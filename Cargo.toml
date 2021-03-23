@@ -1,0 +1,15 @@
+[package]
+name = "lembas"
+version = "0.0.1"
+authors = ["Marius Wilms <info@mariuswilms.dev>"]
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/mawilms/lembas"
+description = """
+For now this crate is only here for name reservation.
+"""
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
