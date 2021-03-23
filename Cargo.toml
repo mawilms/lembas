@@ -16,3 +16,5 @@ For now this crate is only here for name reservation.
 
 
 iced = "^0"
+reqwest = { version = "^0", features = ["blocking"] }
+zip = "^0"

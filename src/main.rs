@@ -1,8 +1,6 @@
 #![warn(clippy::all, clippy::pedantic)]
-mod gui;
+mod core;
 
-use crate::gui::main_window::MainWindow;
-
-pub fn main() {
-    MainWindow::start();
+fn main() {
+    core::downloader::Downloader::install().unwrap();
 }
