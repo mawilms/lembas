@@ -13,3 +13,6 @@ For now this crate is only here for name reservation.
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+
+iced = "^0"
