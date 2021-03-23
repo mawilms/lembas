@@ -1,12 +1,22 @@
-use iced::{Element, Sandbox, Settings, Text};
+use iced::{button, Align, Button, Element, Row, Sandbox, Settings, Text};
 
-pub struct MainWindow;
+#[derive(Default)]
+pub struct MainWindow {
+    refresh_button: button::State,
+    update_all_button: button::State,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Message {
+    RefreshPressed,
+    UpdateAllPressed,
+}
 
 impl Sandbox for MainWindow {
-    type Message = ();
+    type Message = Message;
 
-    fn new() -> MainWindow {
-        MainWindow
+    fn new() -> Self {
+        Self::default()
     }
 
     fn title(&self) -> String {
@@ -17,8 +27,19 @@ impl Sandbox for MainWindow {
         // This application has no interactions
     }
 
-    fn view(&mut self) -> Element<Self::Message> {
-        Text::new("Hello, world!").into()
+    fn view(&mut self) -> Element<Message> {
+        Row::new()
+            .padding(10)
+            .align_items(Align::Center)
+            .push(
+                Button::new(&mut self.refresh_button, Text::new("Refresh"))
+                    .on_press(Message::RefreshPressed),
+            )
+            .push(
+                Button::new(&mut self.update_all_button, Text::new("Update all"))
+                    .on_press(Message::UpdateAllPressed),
+            )
+            .into()
     }
 }
 
