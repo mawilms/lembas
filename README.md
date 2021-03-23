@@ -3,10 +3,9 @@
 # Lembas
 
 [![Build Status](https://www.travis-ci.com/mawilms/CloudZip.svg?branch=master)](https://www.travis-ci.com/mawilms/lembas)
+![docs.rs](https://img.shields.io/docsrs/lembas)
 ![GitHub issues](https://img.shields.io/github/issues/mawilms/lembas)
 [![GitHub license](https://img.shields.io/github/license/mawilms/lembas)](https://github.com/mawilms/lembas/blob/master/LICENSE)
-![Crates.io](https://img.shields.io/crates/d/lembas)
-![docs.rs](https://img.shields.io/docsrs/lembas)
 
 </div>
 
