@@ -2,11 +2,16 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::{error::Error, fs::File};
 
-pub fn install() -> Result<(), Box<dyn Error>> {
-    let target = "https://www.lotrointerface.com/downloads/download1125-Voyage";
+/// Downloads and extracts the specified plugin
+pub fn install(plugin_id: &str, name: &str) -> Result<(), Box<dyn Error>> {
+    let target = format!(
+        "https://www.lotrointerface.com/downloads/download{}-{}",
+        plugin_id, name
+    );
     let response = reqwest::blocking::get(target).unwrap();
 
-    let path = Path::new("./download.zip");
+    let filename = format!("{}_{}.zip", plugin_id, name);
+    let path = Path::new(&filename);
 
     let mut file = match File::create(&path) {
         Err(why) => panic!("couldn't create {}", why),
@@ -17,9 +22,11 @@ pub fn install() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Updates already installed plugins
 pub fn update() {}
 
-pub fn delete() {}
+/// Deletes the specified plugin
+pub fn delete(plugin_id: &str) {}
 
 #[cfg(test)]
 mod tests {
