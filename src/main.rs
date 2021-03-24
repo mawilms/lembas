@@ -2,5 +2,5 @@
 mod core;
 
 fn main() {
-    core::downloader::Downloader::install().unwrap();
+    
 }

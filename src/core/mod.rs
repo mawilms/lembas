@@ -1,1 +1,1 @@
-pub mod downloader;
+pub mod installer;
