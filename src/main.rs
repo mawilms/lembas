@@ -2,5 +2,6 @@
 mod core;
 
 fn main() {
-    core::config::read_plugins();
+    core::config::initialize_plugin_folder();
+    core::installer::install("1125", "Voyage");
 }
