@@ -1,3 +1,4 @@
+use crate::gui::style;
 use iced::{
     button, text_input, Align, Button, Column, Container, Element, Length, Row, Sandbox, Settings,
     Text, TextInput,
@@ -36,9 +37,11 @@ impl Sandbox for MainWindow {
 
     fn view(&mut self) -> Element<Message> {
         let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
-            .on_press(Message::RefreshPressed);
+            .on_press(Message::RefreshPressed)
+            .style(style::PrimaryButton::Enabled);
         let update_all_button = Button::new(&mut self.update_all_button, Text::new("Update all"))
-            .on_press(Message::UpdateAllPressed);
+            .on_press(Message::UpdateAllPressed)
+            .style(style::PrimaryButton::Enabled);
         let installed_plugins = Text::new("5 plugins installed");
         let search_plugins = TextInput::new(
             &mut self.search_input,
@@ -79,6 +82,7 @@ impl Sandbox for MainWindow {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
+            .style(style::Content)
             .into()
     }
 
