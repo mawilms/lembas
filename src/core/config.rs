@@ -1,18 +1,26 @@
 use dirs::{data_dir, home_dir};
+use std::env;
 use std::{fs, path::PathBuf};
 
-trait Config {
-    fn get_settings(&mut self) {}
-}
-
 #[derive(Default)]
-pub struct Windows {
+pub struct Config {
     settings: String,
     plugins: String,
 }
 
-impl Config for Windows {
-    fn get_settings(&mut self) {
+impl Config {
+    pub fn get_settings(&mut self) {
+        let os = env::consts::OS;
+        if os == "linux" {
+            println!("Linux");
+        } else if os == "windows" {
+            self.windows_settings();
+        } else if os == "macos" {
+            println!("Mac");
+        }
+    }
+
+    fn windows_settings(&mut self) {
         let mut path = home_dir().expect("Couldn't find your home directory");
         path = path.join("Dokumente").join("The Lord of the Rings Online");
         fs::create_dir_all(path.join("plugins")).expect("Couldn't create the plugins folder");
@@ -24,6 +32,8 @@ impl Config for Windows {
             .unwrap();
         self.plugins = path.into_os_string().into_string().unwrap();
     }
+
+    fn linux_settings(&mut self) {}
 }
 
 /// Reads the given plugin.json that is basically the database to keep the user based information centralised
