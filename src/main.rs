@@ -1,8 +1,7 @@
 #![warn(clippy::all, clippy::pedantic)]
-mod gui;
+mod core;
 
-use crate::gui::main_window::MainWindow;
-
-pub fn main() {
-    MainWindow::start();
+fn main() {
+    core::config::initialize_plugin_folder();
+    core::installer::install("1125", "Voyage");
 }
