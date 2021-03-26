@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::pedantic)]
-use std::env;
+mod core;
 
 fn main() {
-    println!("{}", env::consts::OS);
+    core::config::initialize_plugin_folder();
+    core::installer::install("1125", "Voyage");
 }

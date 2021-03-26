@@ -1,0 +1,12 @@
+{
+    "plugins": [
+        {
+            "id": "1125",
+            "name": "Voyage"
+        },
+        {
+            "id": "1131",
+            "name": "EmotesHelper"
+        }
+    ]
+}
