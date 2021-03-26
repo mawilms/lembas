@@ -1,8 +1,6 @@
 #![warn(clippy::all, clippy::pedantic)]
-mod gui;
+use std::env;
 
-use crate::gui::main_window::MainWindow;
-
-pub fn main() {
-    MainWindow::start();
+fn main() {
+    println!("{}", env::consts::OS);
 }
