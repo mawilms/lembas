@@ -1,7 +1,14 @@
 #![warn(clippy::all, clippy::pedantic)]
 mod core;
+use std::env;
 
 fn main() {
-    core::config::initialize_plugin_folder();
-    core::installer::install("1125", "Voyage");
+    let os = env::consts::OS;
+    if os == "linux" {
+        println!("Linux");
+    } else if os == "windows" {
+        println!("Windows");
+    } else if os == "macos" {
+        println!("Mac");
+    }
 }
