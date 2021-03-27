@@ -43,9 +43,11 @@ impl Sandbox for MainWindow {
     fn view(&mut self) -> Element<Message> {
         let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
             .on_press(Message::RefreshPressed)
+            .padding(5)
             .style(style::PrimaryButton::Enabled);
         let update_all_button = Button::new(&mut self.update_all_button, Text::new("Update all"))
             .on_press(Message::UpdateAllPressed)
+            .padding(5)
             .style(style::PrimaryButton::Enabled);
         let installed_plugins = Text::new("5 plugins installed").font(FONT);
         let search_plugins = TextInput::new(
@@ -55,10 +57,10 @@ impl Sandbox for MainWindow {
             Message::InputChanged,
         );
 
-        let plugin_name = Text::new("Plugin").font(FONT);
-        let current_version = Text::new("Current Version").font(FONT);
-        let latest_version = Text::new("Latest version").font(FONT);
-        let upgrade = Text::new("Upgrade").font(FONT);
+        let plugin_name = Text::new("Plugin").width(Length::Fill);
+        let current_version = Text::new("Current Version");
+        let latest_version = Text::new("Latest version");
+        let upgrade = Text::new("Upgrade");
 
         let header_column = Row::new()
             .width(Length::Fill)
@@ -80,6 +82,7 @@ impl Sandbox for MainWindow {
 
         let content = Column::new()
             .width(Length::Fill)
+            .spacing(10)
             .align_items(Align::Center)
             .push(top_panel)
             .push(header_column);
@@ -87,6 +90,7 @@ impl Sandbox for MainWindow {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
+            .padding(10)
             .style(style::Content)
             .into()
     }

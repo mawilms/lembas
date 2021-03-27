@@ -9,8 +9,8 @@ impl button::StyleSheet for PrimaryButton {
     fn active(&self) -> button::Style {
         match self {
             Self::Enabled => button::Style {
-                background: Some(Background::Color(Color::from_rgb(0.05, 0.44, 0.62))),
-                border_color: Color::from_rgb(0.29, 0.19, 0.03),
+                background: Some(Background::Color(Color::from_rgb(0.35, 0.27, 0.18))),
+                border_color: Color::from_rgb(0.25, 0.18, 0.13),
                 border_width: 4.0,
                 shadow_offset: Vector::new(1.0, 1.0),
                 text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
@@ -49,7 +49,7 @@ pub struct Content;
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.53, 0.44, 0.30))),
+            background: Some(Background::Color(Color::from_rgb(0.72, 0.61, 0.44))),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
         }
