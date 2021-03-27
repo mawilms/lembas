@@ -49,7 +49,7 @@ pub struct Content;
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.10, 0.21, 0.25))),
+            background: Some(Background::Color(Color::from_rgb(0.53, 0.44, 0.30))),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
         }
