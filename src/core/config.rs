@@ -22,7 +22,7 @@ impl Config {
 
     fn windows_settings(&mut self) {
         let mut path = home_dir().expect("Couldn't find your home directory");
-        path = path.join("Dokumente").join("The Lord of the Rings Online");
+        path = path.join("Documents").join("The Lord of the Rings Online");
         let plugin_path = path.join("plugins");
         fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
 
@@ -40,7 +40,7 @@ impl Config {
 
     fn linux_settings(&mut self) {
         let mut path = home_dir().expect("Couldn't find your home directory");
-        path = path.join("Dokumente").join("The Lord of the Rings Online");
+        path = path.join("Documents").join("The Lord of the Rings Online");
         let plugin_path = path.join("plugins");
         fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
 

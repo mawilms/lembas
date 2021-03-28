@@ -1,2 +1,3 @@
+pub mod assets;
 pub mod main_window;
-pub mod messages;
+pub mod style;
