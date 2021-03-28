@@ -10,13 +10,13 @@ pub fn read_plugins() {
 
 pub fn initialize_plugin_folder() {
     let mut path = home_dir().expect("Couldn't find your home directory");
-    path = path.join("Dokumente").join("The Lord of the Rings Online");
+    path = path.join("Documents").join("The Lord of the Rings Online");
     fs::create_dir_all(path.join("plugins")).expect("Couldn't create the plugins folder");
 }
 
 pub fn get_plugin_folder() -> PathBuf {
     let path = home_dir().expect("Couldn't find your home directory");
-    path.join("Dokumente")
+    path.join("Documents")
         .join("The Lord of the Rings Online")
         .join("plugins")
 }
