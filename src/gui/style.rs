@@ -18,7 +18,7 @@ impl button::StyleSheet for PrimaryButton {
             Self::Enabled => button::Style {
                 background: Some(Background::Color(BUTTON_COLOR_DEFAULT)),
                 border_color: BORDER_COLOR,
-                border_width: 4.0,
+                border_width: 2.0,
                 shadow_offset: Vector::new(1.0, 1.0),
                 text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
                 ..button::Style::default()
@@ -26,7 +26,7 @@ impl button::StyleSheet for PrimaryButton {
             Self::Disabled => button::Style {
                 background: Some(Background::Color(Color::from_rgb(0.35, 0.43, 0.46))),
                 border_color: Color::from_rgb(0.29, 0.19, 0.03),
-                border_width: 4.0,
+                border_width: 2.0,
                 shadow_offset: Vector::new(1.0, 1.0),
                 text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
                 ..button::Style::default()

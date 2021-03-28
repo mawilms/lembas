@@ -36,8 +36,19 @@ impl Sandbox for MainWindow {
         String::from("Lembas")
     }
 
-    fn update(&mut self, _message: Self::Message) {
-        // This application has no interactions
+    fn update(&mut self, message: Self::Message) {
+        match message {
+            Message::RefreshPressed => {
+                println!("Refresh");
+            }
+            Message::UpdateAllPressed => {
+                println!("Update");
+            }
+            Message::InputChanged(state) => {
+                self.input_value = state;
+                println!("Changed");
+            }
+        }
     }
 
     fn view(&mut self) -> Element<Message> {
