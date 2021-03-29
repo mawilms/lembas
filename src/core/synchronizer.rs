@@ -17,7 +17,7 @@ impl Synchronizer {
         let response = reqwest::blocking::get("http://localhost:8000/plugins")?
             .json::<HashMap<String, Plugin>>()?;
         if Path::new(&self.config.plugins_file).exists() {
-            println!("{:?}", self.get_plugins());
+            println!("{:?}", self.get_installed_plugins());
         } else {
             self.create_plugins_db();
             self.write_plugins(&response);
@@ -66,7 +66,7 @@ impl Synchronizer {
         let mut all_packages: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins")
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
             .unwrap();
         let package_iter = stmt
             .query_map(params![], |row| {
@@ -89,7 +89,7 @@ impl Synchronizer {
         let mut installed_packages: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins")
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
         let package_iter = stmt
             .query_map(params![], |row| {
