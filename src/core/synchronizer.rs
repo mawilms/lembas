@@ -22,6 +22,7 @@ impl Synchronizer {
     }
 
     fn write_plugins(&self, packages: &HashMap<String, Package>) {
+        println!("{}", &self.config.plugins_file);
         let filestream =
             File::create(&self.config.plugins_file).expect("Couldn't update plugins.json");
         serde_json::to_writer(filestream, &packages).expect("Couldn't update plugins.json");
@@ -30,7 +31,6 @@ impl Synchronizer {
     pub fn read_plugins(&self) {
         let data = read_to_string(&self.config.plugins_file).expect("Couldn't read plugins.json");
         let res: serde_json::Value = serde_json::from_str(&data).unwrap();
-        println!("{:?}", res);
     }
 }
 
@@ -38,4 +38,5 @@ impl Synchronizer {
 struct Package {
     plugin_id: i32,
     title: String,
+    version: String,
 }
