@@ -23,7 +23,7 @@ impl Synchronizer {
         let path = Path::new(&self.config.settings);
         let filestream =
             File::create(path.join("plugins.json")).expect("Couldn't open plugins.json");
-        serde_json::to_writer(filestream, &packages);
+        serde_json::to_writer(filestream, &packages).expect("Couldn't update plugins.json");
     }
 }
 
