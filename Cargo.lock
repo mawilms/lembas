@@ -1447,6 +1447,7 @@ name = "lembas"
 version = "0.0.1"
 dependencies = [
  "dirs 3.0.1",
+ "futures",
  "iced",
  "reqwest",
  "rusqlite",

@@ -1,7 +1,7 @@
 use crate::gui::main_window::Message;
-use iced::{scrollable, Align, Column, Container, Element, Length, Row, Scrollable, Text};
+use iced::{scrollable, Align, Column, Element, Length, Row, Scrollable, Text};
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct PluginPanel {
     plugin_scrollable_state: scrollable::State,
 }

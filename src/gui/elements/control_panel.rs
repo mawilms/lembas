@@ -9,7 +9,7 @@ const FONT: Font = Font::External {
     bytes: include_bytes!("../assets/RingBearer.ttf"),
 };
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct ControlPanel {
     search_input: text_input::State,
     input_value: String,
