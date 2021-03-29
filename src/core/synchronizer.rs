@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fs::{read_to_string, File},
-    io::Read,
-    path::Path,
 };
 
 pub struct Synchronizer {
