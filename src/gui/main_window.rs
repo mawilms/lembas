@@ -1,21 +1,12 @@
+use crate::gui::elements::control_panel::ControlPanel;
 use crate::gui::{assets::RING_BEARER, style};
-use iced::{
-    button, text_input, Align, Button, Column, Container, Element, Font, Length, Row, Sandbox,
-    Settings, Text, TextInput,
-};
-
-const FONT: Font = Font::External {
-    name: "RingBearer",
-    bytes: include_bytes!("./assets/RingBearer.ttf"),
-};
+use iced::{Align, Column, Container, Element, Length, Row, Sandbox, Settings, Text};
 
 #[derive(Default)]
 pub struct MainWindow {
-    search_input: text_input::State,
-    input_value: String,
+    control_panel: ControlPanel,
 
-    refresh_button: button::State,
-    update_all_button: button::State,
+    input_value: String,
 }
 
 #[derive(Debug, Clone)]
@@ -52,21 +43,7 @@ impl Sandbox for MainWindow {
     }
 
     fn view(&mut self) -> Element<Message> {
-        let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
-            .on_press(Message::RefreshPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-        let update_all_button = Button::new(&mut self.update_all_button, Text::new("Update all"))
-            .on_press(Message::UpdateAllPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-        let installed_plugins = Text::new("5 plugins installed").font(FONT);
-        let search_plugins = TextInput::new(
-            &mut self.search_input,
-            "Search plugins...",
-            &self.input_value,
-            Message::InputChanged,
-        );
+        let Self { control_panel, .. } = self;
 
         let plugin_name = Text::new("Plugin").width(Length::Fill);
         let current_version = Text::new("Current Version");
@@ -82,20 +59,11 @@ impl Sandbox for MainWindow {
             .push(latest_version)
             .push(upgrade);
 
-        let top_panel = Row::new()
-            .width(Length::Fill)
-            .align_items(Align::Center)
-            .spacing(10)
-            .push(refresh_button)
-            .push(update_all_button)
-            .push(installed_plugins)
-            .push(search_plugins);
-
         let content = Column::new()
             .width(Length::Fill)
             .spacing(10)
             .align_items(Align::Center)
-            .push(top_panel)
+            .push(control_panel.view())
             .push(header_column);
 
         Container::new(content)
