@@ -1,3 +1,4 @@
+use crate::core::Plugin;
 use crate::gui::elements::{ControlPanel, PluginPanel};
 use crate::gui::{assets::RING_BEARER, style};
 use iced::{Align, Column, Container, Element, Length, Sandbox, Settings};
@@ -8,6 +9,8 @@ pub struct MainWindow {
     plugin_panel: PluginPanel,
 
     input_value: String,
+    all_plugins: Vec<Plugin>,
+    installed_plugins: Vec<Plugin>,
 }
 
 #[derive(Debug, Clone)]

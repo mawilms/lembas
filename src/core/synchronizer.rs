@@ -108,7 +108,7 @@ impl Synchronizer {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Plugin {
+pub struct Plugin {
     plugin_id: i32,
     title: String,
     #[serde(default)]
