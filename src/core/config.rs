@@ -1,5 +1,5 @@
 use dirs::{data_dir, home_dir};
-use std::{env, path::Path};
+use std::{env, error::Error, path::Path};
 use std::{fs, path::PathBuf};
 
 #[derive(Default)]
@@ -9,50 +9,28 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_settings(&mut self) {
-        let os = env::consts::OS;
-        if os == "linux" {
-            self.linux_settings();
-        } else if os == "windows" {
-            self.windows_settings();
-        } else if os == "macos" {
-            println!("Mac");
-        }
+    pub fn init_settings(&mut self) {
+        self.setup_folders();
+
+        Config::create_plugins_folder(&self.settings);
     }
 
-    fn windows_settings(&mut self) {
-        let mut path = home_dir().expect("Couldn't find your home directory");
-        path = path.join("Documents").join("The Lord of the Rings Online");
-        let plugin_path = path.join("plugins");
-        fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
-        fs::create_dir(data_dir().unwrap().join("Lembas"))
-            .expect("Couldn't create the lembas settings folder");
+    fn setup_folders(&mut self) {
+        let plugins_path = home_dir()
+            .expect("Couldn't find your home directory")
+            .join("Documents")
+            .join("The Lord of the Rings Online")
+            .join("plugins");
+        fs::create_dir_all(&plugins_path).expect("Couldn't create the plugins folder");
+        self.plugins = plugins_path.into_os_string().into_string().unwrap();
 
-        self.settings = data_dir()
-            .expect("Couldn't find the default data directory")
-            .into_os_string()
-            .into_string()
-            .unwrap();
-        self.plugins = plugin_path.into_os_string().into_string().unwrap();
+        let settings_path = data_dir().unwrap().join("Lembas");
 
-        Config::create_plugins_fole(&self.settings);
+        fs::create_dir_all(&settings_path).expect("Couldn't create the lembas settings folder");
+        self.settings = settings_path.into_os_string().into_string().unwrap();
     }
 
-    fn linux_settings(&mut self) {
-        let mut path = home_dir().expect("Couldn't find your home directory");
-        path = path.join("Documents").join("The Lord of the Rings Online");
-        let plugin_path = path.join("plugins");
-        fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
-        fs::create_dir_all(data_dir().unwrap().join("Lembas"))
-            .expect("Couldn't create the lembas settings folder");
-
-        self.settings = plugin_path.clone().into_os_string().into_string().unwrap();
-        self.plugins = plugin_path.into_os_string().into_string().unwrap();
-
-        Config::create_plugins_fole(&self.settings);
-    }
-
-    fn create_plugins_fole(path: &str) {
+    fn create_plugins_folder(path: &str) {
         let path = Path::new(path);
         fs::File::create(path.join("plugins.json")).expect("Couldn't create plugins.json");
     }
