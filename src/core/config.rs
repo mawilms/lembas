@@ -1,5 +1,5 @@
 use dirs::{data_dir, home_dir};
-use std::env;
+use std::{env, path::Path};
 use std::{fs, path::PathBuf};
 
 #[derive(Default)]
@@ -25,17 +25,17 @@ impl Config {
         path = path.join("Documents").join("The Lord of the Rings Online");
         let plugin_path = path.join("plugins");
         fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
+        fs::create_dir(data_dir().unwrap().join("Lembas"))
+            .expect("Couldn't create the lembas settings folder");
 
         self.settings = data_dir()
             .expect("Couldn't find the default data directory")
             .into_os_string()
             .into_string()
             .unwrap();
-        self.plugins = plugin_path
-            .join("plugins")
-            .into_os_string()
-            .into_string()
-            .unwrap();
+        self.plugins = plugin_path.into_os_string().into_string().unwrap();
+
+        Config::create_plugins_fole(&self.settings);
     }
 
     fn linux_settings(&mut self) {
@@ -43,15 +43,17 @@ impl Config {
         path = path.join("Documents").join("The Lord of the Rings Online");
         let plugin_path = path.join("plugins");
         fs::create_dir_all(&plugin_path).expect("Couldn't create the plugins folder");
+        fs::create_dir_all(data_dir().unwrap().join("Lembas"))
+            .expect("Couldn't create the lembas settings folder");
 
         self.settings = plugin_path.clone().into_os_string().into_string().unwrap();
         self.plugins = plugin_path.into_os_string().into_string().unwrap();
-    }
-}
 
-/// Reads the given plugin.json that is basically the database to keep the user based information centralised
-pub fn read_plugins() {
-    let data = fs::read_to_string("samples/plugins.json").unwrap();
-    let json: serde_json::Value = serde_json::from_str(&data).unwrap();
-    println!("{}", json);
+        Config::create_plugins_fole(&self.settings);
+    }
+
+    fn create_plugins_fole(path: &str) {
+        let path = Path::new(path);
+        fs::File::create(path.join("plugins.json")).expect("Couldn't create plugins.json");
+    }
 }

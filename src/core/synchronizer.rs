@@ -1,13 +1,29 @@
+use crate::core::config::Config;
 use serde::{Deserialize, Serialize};
+use std::{fs::File, path::Path};
 
-pub struct Synchronizer {}
+pub struct Synchronizer {
+    config: Config,
+}
 
 impl Synchronizer {
-    pub fn synchronize_plugins() -> Result<(), Box<dyn std::error::Error>> {
+    pub fn new(config: Config) -> Self {
+        Self { config }
+    }
+
+    pub fn synchronize_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
         let response =
             reqwest::blocking::get("http://localhost:8000/plugins")?.json::<Vec<Package>>()?;
         println!("{:?}", response);
+        self.write_plugins(&response);
         Ok(())
+    }
+
+    fn write_plugins(&self, packages: &[Package]) {
+        let path = Path::new(&self.config.settings);
+        let filestream =
+            File::create(path.join("plugins.json")).expect("Couldn't open plugins.json");
+        serde_json::to_writer(filestream, &packages);
     }
 }
 
