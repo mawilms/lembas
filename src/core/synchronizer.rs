@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fs::{read_to_string, File},
+    path::Path,
 };
 
 pub struct Synchronizer {
@@ -17,20 +18,28 @@ impl Synchronizer {
     pub fn synchronize_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
         let response = reqwest::blocking::get("http://localhost:8000/plugins")?
             .json::<HashMap<String, Package>>()?;
+        if Path::new(&self.config.plugins_file).exists() {
+            self.update_plugins(&response);
+        } else {
+            self.write_plugins(&response);
+        }
         self.write_plugins(&response);
         Ok(())
     }
 
     fn write_plugins(&self, packages: &HashMap<String, Package>) {
-        println!("{}", &self.config.plugins_file);
         let filestream =
             File::create(&self.config.plugins_file).expect("Couldn't update plugins.json");
         serde_json::to_writer(filestream, &packages).expect("Couldn't update plugins.json");
     }
 
-    pub fn read_plugins(&self) {
+    fn update_plugins(&self, packages: &HashMap<String, Package>) {
+        let plugins = self.read_plugins();
+    }
+
+    pub fn read_plugins(&self) -> serde_json::Value {
         let data = read_to_string(&self.config.plugins_file).expect("Couldn't read plugins.json");
-        let res: serde_json::Value = serde_json::from_str(&data).unwrap();
+        serde_json::from_str(&data).unwrap()
     }
 }
 
@@ -38,5 +47,7 @@ impl Synchronizer {
 struct Package {
     plugin_id: i32,
     title: String,
-    version: String,
+    #[serde(default)]
+    current_version: String,
+    latest_version: String,
 }
