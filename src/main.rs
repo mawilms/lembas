@@ -10,6 +10,6 @@ fn main() {
     //synchronizer.read_plugins();
     match result {
         Ok(_) => gui::main_window::MainWindow::start(),
-        Err(_) => panic!("Error"),
+        Err(error) => panic!("{}", error),
     }
 }
