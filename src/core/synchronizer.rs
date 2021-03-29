@@ -1,4 +1,6 @@
 use crate::core::config::Config;
+use rusqlite::NO_PARAMS;
+use rusqlite::{Connection, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -19,12 +21,30 @@ impl Synchronizer {
         let response = reqwest::blocking::get("http://localhost:8000/plugins")?
             .json::<HashMap<String, Package>>()?;
         if Path::new(&self.config.plugins_file).exists() {
-            self.update_plugins(&response);
+            //self.update_plugins(&response);
         } else {
-            self.write_plugins(&response);
+            self.create_plugins_db();
+            //self.write_plugins(&response);
         }
-        self.write_plugins(&response);
         Ok(())
+    }
+
+    fn create_plugins_db(&self) {
+        let connection = Connection::open(&self.config.plugins_file).unwrap();
+        connection
+            .execute(
+                "
+                CREATE TABLE plugins (
+                    id INTEGER PRIMARY KEY,
+                    plugin_id INTEGER,
+                    title TEXT,
+                    current_version TEXT,
+                    latest_version TEXT
+                );
+        ",
+                NO_PARAMS,
+            )
+            .unwrap();
     }
 
     fn write_plugins(&self, packages: &HashMap<String, Package>) {
