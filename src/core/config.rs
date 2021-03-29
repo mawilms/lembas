@@ -1,6 +1,6 @@
 use dirs::{data_dir, home_dir};
-use std::{env, error::Error, path::Path};
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::Path;
 
 #[derive(Default)]
 pub struct Config {
