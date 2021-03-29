@@ -17,7 +17,6 @@ impl Synchronizer {
         let response = reqwest::blocking::get("http://localhost:8000/plugins")?
             .json::<HashMap<String, Plugin>>()?;
         if Path::new(&self.config.plugins_file).exists() {
-            println!("{:?}", self.get_installed_plugins());
         } else {
             self.create_plugins_db();
             self.write_plugins(&response);
