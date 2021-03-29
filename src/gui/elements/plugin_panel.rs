@@ -16,7 +16,6 @@ impl PluginPanel {
         Row::new()
             .width(Length::Fill)
             .align_items(Align::Center)
-            .spacing(10)
             .push(plugin_name)
             .push(current_version)
             .push(latest_version)

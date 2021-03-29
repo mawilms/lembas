@@ -94,10 +94,20 @@ impl Application for MainWindow {
             ..
         } = self;
 
-        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state);
+        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
+            .spacing(5)
+            .width(Length::Fill)
+            .align_items(Align::Center)
+            .style(style::Scrollable);
 
+        let mut counter = 0;
         for plugin in &mut self.all_plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.view());
+            if counter % 2 == 0 {
+                plugins_scrollable = plugins_scrollable.push(plugin.view());
+            } else {
+                plugins_scrollable = plugins_scrollable.push(plugin.view());
+            }
+            counter += 1;
         }
 
         let content = Column::new()
@@ -121,7 +131,7 @@ impl MainWindow {
     pub fn start() {
         let mut settings: Settings<()> = Settings::default();
         settings.window.size = (800, 420);
-        settings.default_font = Some(RING_BEARER);
+        //settings.default_font = Some(RING_BEARER);
         MainWindow::run(settings).unwrap_err();
     }
 }

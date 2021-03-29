@@ -1,4 +1,4 @@
-use iced::{button, container, Background, Color, Vector};
+use iced::{button, container, scrollable, Background, Color, Vector};
 
 pub const BORDER_COLOR: Color = Color::from_rgb(0.54, 0.53, 0.31);
 pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.59, 0.32);
@@ -59,6 +59,41 @@ impl container::StyleSheet for Content {
             background: Some(Background::Color(BACKGROUND_COLOR)),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
+        }
+    }
+}
+
+pub struct Scrollable;
+impl scrollable::StyleSheet for Scrollable {
+    fn active(&self) -> scrollable::Scrollbar {
+        scrollable::Scrollbar {
+            background: Some(Background::Color(Color::from_rgb(0.08, 0.61, 0.65))),
+            border_radius: 0.0,
+            border_width: 0.0,
+            border_color: Color::TRANSPARENT,
+            scroller: scrollable::Scroller {
+                color: Color::from_rgb(0.08, 0.61, 0.65),
+                border_radius: 2.0,
+                border_width: 0.0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> scrollable::Scrollbar {
+        let active = self.active();
+
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..active.scroller },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> scrollable::Scrollbar {
+        let hovered = self.hovered();
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..hovered.scroller },
+            ..hovered
         }
     }
 }
