@@ -50,7 +50,6 @@ impl Synchronizer {
 
     fn insert_plugin(&self, plugin: &Plugin) {
         let conn = Connection::open(&self.config.plugins_file).unwrap();
-        println!("{:?}", plugin);
         conn.execute(
             "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4)",
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
