@@ -4,8 +4,8 @@ use std::{fs, path::PathBuf};
 
 #[derive(Default)]
 pub struct Config {
-    settings: String,
-    plugins: String,
+    pub settings: String,
+    pub plugins: String,
 }
 
 impl Config {
