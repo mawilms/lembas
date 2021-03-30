@@ -1,6 +1,6 @@
 use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::{ControlPanel, PluginPanel};
-use crate::gui::{assets::RING_BEARER, style};
+use crate::gui::{style};
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Length, Row, Scrollable,
     Settings, Text,
@@ -100,14 +100,8 @@ impl Application for MainWindow {
             .align_items(Align::Center)
             .style(style::Scrollable);
 
-        let mut counter = 0;
         for plugin in &mut self.all_plugins {
-            if counter % 2 == 0 {
-                plugins_scrollable = plugins_scrollable.push(plugin.view());
-            } else {
-                plugins_scrollable = plugins_scrollable.push(plugin.view());
-            }
-            counter += 1;
+            plugins_scrollable = plugins_scrollable.push(plugin.view());
         }
 
         let content = Column::new()

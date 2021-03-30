@@ -1,5 +1,6 @@
+use crate::gui::style;
 use crate::{core::config::Config, gui::main_window::Message};
-use iced::{Element, Length};
+use iced::{Container, Element, Length};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
