@@ -2,8 +2,8 @@ use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::{ControlPanel, PluginPanel};
 use crate::gui::style;
 use iced::{
-    scrollable, Align, Application, Column, Command, Container, Element, Length, Row, Scrollable,
-    Settings, Text,
+    scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
+    Settings,
 };
 
 #[derive(Default, Debug, Clone)]
