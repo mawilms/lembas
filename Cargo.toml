@@ -1,3 +1,5 @@
+#cargo-features = ["strip"]
+
 [package]
 name = "lembas"
 version = "0.0.1"
@@ -25,3 +27,4 @@ futures = "^0"
 [profile.release]
 opt-level = "s"
 lto = true
+# strip = "symbols" Currently only useable for nightly --> 
