@@ -107,20 +107,29 @@ impl Application for MainWindow {
             plugins_scrollable = plugins_scrollable.push(plugin.view());
         }
 
+        let navigation_container = Container::new(navigation_panel.view())
+            .width(Length::Fill)
+            .padding(10)
+            .style(style::PluginRow);
+
         let content = Column::new()
             .width(Length::Fill)
             .spacing(10)
             .align_items(Align::Center)
-            .push(navigation_panel.view())
             .push(control_panel.view())
             .push(plugin_panel.view())
             .push(plugins_scrollable);
 
-        Container::new(content)
+        let main_container = Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(10)
-            .style(style::Content)
+            .style(style::Content);
+
+        Column::new()
+            .width(Length::Fill)
+            .push(navigation_container)
+            .push(main_container)
             .into()
     }
 }
