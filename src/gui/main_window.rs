@@ -1,5 +1,5 @@
 use crate::core::{Config, Plugin, Synchronizer};
-use crate::gui::elements::{ControlPanel, PluginPanel};
+use crate::gui::elements::{ControlPanel, NavigationPanel, PluginPanel};
 use crate::gui::style;
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
@@ -10,6 +10,7 @@ use iced::{
 pub struct MainWindow {
     control_panel: ControlPanel,
     plugin_panel: PluginPanel,
+    navigation_panel: NavigationPanel,
     synchronizer: Synchronizer,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
@@ -29,6 +30,7 @@ impl MainWindow {
         Self {
             control_panel: ControlPanel::default(),
             plugin_panel: PluginPanel::default(),
+            navigation_panel: NavigationPanel::default(),
             synchronizer,
             plugin_scrollable_state: scrollable::State::default(),
             input_value: String::default(),
@@ -91,6 +93,7 @@ impl Application for MainWindow {
         let Self {
             control_panel,
             plugin_panel,
+            navigation_panel,
             ..
         } = self;
 
@@ -108,6 +111,7 @@ impl Application for MainWindow {
             .width(Length::Fill)
             .spacing(10)
             .align_items(Align::Center)
+            .push(navigation_panel.view())
             .push(control_panel.view())
             .push(plugin_panel.view())
             .push(plugins_scrollable);
