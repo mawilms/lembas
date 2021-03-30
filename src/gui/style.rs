@@ -1,9 +1,9 @@
-use iced::{button, container, Background, Color, Vector};
+use iced::{button, container, scrollable, Background, Color, Vector};
 
 pub const BORDER_COLOR: Color = Color::from_rgb(0.54, 0.53, 0.31);
-pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.59, 0.32);
+pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.69, 0.32);
 pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.25, 0.18, 0.13);
-pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.84, 0.71, 0.49);
+pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.56, 0.32, 0.20);
 pub const COLUMN_COLOR_PRIMARY: Color = Color::from_rgb(0.25, 0.18, 0.13);
 pub const COLUMN_COLOR_SECONDARY: Color = Color::from_rgb(0.25, 0.18, 0.13);
 
@@ -59,6 +59,41 @@ impl container::StyleSheet for Content {
             background: Some(Background::Color(BACKGROUND_COLOR)),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
+        }
+    }
+}
+
+pub struct Scrollable;
+impl scrollable::StyleSheet for Scrollable {
+    fn active(&self) -> scrollable::Scrollbar {
+        scrollable::Scrollbar {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            border_radius: 0.0,
+            border_width: 0.0,
+            border_color: Color::TRANSPARENT,
+            scroller: scrollable::Scroller {
+                color: Color::from_rgb(0.85, 0.71, 0.49),
+                border_radius: 2.0,
+                border_width: 0.0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> scrollable::Scrollbar {
+        let active = self.active();
+
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..active.scroller },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> scrollable::Scrollbar {
+        let hovered = self.hovered();
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..hovered.scroller },
+            ..hovered
         }
     }
 }

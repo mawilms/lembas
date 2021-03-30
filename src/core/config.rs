@@ -2,7 +2,7 @@ use dirs::{data_dir, home_dir};
 use std::path::Path;
 use std::{fs, path::PathBuf};
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct Config {
     pub settings: String,
     pub plugins: String,
@@ -31,7 +31,6 @@ impl Config {
     fn setup_settings_folder(&mut self, settings_path: PathBuf) {
         fs::create_dir_all(&settings_path).expect("Couldn't create the lembas settings folder");
         let path = Path::new(&settings_path).join("plugins.sqlite3");
-        //fs::File::create(&path).expect("Couldn't create plugins db");
         self.plugins_file = path.into_os_string().into_string().unwrap();
         self.settings = settings_path.into_os_string().into_string().unwrap();
     }
