@@ -1,6 +1,6 @@
 use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::{ControlPanel, PluginPanel};
-use crate::gui::{style};
+use crate::gui::style;
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Length, Row, Scrollable,
     Settings, Text,
@@ -124,7 +124,7 @@ impl Application for MainWindow {
 impl MainWindow {
     pub fn start() {
         let mut settings: Settings<()> = Settings::default();
-        settings.window.size = (800, 420);
+        settings.window.size = (900, 620);
         //settings.default_font = Some(RING_BEARER);
         MainWindow::run(settings).unwrap_err();
     }
