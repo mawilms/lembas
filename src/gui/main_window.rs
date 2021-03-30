@@ -1,5 +1,5 @@
 use crate::core::{Config, Plugin, Synchronizer};
-use crate::gui::elements::{ControlPanel, PluginPanel};
+use crate::gui::elements::{ControlPanel, NavigationPanel, PluginPanel};
 use crate::gui::style;
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
@@ -10,6 +10,7 @@ use iced::{
 pub struct MainWindow {
     control_panel: ControlPanel,
     plugin_panel: PluginPanel,
+    navigation_panel: NavigationPanel,
     synchronizer: Synchronizer,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
@@ -29,6 +30,7 @@ impl MainWindow {
         Self {
             control_panel: ControlPanel::default(),
             plugin_panel: PluginPanel::default(),
+            navigation_panel: NavigationPanel::default(),
             synchronizer,
             plugin_scrollable_state: scrollable::State::default(),
             input_value: String::default(),
@@ -91,6 +93,7 @@ impl Application for MainWindow {
         let Self {
             control_panel,
             plugin_panel,
+            navigation_panel,
             ..
         } = self;
 
@@ -104,6 +107,11 @@ impl Application for MainWindow {
             plugins_scrollable = plugins_scrollable.push(plugin.view());
         }
 
+        let navigation_container = Container::new(navigation_panel.view())
+            .width(Length::Fill)
+            .padding(10)
+            .style(style::PluginRow);
+
         let content = Column::new()
             .width(Length::Fill)
             .spacing(10)
@@ -112,11 +120,16 @@ impl Application for MainWindow {
             .push(plugin_panel.view())
             .push(plugins_scrollable);
 
-        Container::new(content)
+        let main_container = Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(10)
-            .style(style::Content)
+            .style(style::Content);
+
+        Column::new()
+            .width(Length::Fill)
+            .push(navigation_container)
+            .push(main_container)
             .into()
     }
 }

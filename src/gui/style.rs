@@ -63,6 +63,17 @@ impl container::StyleSheet for Content {
     }
 }
 
+pub struct PluginRow;
+impl container::StyleSheet for PluginRow {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            text_color: Some(Color::WHITE),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct Scrollable;
 impl scrollable::StyleSheet for Scrollable {
     fn active(&self) -> scrollable::Scrollbar {

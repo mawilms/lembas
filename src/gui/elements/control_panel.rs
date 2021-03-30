@@ -1,12 +1,7 @@
 use crate::gui::main_window::Message;
 use crate::gui::{style};
 use iced::{
-    button, text_input, Align, Button, Element, Font, Length, Row, Text, TextInput,
-};
-
-const FONT: Font = Font::External {
-    name: "RingBearer",
-    bytes: include_bytes!("../assets/RingBearer.ttf"),
+    button, text_input, Align, Button, Element, Length, Row, Text, TextInput,
 };
 
 #[derive(Default, Debug, Clone)]
@@ -28,7 +23,7 @@ impl ControlPanel {
             .on_press(Message::UpdateAllPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
-        let installed_plugins = Text::new("5 plugins installed").font(FONT);
+        let installed_plugins = Text::new("5 plugins installed");
         let search_plugins = TextInput::new(
             &mut self.search_input,
             "Search plugins...",

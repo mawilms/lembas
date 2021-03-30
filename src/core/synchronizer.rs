@@ -123,11 +123,16 @@ impl Plugin {
     pub fn view(&mut self) -> Element<Message> {
         use iced::{Row, Text};
 
-        Row::new()
+        let row = Row::new()
             .push(Text::new(&self.title).width(Length::FillPortion(5)))
             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-            .push(Text::new("Update").width(Length::FillPortion(2)))
+            .push(Text::new("Update").width(Length::FillPortion(2)));
+
+        Container::new(row)
+            .width(Length::Fill)
+            .padding(5)
+            .style(style::PluginRow)
             .into()
     }
 }
