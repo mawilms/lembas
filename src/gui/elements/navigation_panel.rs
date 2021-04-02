@@ -16,20 +16,20 @@ pub struct NavigationPanel {
 impl NavigationPanel {
     pub fn view(&mut self) -> Element<Message> {
         let plugins_btn = Button::new(&mut self.plugins_btn, Text::new("My Plugins"))
-            .on_press(Message::RefreshPressed)
+            .on_press(Message::PluginsPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
         let catalog_btn = Button::new(&mut self.catalog_btn, Text::new("Catalog"))
-            .on_press(Message::UpdateAllPressed)
+            .on_press(Message::CatalogPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
         let divider = Space::new(Length::Fill, Length::Shrink);
         let about_btn = Button::new(&mut self.about_btn, Text::new("About"))
-            .on_press(Message::UpdateAllPressed)
+            .on_press(Message::AboutPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
-        let settings_btn = Button::new(&mut self.settings_btn, Text::new("About"))
-            .on_press(Message::UpdateAllPressed)
+        let settings_btn = Button::new(&mut self.settings_btn, Text::new("Settings"))
+            .on_press(Message::SettingsPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
 

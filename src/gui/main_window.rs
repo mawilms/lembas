@@ -1,5 +1,5 @@
-use crate::core::{Config, Plugin, Synchronizer};
-use crate::gui::elements::{ControlPanel, NavigationPanel, PluginPanel};
+use crate::core::{Config, Synchronizer};
+use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
 use crate::gui::views::Plugins as PluginsView;
 use iced::{
@@ -10,37 +10,29 @@ use iced::{
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
     navigation_panel: NavigationPanel,
-
-    //plugins_view: PluginsView,
-    control_panel: ControlPanel,
-    plugin_panel: PluginPanel,
-
+    plugins_view: PluginsView,
     synchronizer: Synchronizer,
-
-    plugin_scrollable_state: scrollable::State,
-    input_value: String,
-    all_plugins: Vec<Plugin>,
-    //installed_plugins: Vec<Plugin>
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Loaded(MainWindow),
+    PluginsPressed,
+    CatalogPressed,
+    AboutPressed,
+    SettingsPressed,
+
     InputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
-    Loaded(MainWindow),
 }
 
 impl MainWindow {
     pub fn new(synchronizer: Synchronizer) -> Self {
         Self {
-            control_panel: ControlPanel::default(),
-            plugin_panel: PluginPanel::default(),
             navigation_panel: NavigationPanel::default(),
+            plugins_view: PluginsView::default(),
             synchronizer,
-            plugin_scrollable_state: scrollable::State::default(),
-            input_value: String::default(),
-            all_plugins: Vec::default(),
         }
     }
 
@@ -61,13 +53,13 @@ impl Application for MainWindow {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
+        // let mut config = Config::default();
+        // config.init_settings();
+        // let synchronizer = Synchronizer::new(config);
+        // synchronizer.create_plugins_db();
 
         (
-            Self::new(synchronizer),
+            Self::default(),
             Command::perform(Self::load(), Message::Loaded),
         )
     }
@@ -78,59 +70,32 @@ impl Application for MainWindow {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::RefreshPressed => {
-                println!("Refresh");
-            }
-            Message::UpdateAllPressed => {
-                println!("Update");
-            }
-            Message::InputChanged(state) => {
-                self.input_value = state;
-                println!("Changed");
-            }
             Message::Loaded(state) => {
-                self.all_plugins = state.synchronizer.get_plugins();
+                println!("Loaded")
             }
+            Message::PluginsPressed => {}
+            Message::CatalogPressed => {}
+            Message::AboutPressed => {}
+            Message::SettingsPressed => {}
+            Message::InputChanged(_) => {}
+            Message::RefreshPressed => {}
+            Message::UpdateAllPressed => {}
         }
         Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
         let Self {
-            control_panel,
-            plugin_panel,
             navigation_panel,
+            plugins_view,
             ..
         } = self;
-
-        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
-            .spacing(5)
-            .width(Length::Fill)
-            .align_items(Align::Center)
-            .style(style::Scrollable);
-
-        for plugin in &mut self.all_plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.view());
-        }
-
         let navigation_container = Container::new(navigation_panel.view())
             .width(Length::Fill)
             .padding(10)
             .style(style::PluginRow);
 
-        let content = Column::new()
-            .width(Length::Fill)
-            .spacing(10)
-            .align_items(Align::Center)
-            .push(control_panel.view())
-            .push(plugin_panel.view())
-            .push(plugins_scrollable);
-
-        let main_container = Container::new(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(10)
-            .style(style::Content);
+        let main_container = plugins_view.view();
 
         Column::new()
             .width(Length::Fill)
