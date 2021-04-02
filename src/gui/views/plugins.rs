@@ -10,7 +10,7 @@ pub struct Plugins {
     plugin_panel: PluginPanel,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
-    pub installed_plugins: Vec<Plugin>,
+    pub plugins: Vec<Plugin>,
 }
 
 impl Plugins {
@@ -27,7 +27,7 @@ impl Plugins {
             .align_items(Align::Center)
             .style(style::Scrollable);
 
-        for plugin in &mut self.installed_plugins {
+        for plugin in &mut self.plugins {
             plugins_scrollable = plugins_scrollable.push(plugin.view());
         }
 
