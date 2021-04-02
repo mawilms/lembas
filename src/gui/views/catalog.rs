@@ -52,8 +52,6 @@ impl std::fmt::Display for Amount {
 }
 
 impl Catalog {
-    pub fn update(&mut self, message: Message) {}
-
     pub fn view(&mut self) -> Element<Message> {
         let Self { plugin_panel, .. } = self;
 
