@@ -1,6 +1,7 @@
 use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::{ControlPanel, NavigationPanel, PluginPanel};
 use crate::gui::style;
+use crate::gui::views::Plugins as PluginsView;
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
     Settings,
@@ -8,13 +9,18 @@ use iced::{
 
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
+    navigation_panel: NavigationPanel,
+
+    //plugins_view: PluginsView,
     control_panel: ControlPanel,
     plugin_panel: PluginPanel,
-    navigation_panel: NavigationPanel,
+
     synchronizer: Synchronizer,
+
     plugin_scrollable_state: scrollable::State,
     input_value: String,
     all_plugins: Vec<Plugin>,
+    //installed_plugins: Vec<Plugin>
 }
 
 #[derive(Debug, Clone)]
