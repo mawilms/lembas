@@ -1,38 +1,36 @@
 use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
-use crate::gui::views::Plugins as PluginsView;
+use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
+    view: View,
     navigation_panel: NavigationPanel,
     plugins_view: PluginsView,
+    catalog_view: CatalogView,
     synchronizer: Synchronizer,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     Loaded(Vec<Plugin>),
+
+    // Navigation Panel
     PluginsPressed,
     CatalogPressed,
     AboutPressed,
     SettingsPressed,
 
+    // Navigation View
     InputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
+    // Catalog View
 }
 
 impl MainWindow {
-    pub fn new(synchronizer: Synchronizer) -> Self {
-        Self {
-            navigation_panel: NavigationPanel::default(),
-            plugins_view: PluginsView::default(),
-            synchronizer,
-        }
-    }
-
     pub async fn load() -> Vec<Plugin> {
         let mut config = Config::default();
         config.init_settings();
@@ -62,10 +60,15 @@ impl Application for MainWindow {
         match message {
             Message::Loaded(state) => {
                 self.plugins_view.installed_plugins = state;
-                //self.plugins_view.view(installed_plugins);
             }
-            Message::PluginsPressed => {}
-            Message::CatalogPressed => {}
+            Message::PluginsPressed => {
+                println!("Plugins pressed");
+                self.view = View::Plugins;
+            }
+            Message::CatalogPressed => {
+                println!("Catalog pressed");
+                self.view = View::Catalog;
+            }
             Message::AboutPressed => {}
             Message::SettingsPressed => {}
             Message::InputChanged(_) => {}
@@ -77,8 +80,10 @@ impl Application for MainWindow {
 
     fn view(&mut self) -> Element<Message> {
         let Self {
+            view,
             navigation_panel,
             plugins_view,
+            catalog_view,
             ..
         } = self;
         let navigation_container = Container::new(navigation_panel.view())
@@ -86,13 +91,24 @@ impl Application for MainWindow {
             .padding(10)
             .style(style::PluginRow);
 
-        let main_container = plugins_view.view();
-
-        Column::new()
-            .width(Length::Fill)
-            .push(navigation_container)
-            .push(main_container)
-            .into()
+        match view {
+            View::Plugins => {
+                let main_container = plugins_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
+            View::Catalog => {
+                let main_container = catalog_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
+        }
     }
 }
 
