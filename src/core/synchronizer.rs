@@ -86,7 +86,7 @@ impl Synchronizer {
         all_packages
     }
 
-    fn get_installed_plugins(&self) -> Vec<Plugin> {
+    pub fn get_installed_plugins(&self) -> Vec<Plugin> {
         let mut installed_packages: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn

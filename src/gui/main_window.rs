@@ -1,11 +1,8 @@
-use crate::core::{Config, Synchronizer};
+use crate::core::{Config, Plugin, Synchronizer};
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
 use crate::gui::views::Plugins as PluginsView;
-use iced::{
-    scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
-    Settings,
-};
+use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
@@ -16,7 +13,7 @@ pub struct MainWindow {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Loaded(MainWindow),
+    Loaded(Vec<Plugin>),
     PluginsPressed,
     CatalogPressed,
     AboutPressed,
@@ -36,14 +33,12 @@ impl MainWindow {
         }
     }
 
-    pub async fn load() -> Self {
-        // TODO: Ka was genau hier passiert und warum ich das mit einem perform aufrufe. Eigentlich erstelle ich ja gerade zweimal die gleichen Objekte
+    pub async fn load() -> Vec<Plugin> {
         let mut config = Config::default();
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
-
-        Self::new(synchronizer)
+        synchronizer.get_installed_plugins()
     }
 }
 
@@ -71,7 +66,8 @@ impl Application for MainWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Loaded(state) => {
-                println!("Loaded")
+                let installed_plugins = state;
+                println!("{:?}", installed_plugins);
             }
             Message::PluginsPressed => {}
             Message::CatalogPressed => {}
