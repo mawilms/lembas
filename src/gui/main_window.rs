@@ -62,11 +62,9 @@ impl Application for MainWindow {
                 self.plugins_view.installed_plugins = state;
             }
             Message::PluginsPressed => {
-                println!("Plugins pressed");
                 self.view = View::Plugins;
             }
             Message::CatalogPressed => {
-                println!("Catalog pressed");
                 self.view = View::Catalog;
             }
             Message::AboutPressed => {}
