@@ -38,7 +38,7 @@ impl MainWindow {
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
-        synchronizer.get_installed_plugins()
+        synchronizer.get_plugins()
     }
 }
 
@@ -48,11 +48,6 @@ impl Application for MainWindow {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        // let mut config = Config::default();
-        // config.init_settings();
-        // let synchronizer = Synchronizer::new(config);
-        // synchronizer.create_plugins_db();
-
         (
             Self::default(),
             Command::perform(Self::load(), Message::Loaded),
@@ -66,8 +61,8 @@ impl Application for MainWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Loaded(state) => {
-                let installed_plugins = state;
-                println!("{:?}", installed_plugins);
+                self.plugins_view.installed_plugins = state;
+                //self.plugins_view.view(installed_plugins);
             }
             Message::PluginsPressed => {}
             Message::CatalogPressed => {}

@@ -10,7 +10,7 @@ pub struct Plugins {
     plugin_panel: PluginPanel,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
-    installed_plugins: Vec<Plugin>,
+    pub installed_plugins: Vec<Plugin>,
 }
 
 impl Plugins {
