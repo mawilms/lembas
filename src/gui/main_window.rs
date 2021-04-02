@@ -1,51 +1,46 @@
 use crate::core::{Config, Plugin, Synchronizer};
-use crate::gui::elements::{ControlPanel, NavigationPanel, PluginPanel};
+use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
-use iced::{
-    scrollable, Align, Application, Column, Command, Container, Element, Length, Scrollable,
-    Settings,
-};
+use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
+use iced::{Application, Column, Command, Container, Element, Length, Settings};
+
+use super::views::catalog::Amount;
 
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
-    control_panel: ControlPanel,
-    plugin_panel: PluginPanel,
+    view: View,
     navigation_panel: NavigationPanel,
+    plugins_view: PluginsView,
+    catalog_view: CatalogView,
     synchronizer: Synchronizer,
-    plugin_scrollable_state: scrollable::State,
-    input_value: String,
-    all_plugins: Vec<Plugin>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Loaded(Vec<Plugin>),
+
+    // Navigation Panel
+    PluginsPressed,
+    CatalogPressed,
+    AboutPressed,
+    SettingsPressed,
+
+    // Navigation View
     InputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
-    Loaded(MainWindow),
+
+    // Catalog View
+    AmountFiltered(Amount),
 }
 
 impl MainWindow {
-    pub fn new(synchronizer: Synchronizer) -> Self {
-        Self {
-            control_panel: ControlPanel::default(),
-            plugin_panel: PluginPanel::default(),
-            navigation_panel: NavigationPanel::default(),
-            synchronizer,
-            plugin_scrollable_state: scrollable::State::default(),
-            input_value: String::default(),
-            all_plugins: Vec::default(),
-        }
-    }
-
-    pub async fn load() -> Self {
-        // TODO: Ka was genau hier passiert und warum ich das mit einem perform aufrufe. Eigentlich erstelle ich ja gerade zweimal die gleichen Objekte
+    pub async fn load() -> Vec<Plugin> {
         let mut config = Config::default();
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
-
-        Self::new(synchronizer)
+        synchronizer.get_installed_plugins()
     }
 }
 
@@ -55,13 +50,8 @@ impl Application for MainWindow {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-
         (
-            Self::new(synchronizer),
+            Self::default(),
             Command::perform(Self::load(), Message::Loaded),
         )
     }
@@ -72,65 +62,56 @@ impl Application for MainWindow {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::RefreshPressed => {
-                println!("Refresh");
-            }
-            Message::UpdateAllPressed => {
-                println!("Update");
-            }
-            Message::InputChanged(state) => {
-                self.input_value = state;
-                println!("Changed");
-            }
             Message::Loaded(state) => {
-                self.all_plugins = state.synchronizer.get_plugins();
+                self.plugins_view.installed_plugins = state;
             }
+            Message::PluginsPressed => {
+                self.view = View::Plugins;
+            }
+            Message::CatalogPressed => {
+                self.view = View::Catalog;
+            }
+            Message::AboutPressed => {}
+            Message::SettingsPressed => {}
+            Message::InputChanged(_) => {}
+            Message::RefreshPressed => {}
+            Message::UpdateAllPressed => {}
+            Message::AmountFiltered(_) => {}
         }
         Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
         let Self {
-            control_panel,
-            plugin_panel,
+            view,
             navigation_panel,
+            plugins_view,
+            catalog_view,
             ..
         } = self;
-
-        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
-            .spacing(5)
-            .width(Length::Fill)
-            .align_items(Align::Center)
-            .style(style::Scrollable);
-
-        for plugin in &mut self.all_plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.view());
-        }
-
         let navigation_container = Container::new(navigation_panel.view())
             .width(Length::Fill)
             .padding(10)
             .style(style::PluginRow);
 
-        let content = Column::new()
-            .width(Length::Fill)
-            .spacing(10)
-            .align_items(Align::Center)
-            .push(control_panel.view())
-            .push(plugin_panel.view())
-            .push(plugins_scrollable);
-
-        let main_container = Container::new(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(10)
-            .style(style::Content);
-
-        Column::new()
-            .width(Length::Fill)
-            .push(navigation_container)
-            .push(main_container)
-            .into()
+        match view {
+            View::Plugins => {
+                let main_container = plugins_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
+            View::Catalog => {
+                let main_container = catalog_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
+        }
     }
 }
 

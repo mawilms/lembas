@@ -1,12 +1,10 @@
 use crate::gui::main_window::Message;
-use crate::gui::{style};
-use iced::{
-    button, text_input, Align, Button, Element, Length, Row, Text, TextInput,
-};
+use crate::gui::style;
+use iced::{button, text_input, Align, Button, Element, Length, Row, Text, TextInput};
 
 #[derive(Default, Debug, Clone)]
 pub struct ControlPanel {
-    search_input: text_input::State,
+    input: text_input::State,
     input_value: String,
 
     refresh_button: button::State,
@@ -25,7 +23,7 @@ impl ControlPanel {
             .style(style::PrimaryButton::Enabled);
         let installed_plugins = Text::new("5 plugins installed");
         let search_plugins = TextInput::new(
-            &mut self.search_input,
+            &mut self.input,
             "Search plugins...",
             &self.input_value,
             Message::InputChanged,
