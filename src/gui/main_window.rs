@@ -4,6 +4,8 @@ use crate::gui::style;
 use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
+use super::views::catalog::Amount;
+
 #[derive(Default, Debug, Clone)]
 pub struct MainWindow {
     view: View,
@@ -27,7 +29,9 @@ pub enum Message {
     InputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
+
     // Catalog View
+    AmountFiltered(Amount),
 }
 
 impl MainWindow {
@@ -36,7 +40,7 @@ impl MainWindow {
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
-        synchronizer.get_plugins()
+        synchronizer.get_installed_plugins()
     }
 }
 
@@ -72,6 +76,7 @@ impl Application for MainWindow {
             Message::InputChanged(_) => {}
             Message::RefreshPressed => {}
             Message::UpdateAllPressed => {}
+            Message::AmountFiltered(_) => {}
         }
         Command::none()
     }
