@@ -27,12 +27,14 @@ pub enum Message {
     SettingsPressed,
 
     // Navigation View
-    InputChanged(String),
+    PluginInputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
 
     // Catalog View
+    CatalogInputChanged(String),
     AmountFiltered(Amount),
+    PluginSearched(Vec<Plugin>),
 }
 
 impl MainWindow {
@@ -50,6 +52,15 @@ impl MainWindow {
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
         synchronizer.get_plugins()
+    }
+
+    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+        println!("Boom");
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_plugin(&name)
     }
 }
 
@@ -75,7 +86,6 @@ impl Application for MainWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::AllPluginsLoaded(state) => {
-                println!("Bam");
                 self.catalog_view.plugins = state;
                 self.view = View::Catalog;
                 Command::none()
@@ -83,6 +93,11 @@ impl Application for MainWindow {
             Message::InstalledPluginsLoaded(state) => {
                 self.plugins_view.plugins = state;
                 self.view = View::Plugins;
+                Command::none()
+            }
+            Message::PluginSearched(state) => {
+                self.plugins_view.plugins = state;
+                self.view = View::Catalog;
                 Command::none()
             }
             Message::PluginsPressed => Command::perform(
@@ -94,10 +109,17 @@ impl Application for MainWindow {
             }
             Message::AboutPressed => Command::none(),
             Message::SettingsPressed => Command::none(),
-            Message::InputChanged(_) => Command::none(),
+            Message::PluginInputChanged(_) => Command::none(),
             Message::RefreshPressed => Command::none(),
             Message::UpdateAllPressed => Command::none(),
             Message::AmountFiltered(_) => Command::none(),
+            Message::CatalogInputChanged(state) => {
+                self.catalog_view.input_value = state;
+                Command::perform(
+                    Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
+                    Message::PluginSearched,
+                )
+            }
         }
     }
 

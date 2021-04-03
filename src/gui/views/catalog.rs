@@ -15,7 +15,7 @@ pub struct Catalog {
     selected_amount: Amount,
     input: text_input::State,
     plugin_scrollable_state: scrollable::State,
-    input_value: String,
+    pub input_value: String,
 
     pub plugins: Vec<Plugin>,
 }
@@ -59,7 +59,7 @@ impl Catalog {
             &mut self.input,
             "Search plugins...",
             &self.input_value,
-            Message::InputChanged,
+            Message::CatalogInputChanged,
         );
 
         let pick_list = PickList::new(
