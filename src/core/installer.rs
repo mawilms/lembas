@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
-use std::{error::Error, fs::File};
-use std::{fs, io::prelude::*};
+// use std::path::{Path, PathBuf};
+// use std::{error::Error, fs::File};
+// use std::{fs, io::prelude::*};
 
-/// Downloads and extracts the specified plugin
+// /// Downloads and extracts the specified plugin
 // pub fn install(plugin_id: &str, name: &str) -> Result<(), Box<dyn Error>> {
 //     //let plugin_folder_path = get_plugin_folder();
 //     let target = format!(
@@ -35,20 +35,20 @@ use std::{fs, io::prelude::*};
 //     fs::remove_file(path).expect("Couldn't delete old archive");
 // }
 
-/// Updates already installed plugins
-pub fn update() {}
+// /// Updates already installed plugins
+// pub fn update() {}
 
-/// Deletes the specified plugin
-pub fn delete(plugin_id: &str) {}
+// /// Deletes the specified plugin
+// pub fn delete(plugin_id: &str) {}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn install() {
-        assert_eq!(2 + 2, 4);
-    }
+// #[cfg(test)]
+// mod tests {
+//     #[test]
+//     fn install() {
+//         assert_eq!(2 + 2, 4);
+//     }
 
-    fn update() {}
+//     fn update() {}
 
-    fn delete() {}
-}
+//     fn delete() {}
+// }

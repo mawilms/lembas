@@ -1,5 +1,5 @@
 pub mod config;
-pub mod installer;
+//pub mod installer;
 pub mod synchronizer;
 
 pub use config::Config;
