@@ -6,7 +6,7 @@ use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
 use super::views::catalog::Amount;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct MainWindow {
     view: View,
     navigation_panel: NavigationPanel,
@@ -37,30 +37,34 @@ pub enum Message {
     PluginSearched(Vec<Plugin>),
 }
 
+impl Default for MainWindow {
+    fn default() -> Self {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+
+        Self {
+            view: View::default(),
+            navigation_panel: NavigationPanel::default(),
+            plugins_view: PluginsView::default(),
+            catalog_view: CatalogView::default(),
+            synchronizer,
+        }
+    }
+}
+
 impl MainWindow {
-    async fn load_installed_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_installed_plugins()
+    async fn load_installed_plugins(&self) -> Vec<Plugin> {
+        self.synchronizer.get_installed_plugins()
     }
 
-    async fn load_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_plugins()
+    async fn load_plugins(&self) -> Vec<Plugin> {
+        self.synchronizer.get_plugins()
     }
 
-    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        println!("Boom");
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_plugin(&name)
+    async fn get_catalog_plugin(&self, name: String) -> Vec<Plugin> {
+        self.synchronizer.get_plugin(&name)
     }
 }
 
@@ -70,10 +74,11 @@ impl Application for MainWindow {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
+        let main_window = Self::default();
         (
-            Self::default(),
+            main_window,
             Command::perform(
-                Self::load_installed_plugins(),
+                main_window.load_installed_plugins(),
                 Message::InstalledPluginsLoaded,
             ),
         )
@@ -101,11 +106,11 @@ impl Application for MainWindow {
                 Command::none()
             }
             Message::PluginsPressed => Command::perform(
-                Self::load_installed_plugins(),
+                self.load_installed_plugins(),
                 Message::InstalledPluginsLoaded,
             ),
             Message::CatalogPressed => {
-                Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
+                Command::perform(self.load_plugins(), Message::AllPluginsLoaded)
             }
             Message::AboutPressed => Command::none(),
             Message::SettingsPressed => Command::none(),
@@ -116,7 +121,7 @@ impl Application for MainWindow {
             Message::CatalogInputChanged(state) => {
                 self.catalog_view.input_value = state;
                 Command::perform(
-                    Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
+                    self.get_catalog_plugin(self.catalog_view.input_value.clone()),
                     Message::PluginSearched,
                 )
             }
