@@ -16,7 +16,8 @@ impl Synchronizer {
         Self { config }
     }
 
-    pub fn synchronize_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
+    // Used to synchronize the local database with the remote plugin server
+    pub fn update_local_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
         let response = reqwest::blocking::get("http://localhost:8000/plugins")?
             .json::<HashMap<String, Plugin>>()?;
         if Path::new(&self.config.plugins_file).exists() {
@@ -27,6 +28,7 @@ impl Synchronizer {
         Ok(())
     }
 
+    // Creates the local database if it doesn't exist.
     pub fn create_plugins_db(&self) {
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         conn.execute(
@@ -57,10 +59,6 @@ impl Synchronizer {
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
         )
         .unwrap();
-    }
-
-    fn update_plugins(&self, plugins: &HashMap<String, Plugin>) {
-        //let plugins = self.read_plugins();
     }
 
     pub fn get_plugins(&self) -> Vec<Plugin> {
