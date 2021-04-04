@@ -20,11 +20,9 @@ impl Synchronizer {
     pub fn update_local_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
         let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")?
             .json::<HashMap<String, Plugin>>()?;
-        if Path::new(&self.config.plugins_file).exists() {
-        } else {
-            self.create_plugins_db();
-            self.write_plugins(&response);
-        }
+        let local_plugins = self.get_plugins();
+
+        self.write_plugins(&response);
         Ok(())
     }
 
@@ -49,6 +47,18 @@ impl Synchronizer {
     fn write_plugins(&self, plugins: &HashMap<String, Plugin>) {
         for value in plugins.values() {
             self.insert_plugin(&value);
+        }
+    }
+
+    fn update_plugins(&self, plugins: &HashMap<String, Plugin>) {}
+
+    fn compare_plugins(&self, remote: &HashMap<String, Plugin>, local: &mut Vec<Plugin>) {
+        for (name, remote_plugin) in remote {
+            for local_plugin in local {
+                if *name == local_plugin.title {
+                    local_plugin.plugin_id = remote_plugin.plugin_id;
+                }
+            }
         }
     }
 
