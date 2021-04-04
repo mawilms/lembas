@@ -1,4 +1,6 @@
-use crate::core::{Config, Plugin, Synchronizer};
+use crate::core::{
+    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, update_local_plugins, Plugin,
+};
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
 use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
@@ -12,7 +14,6 @@ pub struct MainWindow {
     navigation_panel: NavigationPanel,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
-    synchronizer: Synchronizer,
 }
 
 #[derive(Debug, Clone)]
@@ -39,44 +40,29 @@ pub enum Message {
 
 impl Default for MainWindow {
     fn default() -> Self {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
+        create_plugins_db();
+        update_local_plugins();
 
         Self {
             view: View::default(),
             navigation_panel: NavigationPanel::default(),
             plugins_view: PluginsView::default(),
             catalog_view: CatalogView::default(),
-            synchronizer,
         }
     }
 }
 
 impl MainWindow {
     async fn load_installed_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_installed_plugins()
+        get_installed_plugins()
     }
 
     async fn load_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_plugins()
+        get_plugins()
     }
 
     async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
-        let synchronizer = Synchronizer::new(config);
-        synchronizer.create_plugins_db();
-        synchronizer.get_plugin(&name)
+        get_plugin(&name)
     }
 }
 

@@ -1449,6 +1449,7 @@ dependencies = [
  "dirs 3.0.1",
  "futures",
  "iced",
+ "lazy_static",
  "reqwest",
  "rusqlite",
  "serde",
