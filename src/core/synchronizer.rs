@@ -111,10 +111,10 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE title LIKE ?1;")
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
             .unwrap();
         let plugin_iter = stmt
-            .query_map(params![format!("%{}%", name)], |row| {
+            .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
