@@ -60,6 +60,7 @@ impl MainWindow {
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
+        synchronizer.update_local_plugins();
         synchronizer.get_installed_plugins()
     }
 
