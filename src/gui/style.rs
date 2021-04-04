@@ -2,10 +2,9 @@ use iced::{button, container, scrollable, Background, Color, Vector};
 
 pub const BORDER_COLOR: Color = Color::from_rgb(0.54, 0.53, 0.31);
 pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.69, 0.32);
-pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.25, 0.18, 0.13);
+pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.54, 0.53, 0.31);
 pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.56, 0.32, 0.20);
 pub const COLUMN_COLOR_PRIMARY: Color = Color::from_rgb(0.25, 0.18, 0.13);
-pub const COLUMN_COLOR_SECONDARY: Color = Color::from_rgb(0.25, 0.18, 0.13);
 
 pub enum PrimaryButton {
     Enabled,
@@ -37,15 +36,13 @@ impl button::StyleSheet for PrimaryButton {
     fn hovered(&self) -> button::Style {
         match self {
             Self::Enabled => button::Style {
-                background: Some(Background::Color(Color::from_rgb(0.08, 0.61, 0.65))),
+                background: Some(Background::Color(BUTTON_COLOR_HOVER)),
                 text_color: Color::WHITE,
-                shadow_offset: Vector::new(1.0, 2.0),
                 ..self.active()
             },
             Self::Disabled => button::Style {
                 background: Some(Background::Color(Color::from_rgb8(91, 110, 117))),
                 text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
-                shadow_offset: Vector::new(1.0, 2.0),
                 ..self.active()
             },
         }

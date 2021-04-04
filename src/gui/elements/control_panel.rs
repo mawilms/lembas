@@ -26,7 +26,7 @@ impl ControlPanel {
             &mut self.input,
             "Search plugins...",
             &self.input_value,
-            Message::InputChanged,
+            Message::PluginInputChanged,
         );
 
         Row::new()

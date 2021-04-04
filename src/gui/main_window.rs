@@ -6,7 +6,7 @@ use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
 use super::views::catalog::Amount;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct MainWindow {
     view: View,
     navigation_panel: NavigationPanel,
@@ -17,7 +17,8 @@ pub struct MainWindow {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Loaded(Vec<Plugin>),
+    InstalledPluginsLoaded(Vec<Plugin>),
+    AllPluginsLoaded(Vec<Plugin>),
 
     // Navigation Panel
     PluginsPressed,
@@ -26,21 +27,56 @@ pub enum Message {
     SettingsPressed,
 
     // Navigation View
-    InputChanged(String),
+    PluginInputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
 
     // Catalog View
+    CatalogInputChanged(String),
     AmountFiltered(Amount),
+    PluginSearched(Vec<Plugin>),
+}
+
+impl Default for MainWindow {
+    fn default() -> Self {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+
+        Self {
+            view: View::default(),
+            navigation_panel: NavigationPanel::default(),
+            plugins_view: PluginsView::default(),
+            catalog_view: CatalogView::default(),
+            synchronizer,
+        }
+    }
 }
 
 impl MainWindow {
-    pub async fn load() -> Vec<Plugin> {
+    async fn load_installed_plugins() -> Vec<Plugin> {
         let mut config = Config::default();
         config.init_settings();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
         synchronizer.get_installed_plugins()
+    }
+
+    async fn load_plugins() -> Vec<Plugin> {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_plugins()
+    }
+
+    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_plugin(&name)
     }
 }
 
@@ -52,7 +88,10 @@ impl Application for MainWindow {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Self::default(),
-            Command::perform(Self::load(), Message::Loaded),
+            Command::perform(
+                Self::load_installed_plugins(),
+                Message::InstalledPluginsLoaded,
+            ),
         )
     }
 
@@ -62,23 +101,37 @@ impl Application for MainWindow {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::Loaded(state) => {
-                self.plugins_view.installed_plugins = state;
-            }
-            Message::PluginsPressed => {
-                self.view = View::Plugins;
-            }
-            Message::CatalogPressed => {
+            Message::AllPluginsLoaded(state) | Message::PluginSearched(state) => {
+                self.catalog_view.plugins = state;
                 self.view = View::Catalog;
+                Command::none()
             }
-            Message::AboutPressed => {}
-            Message::SettingsPressed => {}
-            Message::InputChanged(_) => {}
-            Message::RefreshPressed => {}
-            Message::UpdateAllPressed => {}
-            Message::AmountFiltered(_) => {}
+            Message::InstalledPluginsLoaded(state) => {
+                self.plugins_view.plugins = state;
+                self.view = View::Plugins;
+                Command::none()
+            }
+            Message::PluginsPressed => Command::perform(
+                Self::load_installed_plugins(),
+                Message::InstalledPluginsLoaded,
+            ),
+            Message::CatalogPressed => {
+                Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
+            }
+            Message::AboutPressed => Command::none(),
+            Message::SettingsPressed => Command::none(),
+            Message::PluginInputChanged(_) => Command::none(),
+            Message::RefreshPressed => Command::none(),
+            Message::UpdateAllPressed => Command::none(),
+            Message::AmountFiltered(_) => Command::none(),
+            Message::CatalogInputChanged(state) => {
+                self.catalog_view.input_value = state;
+                Command::perform(
+                    Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
+                    Message::PluginSearched,
+                )
+            }
         }
-        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {

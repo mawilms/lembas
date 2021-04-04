@@ -16,8 +16,9 @@ impl Synchronizer {
         Self { config }
     }
 
-    pub fn synchronize_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let response = reqwest::blocking::get("http://localhost:8000/plugins")?
+    // Used to synchronize the local database with the remote plugin server
+    pub fn update_local_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")?
             .json::<HashMap<String, Plugin>>()?;
         if Path::new(&self.config.plugins_file).exists() {
         } else {
@@ -27,6 +28,7 @@ impl Synchronizer {
         Ok(())
     }
 
+    // Creates the local database if it doesn't exist.
     pub fn create_plugins_db(&self) {
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         conn.execute(
@@ -59,17 +61,13 @@ impl Synchronizer {
         .unwrap();
     }
 
-    fn update_plugins(&self, plugins: &HashMap<String, Plugin>) {
-        //let plugins = self.read_plugins();
-    }
-
     pub fn get_plugins(&self) -> Vec<Plugin> {
-        let mut all_packages: Vec<Plugin> = Vec::new();
+        let mut all_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
             .unwrap();
-        let package_iter = stmt
+        let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
@@ -80,19 +78,19 @@ impl Synchronizer {
             })
             .unwrap();
 
-        for plugin in package_iter {
-            all_packages.push(plugin.unwrap());
+        for plugin in plugin_iter {
+            all_plugins.push(plugin.unwrap());
         }
-        all_packages
+        all_plugins
     }
 
     pub fn get_installed_plugins(&self) -> Vec<Plugin> {
-        let mut installed_packages: Vec<Plugin> = Vec::new();
+        let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
-        let package_iter = stmt
+        let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
@@ -103,10 +101,32 @@ impl Synchronizer {
             })
             .unwrap();
 
-        for plugin in package_iter {
-            installed_packages.push(plugin.unwrap());
+        for plugin in plugin_iter {
+            installed_plugins.push(plugin.unwrap());
         }
-        installed_packages
+        installed_plugins
+    }
+
+    pub fn get_plugin(&self, name: &str) -> Vec<Plugin> {
+        let mut installed_plugins: Vec<Plugin> = Vec::new();
+        let conn = Connection::open(&self.config.plugins_file).unwrap();
+        let mut stmt = conn
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
+            .unwrap();
+        let plugin_iter = stmt
+            .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
+                Ok(Plugin {
+                    plugin_id: row.get(0).unwrap(),
+                    title: row.get(1).unwrap(),
+                    current_version: row.get(2).unwrap(),
+                    latest_version: row.get(3).unwrap(),
+                })
+            })
+            .unwrap();
+        for plugin in plugin_iter {
+            installed_plugins.push(plugin.unwrap());
+        }
+        installed_plugins
     }
 }
 
