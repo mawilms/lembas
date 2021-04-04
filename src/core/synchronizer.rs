@@ -126,7 +126,6 @@ impl Synchronizer {
         for plugin in plugin_iter {
             installed_plugins.push(plugin.unwrap());
         }
-        println!("{:?}", &installed_plugins);
         installed_plugins
     }
 }

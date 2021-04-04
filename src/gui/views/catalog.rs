@@ -82,6 +82,8 @@ impl Catalog {
             .align_items(Align::Center)
             .style(style::Scrollable);
 
+        println!("{:?}", self.plugins);
+
         for plugin in &mut self.plugins {
             plugins_scrollable = plugins_scrollable.push(plugin.view());
         }

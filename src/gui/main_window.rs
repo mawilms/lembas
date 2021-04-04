@@ -55,16 +55,28 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    async fn load_installed_plugins(&self) -> Vec<Plugin> {
-        self.synchronizer.get_installed_plugins()
+    async fn load_installed_plugins() -> Vec<Plugin> {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_installed_plugins()
     }
 
-    async fn load_plugins(&self) -> Vec<Plugin> {
-        self.synchronizer.get_plugins()
+    async fn load_plugins() -> Vec<Plugin> {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_plugins()
     }
 
-    async fn get_catalog_plugin(&self, name: String) -> Vec<Plugin> {
-        self.synchronizer.get_plugin(&name)
+    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+        let mut config = Config::default();
+        config.init_settings();
+        let synchronizer = Synchronizer::new(config);
+        synchronizer.create_plugins_db();
+        synchronizer.get_plugin(&name)
     }
 }
 
@@ -74,11 +86,10 @@ impl Application for MainWindow {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let main_window = Self::default();
         (
-            main_window,
+            Self::default(),
             Command::perform(
-                main_window.load_installed_plugins(),
+                Self::load_installed_plugins(),
                 Message::InstalledPluginsLoaded,
             ),
         )
@@ -90,7 +101,7 @@ impl Application for MainWindow {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::AllPluginsLoaded(state) => {
+            Message::AllPluginsLoaded(state) | Message::PluginSearched(state) => {
                 self.catalog_view.plugins = state;
                 self.view = View::Catalog;
                 Command::none()
@@ -100,17 +111,12 @@ impl Application for MainWindow {
                 self.view = View::Plugins;
                 Command::none()
             }
-            Message::PluginSearched(state) => {
-                self.plugins_view.plugins = state;
-                self.view = View::Catalog;
-                Command::none()
-            }
             Message::PluginsPressed => Command::perform(
-                self.load_installed_plugins(),
+                Self::load_installed_plugins(),
                 Message::InstalledPluginsLoaded,
             ),
             Message::CatalogPressed => {
-                Command::perform(self.load_plugins(), Message::AllPluginsLoaded)
+                Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
             }
             Message::AboutPressed => Command::none(),
             Message::SettingsPressed => Command::none(),
@@ -121,7 +127,7 @@ impl Application for MainWindow {
             Message::CatalogInputChanged(state) => {
                 self.catalog_view.input_value = state;
                 Command::perform(
-                    self.get_catalog_plugin(self.catalog_view.input_value.clone()),
+                    Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
                     Message::PluginSearched,
                 )
             }
