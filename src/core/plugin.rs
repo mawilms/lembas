@@ -16,17 +16,29 @@ impl Plugin {
     pub fn view(&mut self) -> Element<Message> {
         use iced::{Row, Text};
 
-        let row = Row::new()
-            .push(Text::new(&self.title).width(Length::FillPortion(5)))
-            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-            .push(Text::new("Update").width(Length::FillPortion(2)));
-
-        Container::new(row)
-            .width(Length::Fill)
-            .padding(5)
-            .style(style::PluginRow)
-            .into()
+        if self.current_version == self.latest_version {
+            let row = Row::new()
+                .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
+                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                .push(Text::new("Update").width(Length::FillPortion(2)));
+            Container::new(row)
+                .width(Length::Fill)
+                .padding(5)
+                .style(style::PluginRow)
+                .into()
+        } else {
+            let row = Row::new()
+                .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
+                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                .push(Text::new("").width(Length::FillPortion(2)));
+            Container::new(row)
+                .width(Length::Fill)
+                .padding(5)
+                .style(style::PluginRow)
+                .into()
+        }
     }
 
     pub fn catalog_view(&mut self) -> Element<Message> {
