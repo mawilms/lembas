@@ -1,5 +1,5 @@
 use crate::core::{
-    create_plugins_db, get_installed_plugins, get_plugin, get_plugins,
+    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, install,
     synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::elements::NavigationPanel;
@@ -56,6 +56,7 @@ impl Default for MainWindow {
 
 impl MainWindow {
     fn install_plugin(plugin: &Plugin) {
+        install(&plugin.plugin_id, &plugin.title);
         install_plugin(plugin);
     }
 
