@@ -1,6 +1,11 @@
 use dirs::{data_dir, home_dir};
+use lazy_static::lazy_static;
 use std::fs;
 use std::path::Path;
+
+lazy_static! {
+    pub static ref CONFIGURATION: Config = Config::default();
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {

@@ -1,4 +1,5 @@
 #![warn(clippy::all, clippy::pedantic)]
+use crate::core::config::CONFIGURATION;
 mod core;
 mod gui;
 
