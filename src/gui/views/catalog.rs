@@ -83,7 +83,7 @@ impl Catalog {
             .style(style::Scrollable);
 
         for plugin in &mut self.plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.view());
+            plugins_scrollable = plugins_scrollable.push(plugin.catalog_view());
         }
 
         let content = Column::new()

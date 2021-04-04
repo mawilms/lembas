@@ -1,9 +1,7 @@
-use crate::gui::style;
-use crate::{core::config::Config, gui::main_window::Message};
-use iced::{Container, Element, Length};
+use crate::core::config::Config;
+use crate::core::Plugin;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, Clone, Default)]
@@ -127,32 +125,5 @@ impl Synchronizer {
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Plugin {
-    plugin_id: i32,
-    title: String,
-    #[serde(default)]
-    current_version: String,
-    latest_version: String,
-}
-
-impl Plugin {
-    pub fn view(&mut self) -> Element<Message> {
-        use iced::{Row, Text};
-
-        let row = Row::new()
-            .push(Text::new(&self.title).width(Length::FillPortion(5)))
-            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-            .push(Text::new("Update").width(Length::FillPortion(2)));
-
-        Container::new(row)
-            .width(Length::Fill)
-            .padding(5)
-            .style(style::PluginRow)
-            .into()
     }
 }
