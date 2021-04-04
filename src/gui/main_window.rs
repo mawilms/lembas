@@ -39,8 +39,7 @@ pub enum Message {
 
 impl Default for MainWindow {
     fn default() -> Self {
-        let mut config = Config::default();
-        config.init_settings();
+        let config = Config::default();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
 
@@ -56,24 +55,21 @@ impl Default for MainWindow {
 
 impl MainWindow {
     async fn load_installed_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
+        let config = Config::default();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
         synchronizer.get_installed_plugins()
     }
 
     async fn load_plugins() -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
+        let config = Config::default();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
         synchronizer.get_plugins()
     }
 
     async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        let mut config = Config::default();
-        config.init_settings();
+        let config = Config::default();
         let synchronizer = Synchronizer::new(config);
         synchronizer.create_plugins_db();
         synchronizer.get_plugin(&name)
