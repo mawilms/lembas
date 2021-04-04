@@ -4,7 +4,7 @@ use iced::{Container, Element, Length};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
 pub struct Synchronizer {
@@ -17,15 +17,16 @@ impl Synchronizer {
     }
 
     // Used to synchronize the local database with the remote plugin server
-    pub fn update_local_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")?
-            .json::<HashMap<String, Plugin>>()?;
-        if Path::new(&self.config.plugins_file).exists() {
-        } else {
-            self.create_plugins_db();
-            self.write_plugins(&response);
+    pub fn update_local_plugins(&self) {
+        let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")
+            .expect("Server not responding")
+            .json::<HashMap<String, Plugin>>()
+            .expect("Unable to parse JSON");
+        let mut remote_plugins: Vec<Plugin> = Vec::new();
+        for (_, element) in response {
+            remote_plugins.push(element);
         }
-        Ok(())
+        self.write_plugins(&remote_plugins);
     }
 
     // Creates the local database if it doesn't exist.
@@ -35,7 +36,7 @@ impl Synchronizer {
             "
                 CREATE TABLE IF NOT EXISTS plugins (
                     id INTEGER PRIMARY KEY,
-                    plugin_id INTEGER,
+                    plugin_id INTEGER UNIQUE,
                     title TEXT,
                     current_version TEXT,
                     latest_version TEXT
@@ -46,16 +47,17 @@ impl Synchronizer {
         .unwrap();
     }
 
-    fn write_plugins(&self, plugins: &HashMap<String, Plugin>) {
-        for value in plugins.values() {
+    fn write_plugins(&self, plugins: &[Plugin]) {
+        for value in plugins {
             self.insert_plugin(&value);
         }
     }
 
     fn insert_plugin(&self, plugin: &Plugin) {
+        // "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id, title, current_version, latest_version) DO UPDATE SET plugin_id=?1 title=?2 current_version=?3 latest_version=?4;"
         let conn = Connection::open(&self.config.plugins_file).unwrap();
         conn.execute(
-            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
         )
         .unwrap();
@@ -154,5 +156,15 @@ impl Plugin {
             .padding(5)
             .style(style::PluginRow)
             .into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::core::{Config, Synchronizer};
+
+    #[test]
+    fn exploration() {
+        assert_eq!(2 + 2, 4);
     }
 }
