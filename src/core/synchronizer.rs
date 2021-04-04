@@ -1,39 +1,30 @@
+use crate::core::config::CONFIGURATION;
+use crate::gui::main_window::Message;
 use crate::gui::style;
-use crate::{core::config::Config, gui::main_window::Message};
 use iced::{Container, Element, Length};
 use rusqlite::NO_PARAMS;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Default)]
-pub struct Synchronizer {
-    config: Config,
+// Used to synchronize the local database with the remote plugin server
+pub fn update_local_plugins() {
+    let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")
+        .expect("Server not responding")
+        .json::<HashMap<String, Plugin>>()
+        .expect("Unable to parse JSON");
+    let mut remote_plugins: Vec<Plugin> = Vec::new();
+    for (_, element) in response {
+        remote_plugins.push(element);
+    }
+    write_plugins(&remote_plugins);
 }
 
-impl Synchronizer {
-    pub fn new(config: Config) -> Self {
-        Self { config }
-    }
-
-    // Used to synchronize the local database with the remote plugin server
-    pub fn update_local_plugins(&self) {
-        let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")
-            .expect("Server not responding")
-            .json::<HashMap<String, Plugin>>()
-            .expect("Unable to parse JSON");
-        let mut remote_plugins: Vec<Plugin> = Vec::new();
-        for (_, element) in response {
-            remote_plugins.push(element);
-        }
-        self.write_plugins(&remote_plugins);
-    }
-
-    // Creates the local database if it doesn't exist.
-    pub fn create_plugins_db(&self) {
-        let conn = Connection::open(&self.config.plugins_file).unwrap();
-        conn.execute(
-            "
+// Creates the local database if it doesn't exist.
+pub fn create_plugins_db() {
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    conn.execute(
+        "
                 CREATE TABLE IF NOT EXISTS plugins (
                     id INTEGER PRIMARY KEY,
                     plugin_id INTEGER UNIQUE,
@@ -42,94 +33,93 @@ impl Synchronizer {
                     latest_version TEXT
                 );
         ",
-            NO_PARAMS,
-        )
-        .unwrap();
-    }
+        NO_PARAMS,
+    )
+    .unwrap();
+}
 
-    fn write_plugins(&self, plugins: &[Plugin]) {
-        for value in plugins {
-            self.insert_plugin(&value);
-        }
+fn write_plugins(plugins: &[Plugin]) {
+    for value in plugins {
+        insert_plugin(&value);
     }
+}
 
-    fn insert_plugin(&self, plugin: &Plugin) {
-        // "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id, title, current_version, latest_version) DO UPDATE SET plugin_id=?1 title=?2 current_version=?3 latest_version=?4;"
-        let conn = Connection::open(&self.config.plugins_file).unwrap();
-        conn.execute(
+fn insert_plugin(plugin: &Plugin) {
+    // "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id, title, current_version, latest_version) DO UPDATE SET plugin_id=?1 title=?2 current_version=?3 latest_version=?4;"
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    conn.execute(
             "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
         )
         .unwrap();
-    }
+}
 
-    pub fn get_plugins(&self) -> Vec<Plugin> {
-        let mut all_plugins: Vec<Plugin> = Vec::new();
-        let conn = Connection::open(&self.config.plugins_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
-            .unwrap();
-        let plugin_iter = stmt
-            .query_map(params![], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
-                })
+pub fn get_plugins() -> Vec<Plugin> {
+    let mut all_plugins: Vec<Plugin> = Vec::new();
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
+        .unwrap();
+    let plugin_iter = stmt
+        .query_map(params![], |row| {
+            Ok(Plugin {
+                plugin_id: row.get(0).unwrap(),
+                title: row.get(1).unwrap(),
+                current_version: row.get(2).unwrap(),
+                latest_version: row.get(3).unwrap(),
             })
-            .unwrap();
+        })
+        .unwrap();
 
-        for plugin in plugin_iter {
-            all_plugins.push(plugin.unwrap());
-        }
-        all_plugins
+    for plugin in plugin_iter {
+        all_plugins.push(plugin.unwrap());
     }
+    all_plugins
+}
 
-    pub fn get_installed_plugins(&self) -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
-        let conn = Connection::open(&self.config.plugins_file).unwrap();
-        let mut stmt = conn
+pub fn get_installed_plugins() -> Vec<Plugin> {
+    let mut installed_plugins: Vec<Plugin> = Vec::new();
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    let mut stmt = conn
             .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
-        let plugin_iter = stmt
-            .query_map(params![], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
-                })
+    let plugin_iter = stmt
+        .query_map(params![], |row| {
+            Ok(Plugin {
+                plugin_id: row.get(0).unwrap(),
+                title: row.get(1).unwrap(),
+                current_version: row.get(2).unwrap(),
+                latest_version: row.get(3).unwrap(),
             })
-            .unwrap();
+        })
+        .unwrap();
 
-        for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
-        }
-        installed_plugins
+    for plugin in plugin_iter {
+        installed_plugins.push(plugin.unwrap());
     }
+    installed_plugins
+}
 
-    pub fn get_plugin(&self, name: &str) -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
-        let conn = Connection::open(&self.config.plugins_file).unwrap();
-        let mut stmt = conn
+pub fn get_plugin(name: &str) -> Vec<Plugin> {
+    let mut installed_plugins: Vec<Plugin> = Vec::new();
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    let mut stmt = conn
             .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
             .unwrap();
-        let plugin_iter = stmt
-            .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
-                })
+    let plugin_iter = stmt
+        .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
+            Ok(Plugin {
+                plugin_id: row.get(0).unwrap(),
+                title: row.get(1).unwrap(),
+                current_version: row.get(2).unwrap(),
+                latest_version: row.get(3).unwrap(),
             })
-            .unwrap();
-        for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
-        }
-        installed_plugins
+        })
+        .unwrap();
+    for plugin in plugin_iter {
+        installed_plugins.push(plugin.unwrap());
     }
+    installed_plugins
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -161,7 +151,6 @@ impl Plugin {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::{Config, Synchronizer};
 
     #[test]
     fn exploration() {
