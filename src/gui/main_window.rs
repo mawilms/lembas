@@ -1,5 +1,6 @@
 use crate::core::{
-    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, update_local_plugins, Plugin,
+    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, install,
+    synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
@@ -36,6 +37,7 @@ pub enum Message {
     CatalogInputChanged(String),
     AmountFiltered(Amount),
     PluginSearched(Vec<Plugin>),
+    InstallPressed(Plugin),
 }
 
 impl Default for MainWindow {
@@ -53,6 +55,11 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
+    fn install_plugin(plugin: &Plugin) {
+        install(&plugin.plugin_id, &plugin.title);
+        install_plugin(plugin);
+    }
+
     async fn load_installed_plugins() -> Vec<Plugin> {
         get_installed_plugins()
     }
@@ -116,6 +123,10 @@ impl Application for MainWindow {
                     Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
                     Message::PluginSearched,
                 )
+            }
+            Message::InstallPressed(plugin) => {
+                Self::install_plugin(&plugin);
+                Command::none()
             }
         }
     }

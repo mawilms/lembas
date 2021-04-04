@@ -1,10 +1,8 @@
 use crate::core::config::CONFIGURATION;
-use crate::gui::main_window::Message;
-use crate::gui::style;
-use iced::{Container, Element, Length};
+use crate::core::Plugin;
+use iced::button;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // Used to synchronize the local database with the remote plugin server
@@ -48,8 +46,17 @@ fn insert_plugin(plugin: &Plugin) {
     // "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id, title, current_version, latest_version) DO UPDATE SET plugin_id=?1 title=?2 current_version=?3 latest_version=?4;"
     let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
     conn.execute(
-            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
+        )
+        .unwrap();
+}
+
+pub fn install_plugin(plugin: &Plugin) {
+    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+    conn.execute(
+            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, latest_version=?4;",
+            params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version],
         )
         .unwrap();
 }
@@ -67,6 +74,7 @@ pub fn get_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
+                install_btn_state: button::State::default(),
             })
         })
         .unwrap();
@@ -90,6 +98,7 @@ pub fn get_installed_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
+                install_btn_state: button::State::default(),
             })
         })
         .unwrap();
@@ -113,6 +122,7 @@ pub fn get_plugin(name: &str) -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
+                install_btn_state: button::State::default(),
             })
         })
         .unwrap();
@@ -120,40 +130,4 @@ pub fn get_plugin(name: &str) -> Vec<Plugin> {
         installed_plugins.push(plugin.unwrap());
     }
     installed_plugins
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Plugin {
-    plugin_id: i32,
-    title: String,
-    #[serde(default)]
-    current_version: String,
-    latest_version: String,
-}
-
-impl Plugin {
-    pub fn view(&mut self) -> Element<Message> {
-        use iced::{Row, Text};
-
-        let row = Row::new()
-            .push(Text::new(&self.title).width(Length::FillPortion(5)))
-            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-            .push(Text::new("Update").width(Length::FillPortion(2)));
-
-        Container::new(row)
-            .width(Length::Fill)
-            .padding(5)
-            .style(style::PluginRow)
-            .into()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn exploration() {
-        assert_eq!(2 + 2, 4);
-    }
 }
