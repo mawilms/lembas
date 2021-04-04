@@ -156,3 +156,13 @@ impl Plugin {
             .into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::core::{Config, Synchronizer};
+
+    #[test]
+    fn exploration() {
+        assert_eq!(2 + 2, 4);
+    }
+}
