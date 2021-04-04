@@ -18,7 +18,7 @@ impl Synchronizer {
 
     // Used to synchronize the local database with the remote plugin server
     pub fn update_local_plugins(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let response = reqwest::blocking::get("http://localhost:8000/plugins")?
+        let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")?
             .json::<HashMap<String, Plugin>>()?;
         if Path::new(&self.config.plugins_file).exists() {
         } else {
