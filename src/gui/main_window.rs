@@ -156,7 +156,10 @@ impl Application for MainWindow {
                     Command::none()
                 }
             },
-            Message::UpgradePressed(_) => Command::none(),
+            Message::UpgradePressed(_) => {
+                println!("Upgrade");
+                Command::none()
+            }
         }
     }
 
