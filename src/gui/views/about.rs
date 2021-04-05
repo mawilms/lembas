@@ -7,7 +7,13 @@ pub struct About {}
 
 impl About {
     pub fn view(&self) -> Element<Message> {
-        let about_text = Text::new("Hallo Welt");
+        let about_text = Text::new(
+            "Welcome to Lembas
+
+Lembas is a completely free project that tries to make the plugin install process in LotRO as easy as possible.
+It's open source and shouldn't be used commercially in any way.
+        ",
+        );
 
         let content = Column::new()
             .width(Length::Fill)
