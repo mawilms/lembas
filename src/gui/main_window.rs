@@ -40,6 +40,9 @@ pub enum Message {
     AmountFiltered(Amount),
     PluginSearched(Vec<Plugin>),
     InstallPressed(Plugin),
+
+    // Plugin View
+    UpgradePressed(Plugin),
 }
 
 impl Default for MainWindow {
@@ -153,6 +156,7 @@ impl Application for MainWindow {
                     Command::none()
                 }
             },
+            Message::UpgradePressed(_) => Command::none(),
         }
     }
 
