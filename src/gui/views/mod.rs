@@ -1,6 +1,8 @@
+pub mod about;
 pub mod catalog;
 pub mod plugins;
 
+pub use about::About;
 pub use catalog::Catalog;
 pub use plugins::Plugins;
 
@@ -8,6 +10,7 @@ pub use plugins::Plugins;
 pub enum View {
     Plugins,
     Catalog,
+    About,
 }
 
 impl Default for View {

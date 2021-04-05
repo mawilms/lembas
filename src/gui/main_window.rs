@@ -4,7 +4,7 @@ use crate::core::{
 };
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
-use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
+use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{Application, Column, Command, Container, Element, Length, Settings};
 
 use super::views::catalog::Amount;
@@ -15,6 +15,7 @@ pub struct MainWindow {
     navigation_panel: NavigationPanel,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
+    about_view: AboutView,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,7 @@ impl Default for MainWindow {
             navigation_panel: NavigationPanel::default(),
             plugins_view: PluginsView::default(),
             catalog_view: CatalogView::default(),
+            about_view: AboutView::default(),
         }
     }
 }
@@ -119,7 +121,10 @@ impl Application for MainWindow {
             Message::CatalogPressed => {
                 Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
             }
-            Message::AboutPressed => Command::none(),
+            Message::AboutPressed => {
+                self.view = View::About;
+                Command::none()
+            }
             Message::SettingsPressed => Command::none(),
             Message::PluginInputChanged(_) => Command::none(),
             Message::RefreshPressed => {
@@ -157,6 +162,7 @@ impl Application for MainWindow {
             navigation_panel,
             plugins_view,
             catalog_view,
+            about_view,
             ..
         } = self;
         let navigation_container = Container::new(navigation_panel.view())
@@ -175,6 +181,14 @@ impl Application for MainWindow {
             }
             View::Catalog => {
                 let main_container = catalog_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
+            View::About => {
+                let main_container = about_view.view();
                 Column::new()
                     .width(Length::Fill)
                     .push(navigation_container)
