@@ -105,3 +105,32 @@ impl scrollable::StyleSheet for Scrollable {
         }
     }
 }
+
+pub enum InstallButton {
+    Enabled,
+    Disabled,
+}
+
+impl button::StyleSheet for InstallButton {
+    fn active(&self) -> button::Style {
+        match self {
+            Self::Enabled => button::Style {
+                background: Some(Background::Color(Color::TRANSPARENT)),
+                text_color: BUTTON_COLOR_DEFAULT,
+                ..button::Style::default()
+            },
+            Self::Disabled => button::Style {
+                background: Some(Background::Color(Color::TRANSPARENT)),
+                text_color: BACKGROUND_COLOR,
+                ..button::Style::default()
+            },
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        match self {
+            Self::Enabled => button::Style { ..self.active() },
+            Self::Disabled => button::Style { ..self.active() },
+        }
+    }
+}

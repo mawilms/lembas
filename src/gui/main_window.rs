@@ -1,11 +1,13 @@
+use crate::core::config::CONFIGURATION;
 use crate::core::{
-    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, install,
+    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, installer,
     synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
-use crate::gui::views::{Catalog as CatalogView, Plugins as PluginsView, View};
+use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{Application, Column, Command, Container, Element, Length, Settings};
+use std::path::Path;
 
 use super::views::catalog::Amount;
 
@@ -15,12 +17,14 @@ pub struct MainWindow {
     navigation_panel: NavigationPanel,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
+    about_view: AboutView,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     InstalledPluginsLoaded(Vec<Plugin>),
     AllPluginsLoaded(Vec<Plugin>),
+    PluginsSynchronized(Result<(), ApplicationError>),
 
     // Navigation Panel
     PluginsPressed,
@@ -38,6 +42,9 @@ pub enum Message {
     AmountFiltered(Amount),
     PluginSearched(Vec<Plugin>),
     InstallPressed(Plugin),
+
+    // Plugin View
+    UpgradePressed(Plugin),
 }
 
 impl Default for MainWindow {
@@ -50,14 +57,35 @@ impl Default for MainWindow {
             navigation_panel: NavigationPanel::default(),
             plugins_view: PluginsView::default(),
             catalog_view: CatalogView::default(),
+            about_view: AboutView::default(),
         }
     }
 }
 
 impl MainWindow {
-    fn install_plugin(plugin: &Plugin) {
-        install(&plugin.plugin_id, &plugin.title);
-        install_plugin(plugin);
+    async fn install_plugin(plugin: Plugin) -> Vec<Plugin> {
+        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
+        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+        let target = format!(
+            "https://www.lotrointerface.com/downloads/download{}-{}",
+            &plugin.plugin_id, &plugin.title
+        );
+
+        if installer::install(&path, &target).is_ok() {
+            installer::zip_operation(path.as_path());
+            install_plugin(&plugin);
+            get_installed_plugins()
+        } else {
+            // TODO: Implement proper error handling
+            let result: Vec<Plugin> = Vec::new();
+            result
+        }
+    }
+
+    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
+        // TODO Implement here
+        let result: Vec<Plugin> = Vec::new();
+        result
     }
 
     async fn load_installed_plugins() -> Vec<Plugin> {
@@ -70,6 +98,16 @@ impl MainWindow {
 
     async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
         get_plugin(&name)
+    }
+
+    async fn refresh_db() -> Result<(), ApplicationError> {
+        match update_local_plugins() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                println!("{:?}", &error);
+                Err(ApplicationError::Synchronize)
+            }
+        }
     }
 }
 
@@ -111,11 +149,22 @@ impl Application for MainWindow {
             Message::CatalogPressed => {
                 Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
             }
-            Message::AboutPressed => Command::none(),
-            Message::SettingsPressed => Command::none(),
+            Message::AboutPressed => {
+                self.view = View::About;
+                Command::none()
+            }
+            Message::SettingsPressed | Message::PluginsSynchronized(_) => Command::none(),
             Message::PluginInputChanged(_) => Command::none(),
-            Message::RefreshPressed => Command::none(),
-            Message::UpdateAllPressed => Command::none(),
+            Message::RefreshPressed => {
+                Command::perform(Self::refresh_db(), Message::PluginsSynchronized)
+            }
+            Message::UpdateAllPressed => {
+                let plugins = self.plugins_view.plugins.clone();
+                Command::perform(
+                    Self::update_plugins(plugins),
+                    Message::InstalledPluginsLoaded,
+                )
+            }
             Message::AmountFiltered(_) => Command::none(),
             Message::CatalogInputChanged(state) => {
                 self.catalog_view.input_value = state;
@@ -125,7 +174,14 @@ impl Application for MainWindow {
                 )
             }
             Message::InstallPressed(plugin) => {
-                Self::install_plugin(&plugin);
+                let plugin = plugin.clone();
+                Command::perform(
+                    Self::install_plugin(plugin),
+                    Message::InstalledPluginsLoaded,
+                )
+            }
+            Message::UpgradePressed(_) => {
+                println!("Upgrade");
                 Command::none()
             }
         }
@@ -137,6 +193,7 @@ impl Application for MainWindow {
             navigation_panel,
             plugins_view,
             catalog_view,
+            about_view,
             ..
         } = self;
         let navigation_container = Container::new(navigation_panel.view())
@@ -161,6 +218,14 @@ impl Application for MainWindow {
                     .push(main_container)
                     .into()
             }
+            View::About => {
+                let main_container = about_view.view();
+                Column::new()
+                    .width(Length::Fill)
+                    .push(navigation_container)
+                    .push(main_container)
+                    .into()
+            }
         }
     }
 }
@@ -172,4 +237,11 @@ impl MainWindow {
         //settings.default_font = Some(RING_BEARER);
         MainWindow::run(settings).unwrap_err();
     }
+}
+
+#[derive(Debug, Clone)]
+enum ApplicationError {
+    Load,
+    Install,
+    Synchronize,
 }

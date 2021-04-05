@@ -3,19 +3,22 @@ use crate::core::Plugin;
 use iced::button;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
 
 // Used to synchronize the local database with the remote plugin server
-pub fn update_local_plugins() {
-    let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")
-        .expect("Server not responding")
+#[tokio::main]
+pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
+    let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
+        .await?
         .json::<HashMap<String, Plugin>>()
-        .expect("Unable to parse JSON");
+        .await?;
     let mut remote_plugins: Vec<Plugin> = Vec::new();
     for (_, element) in response {
         remote_plugins.push(element);
     }
-    write_plugins(&remote_plugins);
+    write_plugins(&remote_plugins)?;
+
+    Ok(())
 }
 
 // Creates the local database if it doesn't exist.
@@ -36,26 +39,26 @@ pub fn create_plugins_db() {
     .unwrap();
 }
 
-fn write_plugins(plugins: &[Plugin]) {
+fn write_plugins(plugins: &[Plugin]) -> Result<(), Box<dyn Error>> {
     for value in plugins {
-        insert_plugin(&value);
+        insert_plugin(&value)?;
     }
+    Ok(())
 }
 
-fn insert_plugin(plugin: &Plugin) {
-    // "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id, title, current_version, latest_version) DO UPDATE SET plugin_id=?1 title=?2 current_version=?3 latest_version=?4;"
+fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
     conn.execute(
             "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, "", plugin.latest_version],
-        )
-        .unwrap();
+        )?;
+    Ok(())
 }
 
 pub fn install_plugin(plugin: &Plugin) {
     let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
     conn.execute(
-            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, latest_version=?4;",
+            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version],
         )
         .unwrap();

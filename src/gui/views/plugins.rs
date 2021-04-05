@@ -27,6 +27,8 @@ impl Plugins {
             .align_items(Align::Center)
             .style(style::Scrollable);
 
+        let plugin_amount = self.plugins.len();
+
         for plugin in &mut self.plugins {
             plugins_scrollable = plugins_scrollable.push(plugin.view());
         }
@@ -35,7 +37,7 @@ impl Plugins {
             .width(Length::Fill)
             .spacing(10)
             .align_items(Align::Center)
-            .push(control_panel.view())
+            .push(control_panel.view(plugin_amount))
             .push(plugin_panel.view())
             .push(plugins_scrollable);
 
