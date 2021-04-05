@@ -79,7 +79,7 @@ impl MainWindow {
     }
 
     async fn refresh_db() -> Result<(), ApplicationError> {
-        match update_local_plugins() {
+        match update_local_plugins().await {
             Ok(_) => Ok(()),
             Err(_) => Err(ApplicationError::SynchronizeError),
         }

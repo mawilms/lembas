@@ -6,11 +6,11 @@ use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
 
 // Used to synchronize the local database with the remote plugin server
-pub fn update_local_plugins() -> Result<(), Box<dyn Error>> {
-    let response = reqwest::blocking::get("https://young-hamlet-23901.herokuapp.com/plugins")
-        .expect("Server not responding")
+pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
+    let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
+        .await?
         .json::<HashMap<String, Plugin>>()
-        .expect("Unable to parse JSON");
+        .await?;
     let mut remote_plugins: Vec<Plugin> = Vec::new();
     for (_, element) in response {
         remote_plugins.push(element);
