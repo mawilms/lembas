@@ -6,6 +6,7 @@ use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
 
 // Used to synchronize the local database with the remote plugin server
+#[tokio::main]
 pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
     let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
         .await?

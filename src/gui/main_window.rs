@@ -72,17 +72,14 @@ impl MainWindow {
             &plugin.plugin_id, &plugin.title
         );
 
-        match installer::install(&path, &target).await {
-            Ok(_) => {
-                installer::zip_operation(path.as_path());
-                install_plugin(&plugin);
-                get_installed_plugins()
-            }
-            Err(_) => {
-                // TODO: Implement proper error handling
-                let result: Vec<Plugin> = Vec::new();
-                result
-            }
+        if installer::install(&path, &target).await.is_ok() {
+            installer::zip_operation(path.as_path());
+            install_plugin(&plugin);
+            get_installed_plugins()
+        } else {
+            // TODO: Implement proper error handling
+            let result: Vec<Plugin> = Vec::new();
+            result
         }
     }
 
@@ -105,9 +102,9 @@ impl MainWindow {
     }
 
     async fn refresh_db() -> Result<(), ApplicationError> {
-        match update_local_plugins().await {
+        match update_local_plugins() {
             Ok(_) => Ok(()),
-            Err(_) => Err(ApplicationError::SynchronizeError),
+            Err(_) => Err(ApplicationError::Synchronize),
         }
     }
 }
@@ -181,16 +178,15 @@ impl Application for MainWindow {
                     Message::InstalledPluginsLoaded,
                 )
             }
-            Message::PluginsSynchronized(result) => match result {
-                Ok(_) => {
+            Message::PluginsSynchronized(result) => {
+                if result.is_ok() {
                     println!("Synchronized");
                     Command::none()
-                }
-                Err(_) => {
+                } else {
                     println!("Boom");
                     Command::none()
                 }
-            },
+            }
             Message::UpgradePressed(_) => {
                 println!("Upgrade");
                 Command::none()
@@ -252,7 +248,7 @@ impl MainWindow {
 
 #[derive(Debug, Clone)]
 enum ApplicationError {
-    LoadError,
-    InstallError,
-    SynchronizeError,
+    Load,
+    Install,
+    Synchronize,
 }
