@@ -21,6 +21,7 @@ pub struct MainWindow {
 pub enum Message {
     InstalledPluginsLoaded(Vec<Plugin>),
     AllPluginsLoaded(Vec<Plugin>),
+    PluginsSynchronized(Result<(), ApplicationError>),
 
     // Navigation Panel
     PluginsPressed,
@@ -72,7 +73,12 @@ impl MainWindow {
         get_plugin(&name)
     }
 
-    async fn refresh_db() {}
+    async fn refresh_db() -> Result<(), ApplicationError> {
+        match update_local_plugins() {
+            Ok(_) => Ok(()),
+            Err(_) => Err(ApplicationError::SynchronizeError),
+        }
+    }
 }
 
 impl Application for MainWindow {
@@ -117,8 +123,7 @@ impl Application for MainWindow {
             Message::SettingsPressed => Command::none(),
             Message::PluginInputChanged(_) => Command::none(),
             Message::RefreshPressed => {
-                //Command::perform(Self::refresh_db, Message::AllPluginsLoaded);
-                Command::none()
+                Command::perform(Self::refresh_db(), Message::PluginsSynchronized)
             }
             Message::UpdateAllPressed => Command::none(),
             Message::AmountFiltered(_) => Command::none(),
@@ -133,6 +138,16 @@ impl Application for MainWindow {
                 Self::install_plugin(&plugin);
                 Command::none()
             }
+            Message::PluginsSynchronized(result) => match result {
+                Ok(_) => {
+                    println!("Synchronized");
+                    Command::none()
+                }
+                Err(_) => {
+                    println!("Boom");
+                    Command::none()
+                }
+            },
         }
     }
 
@@ -177,4 +192,11 @@ impl MainWindow {
         //settings.default_font = Some(RING_BEARER);
         MainWindow::run(settings).unwrap_err();
     }
+}
+
+#[derive(Debug, Clone)]
+enum ApplicationError {
+    LoadError,
+    InstallError,
+    SynchronizeError,
 }

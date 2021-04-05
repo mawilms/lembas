@@ -5,7 +5,6 @@ use std::{fs, io::prelude::*};
 
 /// Downloads and extracts the specified plugin
 pub fn install(plugin_id: &i32, name: &str) -> Result<(), Box<dyn Error>> {
-    //let plugin_folder_path = get_plugin_folder();
     let target = format!(
         "https://www.lotrointerface.com/downloads/download{}-{}",
         plugin_id, name
