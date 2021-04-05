@@ -4,7 +4,7 @@ use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 
 /// Downloads and extracts the specified plugin
-pub async fn install(filename: &str, path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
+pub async fn install(path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
     let response = reqwest::get(target).await?;
 
     let mut file = match File::create(&path) {

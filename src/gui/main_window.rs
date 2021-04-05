@@ -63,7 +63,8 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    async fn install_plugin(plugin: &Plugin) {
+    async fn install_plugin(plugin: Plugin) -> Vec<Plugin> {
+        println!("Install pressed");
         let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
@@ -71,9 +72,24 @@ impl MainWindow {
             &plugin.plugin_id, &plugin.title
         );
 
-        installer::install(&filename, &path, &target);
-        installer::zip_operation(path.as_path());
-        install_plugin(plugin);
+        match installer::install(&path, &target).await {
+            Ok(_) => {
+                installer::zip_operation(path.as_path());
+                install_plugin(&plugin);
+                get_installed_plugins()
+            }
+            Err(_) => {
+                // TODO: Implement proper error handling
+                let result: Vec<Plugin> = Vec::new();
+                result
+            }
+        }
+    }
+
+    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
+        // TODO Implement here
+        let result: Vec<Plugin> = Vec::new();
+        result
     }
 
     async fn load_installed_plugins() -> Vec<Plugin> {
@@ -93,12 +109,6 @@ impl MainWindow {
             Ok(_) => Ok(()),
             Err(_) => Err(ApplicationError::SynchronizeError),
         }
-    }
-
-    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
-        // TODO Implement here
-        let result: Vec<Plugin> = Vec::new();
-        result
     }
 }
 
@@ -165,8 +175,11 @@ impl Application for MainWindow {
                 )
             }
             Message::InstallPressed(plugin) => {
-                Self::install_plugin(&plugin);
-                Command::none()
+                let plugin = plugin.clone();
+                Command::perform(
+                    Self::install_plugin(plugin),
+                    Message::InstalledPluginsLoaded,
+                )
             }
             Message::PluginsSynchronized(result) => match result {
                 Ok(_) => {
