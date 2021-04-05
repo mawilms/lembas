@@ -4,6 +4,7 @@ use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 
 /// Downloads and extracts the specified plugin
+#[tokio::main]
 pub async fn install(path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
     let response = reqwest::get(target).await?;
 

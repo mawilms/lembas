@@ -64,7 +64,6 @@ impl Default for MainWindow {
 
 impl MainWindow {
     async fn install_plugin(plugin: Plugin) -> Vec<Plugin> {
-        println!("Install pressed");
         let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
@@ -72,7 +71,7 @@ impl MainWindow {
             &plugin.plugin_id, &plugin.title
         );
 
-        if installer::install(&path, &target).await.is_ok() {
+        if installer::install(&path, &target).is_ok() {
             installer::zip_operation(path.as_path());
             install_plugin(&plugin);
             get_installed_plugins()
@@ -104,7 +103,10 @@ impl MainWindow {
     async fn refresh_db() -> Result<(), ApplicationError> {
         match update_local_plugins() {
             Ok(_) => Ok(()),
-            Err(_) => Err(ApplicationError::Synchronize),
+            Err(error) => {
+                println!("{:?}", &error);
+                Err(ApplicationError::Synchronize)
+            }
         }
     }
 }
@@ -151,7 +153,7 @@ impl Application for MainWindow {
                 self.view = View::About;
                 Command::none()
             }
-            Message::SettingsPressed => Command::none(),
+            Message::SettingsPressed | Message::PluginsSynchronized(_) => Command::none(),
             Message::PluginInputChanged(_) => Command::none(),
             Message::RefreshPressed => {
                 Command::perform(Self::refresh_db(), Message::PluginsSynchronized)
@@ -177,15 +179,6 @@ impl Application for MainWindow {
                     Self::install_plugin(plugin),
                     Message::InstalledPluginsLoaded,
                 )
-            }
-            Message::PluginsSynchronized(result) => {
-                if result.is_ok() {
-                    println!("Synchronized");
-                    Command::none()
-                } else {
-                    println!("Boom");
-                    Command::none()
-                }
             }
             Message::UpgradePressed(_) => {
                 println!("Upgrade");

@@ -56,10 +56,9 @@ fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn install_plugin(plugin: &Plugin) {
-    println!("Bla");
     let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
     conn.execute(
-            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, latest_version=?4;",
+            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version],
         )
         .unwrap();
