@@ -71,6 +71,8 @@ impl MainWindow {
     async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
         get_plugin(&name)
     }
+
+    async fn refresh_db() {}
 }
 
 impl Application for MainWindow {
@@ -114,7 +116,10 @@ impl Application for MainWindow {
             Message::AboutPressed => Command::none(),
             Message::SettingsPressed => Command::none(),
             Message::PluginInputChanged(_) => Command::none(),
-            Message::RefreshPressed => Command::none(),
+            Message::RefreshPressed => {
+                //Command::perform(Self::refresh_db, Message::AllPluginsLoaded);
+                Command::none()
+            }
             Message::UpdateAllPressed => Command::none(),
             Message::AmountFiltered(_) => Command::none(),
             Message::CatalogInputChanged(state) => {

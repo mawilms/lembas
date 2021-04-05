@@ -23,7 +23,7 @@ impl Plugin {
                 .push(Text::new(&self.title).width(Length::FillPortion(5)))
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                .push(Text::new("Update").width(Length::FillPortion(2)));
+                .push(Text::new("").width(Length::FillPortion(2)));
             Container::new(row)
                 .width(Length::Fill)
                 .padding(5)
@@ -34,7 +34,7 @@ impl Plugin {
                 .push(Text::new(&self.title).width(Length::FillPortion(5)))
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                .push(Text::new("").width(Length::FillPortion(2)));
+                .push(Text::new("Update").width(Length::FillPortion(2)));
             Container::new(row)
                 .width(Length::Fill)
                 .padding(5)

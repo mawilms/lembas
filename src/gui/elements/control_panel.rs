@@ -12,7 +12,7 @@ pub struct ControlPanel {
 }
 
 impl ControlPanel {
-    pub fn view(&mut self) -> Element<Message> {
+    pub fn view(&mut self, plugins_amount: usize) -> Element<Message> {
         let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
             .on_press(Message::RefreshPressed)
             .padding(5)
@@ -21,7 +21,7 @@ impl ControlPanel {
             .on_press(Message::UpdateAllPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
-        let installed_plugins = Text::new("5 plugins installed");
+        let installed_plugins = Text::new(format!("{} plugins installed", plugins_amount));
         let search_plugins = TextInput::new(
             &mut self.input,
             "Search plugins...",
