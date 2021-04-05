@@ -1,35 +1,33 @@
 use crate::core::config::CONFIGURATION;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 
 /// Downloads and extracts the specified plugin
-pub fn install(plugin_id: &i32, name: &str) -> Result<(), Box<dyn Error>> {
-    let target = format!(
-        "https://www.lotrointerface.com/downloads/download{}-{}",
-        plugin_id, name
-    );
-    let response = reqwest::blocking::get(target).unwrap();
-
-    let filename = format!("{}_{}.zip", plugin_id, name);
-    let path = Path::new(&CONFIGURATION.plugins).join(filename);
+pub async fn install(filename: &str, path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
+    let response = reqwest::get(target).await?;
 
     let mut file = match File::create(&path) {
         Err(why) => panic!("couldn't create {}", why),
         Ok(file) => file,
     };
-    let content = response.bytes().unwrap();
+    let content = response.bytes().await?;
     file.write_all(&content)?;
-
-    zip_operation(path.as_path(), Path::new(&CONFIGURATION.plugins));
 
     Ok(())
 }
 
-fn zip_operation(path: &Path, plugin_folder_path: &Path) {
+pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
+    let path = Path::new(&CONFIGURATION.plugins).join(name);
+    fs::remove_file(path)?;
+
+    Ok(())
+}
+
+pub fn zip_operation(path: &Path) {
     let file = File::open(path).expect("Couldn't read file");
     let mut zip_archive = zip::ZipArchive::new(file).expect("Couldn't read the zip archive");
-    zip::ZipArchive::extract(&mut zip_archive, plugin_folder_path)
+    zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins))
         .expect("Couldn't extract plugin");
 
     fs::remove_file(path).expect("Couldn't delete old archive");

@@ -1,11 +1,13 @@
+use crate::core::config::CONFIGURATION;
 use crate::core::{
-    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, install,
+    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, installer,
     synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
 use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{Application, Column, Command, Container, Element, Length, Settings};
+use std::path::Path;
 
 use super::views::catalog::Amount;
 
@@ -61,8 +63,16 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    fn install_plugin(plugin: &Plugin) {
-        install(&plugin.plugin_id, &plugin.title);
+    async fn install_plugin(plugin: &Plugin) {
+        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
+        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+        let target = format!(
+            "https://www.lotrointerface.com/downloads/download{}-{}",
+            &plugin.plugin_id, &plugin.title
+        );
+
+        installer::install(&filename, &path, &target);
+        installer::zip_operation(path.as_path());
         install_plugin(plugin);
     }
 
@@ -83,6 +93,12 @@ impl MainWindow {
             Ok(_) => Ok(()),
             Err(_) => Err(ApplicationError::SynchronizeError),
         }
+    }
+
+    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
+        // TODO Implement here
+        let result: Vec<Plugin> = Vec::new();
+        result
     }
 }
 
@@ -133,7 +149,13 @@ impl Application for MainWindow {
             Message::RefreshPressed => {
                 Command::perform(Self::refresh_db(), Message::PluginsSynchronized)
             }
-            Message::UpdateAllPressed => Command::none(),
+            Message::UpdateAllPressed => {
+                let plugins = self.plugins_view.plugins.clone();
+                Command::perform(
+                    Self::update_plugins(plugins),
+                    Message::InstalledPluginsLoaded,
+                )
+            }
             Message::AmountFiltered(_) => Command::none(),
             Message::CatalogInputChanged(state) => {
                 self.catalog_view.input_value = state;
