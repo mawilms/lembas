@@ -45,6 +45,8 @@ pub enum Message {
 
     // Plugin View
     UpgradePressed(Plugin),
+    ToggleView,
+    ToggleRow(bool),
 }
 
 impl Default for MainWindow {
@@ -182,6 +184,14 @@ impl Application for MainWindow {
             }
             Message::UpgradePressed(_) => {
                 println!("Upgrade");
+                Command::none()
+            }
+            Message::ToggleView => {
+                println!("Toggle");
+                Command::none()
+            }
+            Message::ToggleRow(_) => {
+                println!("Row clicked");
                 Command::none()
             }
         }

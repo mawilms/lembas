@@ -1,4 +1,5 @@
 use crate::core::Plugin;
+use crate::gui::elements::PluginRow;
 use crate::gui::elements::{ControlPanel, PluginPanel};
 use crate::gui::main_window::Message;
 use crate::gui::style;
@@ -29,9 +30,19 @@ impl Plugins {
 
         let plugin_amount = self.plugins.len();
 
-        for plugin in &mut self.plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.view());
+        for plugin in &self.plugins {
+            let mut plugin_row = PluginRow::new(
+                plugin.plugin_id,
+                plugin.title.clone(),
+                plugin.current_version.clone(),
+                plugin.latest_version.clone(),
+            );
+            plugins_scrollable = plugins_scrollable.push(plugin_row.view());
         }
+
+        // for plugin in &mut self.plugins {
+        //     plugins_scrollable = plugins_scrollable.push(plugin.view());
+        // }
 
         let content = Column::new()
             .width(Length::Fill)
