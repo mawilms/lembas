@@ -6,8 +6,8 @@ use crate::core::{
 use crate::gui::style;
 use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{
-    button, Align, Application, Button, Column, Command, Container, Element, Length,
-    Row, Settings, Space, Text,
+    button, Align, Application, Button, Column, Command, Container, Element, Length, Row, Settings,
+    Space, Text,
 };
 use std::path::Path;
 
@@ -52,6 +52,8 @@ pub enum Message {
 
     // Plugin View
     UpgradePressed(Plugin),
+    PluginDownloaded(Result<(String, Plugin), String>),
+    PluginExtracted,
 }
 
 impl Default for MainWindow {
@@ -74,23 +76,45 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    async fn install_plugin(plugin: Plugin) -> Vec<Plugin> {
+    // async fn download_plugin(plugin: Plugin) -> Result<String, String> {
+    //     let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
+    //     let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+    //     let target = format!(
+    //         "https://www.lotrointerface.com/downloads/download{}-{}",
+    //         &plugin.plugin_id, &plugin.title
+    //     );
+
+    //     if installer::install(&path, &target).is_ok() {
+    //         installer::zip_operation(path.as_path());
+    //         install_plugin(&plugin);
+    //         get_installed_plugins();
+    //         Ok(String::from("Bla"))
+    //     } else {
+    //         // TODO: Implement proper error handling
+    //         let result: Vec<Plugin> = Vec::new();
+    //         result;
+    //         Err(String::from("Bla"))
+    //     }
+    // }
+
+    async fn download_plugin(plugin: Plugin) -> Result<(String, Plugin), String> {
         let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.plugin_id, &plugin.title
         );
-
         if installer::install(&path, &target).is_ok() {
-            installer::zip_operation(path.as_path());
-            install_plugin(&plugin);
-            get_installed_plugins()
+            Ok((String::from("Downloaded"), plugin))
         } else {
-            // TODO: Implement proper error handling
-            let result: Vec<Plugin> = Vec::new();
-            result
+            Err(String::from("Download failed"))
         }
+    }
+
+    async fn extract_plugin() {
+        // installer::zip_operation(path.as_path());
+        // install_plugin(&plugin);
+        // get_installed_plugins();
     }
 
     async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
@@ -186,15 +210,23 @@ impl Application for MainWindow {
             }
             Message::InstallPressed(plugin) => {
                 let plugin = plugin.clone();
-                Command::perform(
-                    Self::install_plugin(plugin),
-                    Message::InstalledPluginsLoaded,
-                )
+                Command::perform(Self::download_plugin(plugin), Message::PluginDownloaded)
             }
             Message::UpgradePressed(_) => {
                 println!("Upgrade");
                 Command::none()
             }
+            Message::PluginDownloaded(state) => match state {
+                Ok(msg) => {
+                    println!("{}", msg);
+                    Command::perform(Self::extract_plugin(), Message::PluginExtracted)
+                }
+                Err(msg) => {
+                    println!("{}", msg);
+                    Command::none()
+                }
+            },
+            Message::PluginExtracted => {}
         }
     }
 
