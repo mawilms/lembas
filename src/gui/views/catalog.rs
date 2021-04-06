@@ -1,10 +1,11 @@
-use crate::core::Plugin;
 use crate::gui::main_window::Message;
 use crate::gui::style;
 use iced::{
     pick_list, scrollable, text_input, Align, Column, Container, Element, Length, PickList, Row,
     Scrollable, Text, TextInput,
 };
+
+use super::plugins::PluginState;
 
 #[derive(Default, Debug, Clone)]
 pub struct Catalog {
@@ -14,7 +15,7 @@ pub struct Catalog {
     plugin_scrollable_state: scrollable::State,
     pub input_value: String,
 
-    pub plugins: Vec<Plugin>,
+    pub plugins: Vec<PluginState>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,7 +92,11 @@ impl Catalog {
             .style(style::Scrollable);
 
         for plugin in &mut self.plugins {
-            plugins_scrollable = plugins_scrollable.push(plugin.catalog_view());
+            plugins_scrollable = plugins_scrollable.push(
+                plugin
+                    .catalog_view()
+                    .map(move |message| Message::Plugin(message)),
+            );
         }
 
         let content = Column::new()
