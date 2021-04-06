@@ -3,7 +3,7 @@ use crate::gui::style;
 use iced::{button, Align, Button, Container, Element, Length};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Plugin {
     #[serde(skip)]
     pub install_btn_state: button::State,
@@ -12,6 +12,20 @@ pub struct Plugin {
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
+    pub status: String,
+}
+
+impl Default for Plugin {
+    fn default() -> Self {
+        Self {
+            install_btn_state: button::State::default(),
+            plugin_id: i32::default(),
+            title: String::default(),
+            current_version: String::default(),
+            latest_version: String::default(),
+            status: "Install".to_string(),
+        }
+    }
 }
 
 impl Plugin {
@@ -38,7 +52,7 @@ impl Plugin {
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
+                    Button::new(&mut self.install_btn_state, Text::new(&self.status))
                         .on_press(Message::UpgradePressed(plugin))
                         .width(Length::FillPortion(2))
                         .style(style::InstallButton::Enabled),
@@ -55,17 +69,17 @@ impl Plugin {
         use iced::{Row, Text};
         let plugin = self.clone();
 
-        if self.current_version != "" {
+        if self.current_version.is_empty() {
             let row = Row::new()
                 .align_items(Align::Center)
                 .push(Text::new(&self.title).width(Length::FillPortion(5)))
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Installed"))
+                    Button::new(&mut self.install_btn_state, Text::new("Install"))
                         .on_press(Message::InstallPressed(plugin))
                         .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Disabled),
+                        .style(style::InstallButton::Enabled),
                 );
 
             Container::new(row)
@@ -80,10 +94,10 @@ impl Plugin {
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Install"))
+                    Button::new(&mut self.install_btn_state, Text::new("Installed"))
                         .on_press(Message::InstallPressed(plugin))
                         .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Enabled),
+                        .style(style::InstallButton::Disabled),
                 );
 
             Container::new(row)

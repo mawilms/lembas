@@ -74,7 +74,7 @@ impl Catalog {
         let plugin_name = Text::new("Plugin").width(Length::FillPortion(5));
         let current_version = Text::new("Current Version").width(Length::FillPortion(3));
         let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
-        let upgrade = Text::new("Upgrade").width(Length::FillPortion(2));
+        let status = Text::new("Status").width(Length::FillPortion(2));
 
         let plugin_panel = Row::new()
             .width(Length::Fill)
@@ -82,7 +82,7 @@ impl Catalog {
             .push(plugin_name)
             .push(current_version)
             .push(latest_version)
-            .push(upgrade);
+            .push(status);
 
         let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
             .spacing(5)
