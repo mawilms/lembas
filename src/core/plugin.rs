@@ -55,17 +55,17 @@ impl Plugin {
         use iced::{Row, Text};
         let plugin = self.clone();
 
-        if self.current_version != "" {
+        if self.current_version == "" {
             let row = Row::new()
                 .align_items(Align::Center)
                 .push(Text::new(&self.title).width(Length::FillPortion(5)))
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Installed"))
+                    Button::new(&mut self.install_btn_state, Text::new("Install"))
                         .on_press(Message::InstallPressed(plugin))
                         .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Disabled),
+                        .style(style::InstallButton::Enabled),
                 );
 
             Container::new(row)
@@ -80,10 +80,10 @@ impl Plugin {
                 .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Install"))
+                    Button::new(&mut self.install_btn_state, Text::new("Installed"))
                         .on_press(Message::InstallPressed(plugin))
                         .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Enabled),
+                        .style(style::InstallButton::Disabled),
                 );
 
             Container::new(row)
