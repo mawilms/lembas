@@ -5,6 +5,7 @@ use iced::{
     Scrollable, Text, TextInput,
 };
 
+// View that is rendered to show the user installed plugins
 #[derive(Default, Debug, Clone)]
 pub struct Plugins {
     plugin_scrollable_state: scrollable::State,
@@ -75,6 +76,8 @@ impl Plugins {
         //         .view(),
         //     );
         // }
+
+        // !!! This section causes problems. It's planned to render the toggleable rows inside the scrollable and to handle click events !!!
         for plugin in plugins {
             let pla = plugin.clone();
             let mut plugin_row = PluginRow::new(
@@ -111,6 +114,7 @@ impl Plugins {
             .push(plugin_panel)
             .push(plugins_scrollable);
 
+        /// !!! Here happens the error: cannot return value referencing local variable `plugin_row` returns a value referencing data owned by the current function !!!
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -120,6 +124,7 @@ impl Plugins {
     }
 }
 
+// Single row that has a toggle effect to show additional data
 #[derive(Clone, Debug)]
 pub struct PluginRow {
     pub id: i32,
@@ -177,6 +182,8 @@ impl PluginRow {
         }
     }
 }
+
+// Currently used struct. Might be deprecated later when the toggleable PluginRow is installed
 #[derive(Debug, Clone, Default)]
 pub struct PluginState {
     pub plugin_id: i32,
