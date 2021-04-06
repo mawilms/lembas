@@ -1,6 +1,5 @@
-use crate::core::config::CONFIGURATION;
 use crate::core::Plugin;
-use iced::button;
+use crate::{core::config::CONFIGURATION, gui::views::plugins::PluginState};
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
@@ -55,7 +54,7 @@ fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn install_plugin(plugin: &Plugin) {
+pub fn install_plugin(plugin: &PluginState) {
     let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
     conn.execute(
             "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
@@ -77,7 +76,6 @@ pub fn get_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
             })
         })
         .unwrap();
@@ -101,7 +99,6 @@ pub fn get_installed_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
             })
         })
         .unwrap();
@@ -125,7 +122,6 @@ pub fn get_plugin(name: &str) -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
             })
         })
         .unwrap();

@@ -6,12 +6,15 @@ use crate::core::{
 use crate::gui::style;
 use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
 use iced::{
-    button, Align, Application, Button, Column, Command, Container, Element, Length,
-    Row, Settings, Space, Text,
+    button, Align, Application, Button, Column, Command, Container, Element, Length, Row, Settings,
+    Space, Text,
 };
 use std::path::Path;
 
-use super::views::catalog::Amount;
+use super::views::{
+    catalog::Amount,
+    plugins::{PluginMessage, PluginState},
+};
 
 #[derive(Debug, Clone)]
 pub struct MainWindow {
@@ -48,12 +51,12 @@ pub enum Message {
     CatalogInputChanged(String),
     AmountFiltered(Amount),
     PluginSearched(Vec<Plugin>),
-    InstallPressed(Plugin),
 
     // Plugin View
     UpgradePressed(Plugin),
     ToggleView,
     ToggleRow(bool),
+    Plugin(PluginMessage),
 }
 
 impl Default for MainWindow {
@@ -76,7 +79,7 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    async fn install_plugin(plugin: Plugin) -> Vec<Plugin> {
+    async fn install_plugin(plugin: PluginState) -> Vec<Plugin> {
         let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
@@ -95,7 +98,7 @@ impl MainWindow {
         }
     }
 
-    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
+    async fn update_plugins(plugins: Vec<PluginState>) -> Vec<Plugin> {
         // TODO Implement here
         let result: Vec<Plugin> = Vec::new();
         result
@@ -146,12 +149,30 @@ impl Application for MainWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::AllPluginsLoaded(state) | Message::PluginSearched(state) => {
-                self.catalog_view.plugins = state;
+                let mut states: Vec<PluginState> = Vec::new();
+                for plugin in state {
+                    states.push(PluginState::new(
+                        plugin.plugin_id,
+                        &plugin.title,
+                        &plugin.current_version,
+                        &plugin.latest_version,
+                    ));
+                }
+                self.catalog_view.plugins = states;
                 self.view = View::Catalog;
                 Command::none()
             }
             Message::InstalledPluginsLoaded(state) => {
-                self.plugins_view.plugins = state;
+                let mut states: Vec<PluginState> = Vec::new();
+                for plugin in state {
+                    states.push(PluginState::new(
+                        plugin.plugin_id,
+                        &plugin.title,
+                        &plugin.current_version,
+                        &plugin.latest_version,
+                    ));
+                }
+                self.plugins_view.plugins = states;
                 self.view = View::Plugins;
                 Command::none()
             }
@@ -186,14 +207,14 @@ impl Application for MainWindow {
                     Message::PluginSearched,
                 )
             }
-            Message::InstallPressed(plugin) => {
+            Message::Plugin(PluginMessage::InstallPressed(plugin)) => {
                 let plugin = plugin.clone();
                 Command::perform(
                     Self::install_plugin(plugin),
                     Message::InstalledPluginsLoaded,
                 )
             }
-            Message::UpgradePressed(_) => {
+            Message::Plugin(PluginMessage::UpgradePressed(_)) => {
                 println!("Upgrade");
                 Command::none()
             }
@@ -205,6 +226,7 @@ impl Application for MainWindow {
                 println!("Row clicked");
                 Command::none()
             }
+            Message::UpgradePressed(_) => Command::none(),
         }
     }
 
