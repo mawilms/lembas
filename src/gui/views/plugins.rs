@@ -18,6 +18,8 @@ pub struct Plugins {
 
 impl Plugins {
     pub fn view(&mut self) -> Element<Message> {
+        let Self { plugins, .. } = self;
+
         let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
             .on_press(Message::RefreshPressed)
             .padding(5)
@@ -26,7 +28,7 @@ impl Plugins {
             .on_press(Message::UpdateAllPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
-        let installed_plugins = Text::new(format!("{} plugins installed", self.plugins.len()));
+        let installed_plugins = Text::new(format!("{} plugins installed", plugins.len()));
         let search_plugins = TextInput::new(
             &mut self.input,
             "Search plugins...",
@@ -62,8 +64,31 @@ impl Plugins {
             .align_items(Align::Center)
             .style(style::Scrollable);
 
-        for plugin in &self.plugins {
-            plugins_scrollable = plugins_scrollable.push(
+        let mut plugin_row: PluginRow;
+        // for plugin in plugins {
+        //     plugins_scrollable = plugins_scrollable.push(
+        //         PluginRow::new(
+        //             plugin.plugin_id,
+        //             plugin.title.clone(),
+        //             plugin.current_version.clone(),
+        //             plugin.latest_version.clone(),
+        //         )
+        //         .view(),
+        //     );
+        // }
+        // for plugin in plugins {
+        //     let pla = plugin.clone();
+        //     let mut plugin_row = PluginRow::new(
+        //         pla.plugin_id,
+        //         pla.title,
+        //         pla.current_version,
+        //         pla.latest_version,
+        //     );
+        //     plugins_scrollable = plugins_scrollable.push(plugin_row.view());
+        // }
+
+        let bla = plugins.into_iter().map(|plugin| {
+            plugins_scrollable.push(
                 PluginRow::new(
                     plugin.plugin_id,
                     plugin.title.clone(),
@@ -71,8 +96,8 @@ impl Plugins {
                     plugin.latest_version.clone(),
                 )
                 .view(),
-            );
-        }
+            )
+        });
 
         // for plugin in &mut self.plugins {
         //     plugins_scrollable = plugins_scrollable.push(plugin.view());
@@ -120,15 +145,14 @@ impl PluginRow {
     fn update(&mut self, message: Message) {}
 
     pub fn view(&mut self) -> Element<'_, Message> {
-        match self.opened {
-            true => Column::new()
+        if self.opened {
+            Column::new()
                 .push(
                     Button::new(
                         &mut self.toggle_view_btn,
                         Row::new().push(Text::new(&self.title)),
                     )
                     .padding(10)
-                    .width(Length::Fill)
                     .on_press(Message::ToggleView),
                 )
                 .push(
@@ -136,9 +160,9 @@ impl PluginRow {
                         .push(Text::new("Hallo").width(Length::Fill))
                         .padding(20),
                 )
-                .into(),
-
-            false => Column::new()
+                .into()
+        } else {
+            Column::new()
                 .spacing(5)
                 .push(
                     Button::new(
@@ -149,7 +173,7 @@ impl PluginRow {
                     .width(Length::Fill)
                     .on_press(Message::ToggleView),
                 )
-                .into(),
+                .into()
         }
     }
 }
