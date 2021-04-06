@@ -53,7 +53,7 @@ pub enum Message {
     // Plugin View
     UpgradePressed(Plugin),
     PluginDownloaded(Result<(String, Plugin), String>),
-    PluginExtracted,
+    PluginExtracted(Result<String, String>),
 }
 
 impl Default for MainWindow {
@@ -111,9 +111,14 @@ impl MainWindow {
         }
     }
 
-    async fn extract_plugin() {
-        // installer::zip_operation(path.as_path());
-        // install_plugin(&plugin);
+    async fn extract_plugin(plugin: Plugin) -> Result<String, String> {
+        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
+        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+        installer::zip_operation(path.as_path());
+        match install_plugin(&plugin) {
+            Ok(state) => Ok(String::from("Extracted")),
+            Err(_) => Err(String::from("Extraction failed")),
+        }
         // get_installed_plugins();
     }
 
@@ -217,16 +222,21 @@ impl Application for MainWindow {
                 Command::none()
             }
             Message::PluginDownloaded(state) => match state {
-                Ok(msg) => {
+                Ok((msg, plugin)) => {
                     println!("{}", msg);
-                    Command::perform(Self::extract_plugin(), Message::PluginExtracted)
+                    Command::perform(Self::extract_plugin(plugin), Message::PluginExtracted)
                 }
                 Err(msg) => {
                     println!("{}", msg);
                     Command::none()
                 }
             },
-            Message::PluginExtracted => {}
+            Message::PluginExtracted(state) => match state {
+                Ok(msg) | Err(msg) => {
+                    println!("{}", msg);
+                    Command::none()
+                }
+            },
         }
     }
 

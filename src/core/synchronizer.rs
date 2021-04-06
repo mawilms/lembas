@@ -55,13 +55,13 @@ fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn install_plugin(plugin: &Plugin) {
-    let conn = Connection::open(&CONFIGURATION.plugins_file).unwrap();
+pub fn install_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+    let conn = Connection::open(&CONFIGURATION.plugins_file)?;
     conn.execute(
             "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
             params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version],
-        )
-        .unwrap();
+        )?;
+    Ok(())
 }
 
 pub fn get_plugins() -> Vec<Plugin> {
