@@ -63,7 +63,7 @@ impl Plugins {
 
         for plugin in &mut self.plugins {
             plugins_scrollable =
-                plugins_scrollable.push(plugin.view().map(move |message| Message::Plugin(message)));
+                plugins_scrollable.push(plugin.view().map(Message::Plugin));
         }
 
         let content = Column::new()

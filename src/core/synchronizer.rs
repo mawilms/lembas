@@ -1,6 +1,5 @@
 use crate::core::Plugin;
 use crate::{core::config::CONFIGURATION, gui::views::plugins::PluginState};
-use iced::button;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};

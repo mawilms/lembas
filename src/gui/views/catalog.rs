@@ -95,7 +95,7 @@ impl Catalog {
             plugins_scrollable = plugins_scrollable.push(
                 plugin
                     .catalog_view()
-                    .map(move |message| Message::Plugin(message)),
+                    .map(Message::Plugin),
             );
         }
 
