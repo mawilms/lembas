@@ -4,7 +4,7 @@ use crate::core::{
     synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::style;
-use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
+use crate::gui::views::{About as AboutView, CatalogView, PluginsView, View};
 use iced::{
     button, Align, Application, Button, Column, Command, Container, Element, Length, Row, Settings,
     Space, Text,
@@ -168,7 +168,7 @@ impl Application for MainWindow {
                         &plugin.latest_version,
                     ));
                 }
-                self.plugins_view.plugins = states;
+                self.plugins_view.s
                 self.view = View::Plugins;
                 Command::none()
             }

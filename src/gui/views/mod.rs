@@ -3,8 +3,8 @@ pub mod catalog;
 pub mod plugins;
 
 pub use about::About;
-pub use catalog::Catalog;
-pub use plugins::Plugins;
+pub use catalog::Catalog as CatalogView;
+pub use plugins::Plugins as PluginsView;
 
 #[derive(Debug, Clone)]
 pub enum View {
