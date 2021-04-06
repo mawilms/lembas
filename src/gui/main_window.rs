@@ -3,10 +3,12 @@ use crate::core::{
     create_plugins_db, get_installed_plugins, get_plugin, get_plugins, installer,
     synchronizer::install_plugin, update_local_plugins, Plugin,
 };
-use crate::gui::elements::NavigationPanel;
 use crate::gui::style;
 use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
-use iced::{Application, Column, Command, Container, Element, Length, Settings};
+use iced::{
+    button, Align, Application, Button, Column, Command, Container, Element, Length,
+    Row, Settings, Space, Text,
+};
 use std::path::Path;
 
 use super::views::catalog::Amount;
@@ -14,10 +16,15 @@ use super::views::catalog::Amount;
 #[derive(Debug, Clone)]
 pub struct MainWindow {
     view: View,
-    navigation_panel: NavigationPanel,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
     about_view: AboutView,
+
+    input_value: String,
+    plugins_btn: button::State,
+    catalog_btn: button::State,
+    about_btn: button::State,
+    settings_btn: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -56,10 +63,14 @@ impl Default for MainWindow {
 
         Self {
             view: View::default(),
-            navigation_panel: NavigationPanel::default(),
             plugins_view: PluginsView::default(),
             catalog_view: CatalogView::default(),
             about_view: AboutView::default(),
+            input_value: "".to_string(),
+            plugins_btn: button::State::default(),
+            catalog_btn: button::State::default(),
+            about_btn: button::State::default(),
+            settings_btn: button::State::default(),
         }
     }
 }
@@ -200,13 +211,41 @@ impl Application for MainWindow {
     fn view(&mut self) -> Element<Message> {
         let Self {
             view,
-            navigation_panel,
             plugins_view,
             catalog_view,
             about_view,
             ..
         } = self;
-        let navigation_container = Container::new(navigation_panel.view())
+
+        let plugins_btn = Button::new(&mut self.plugins_btn, Text::new("My Plugins"))
+            .on_press(Message::PluginsPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+        let catalog_btn = Button::new(&mut self.catalog_btn, Text::new("Catalog"))
+            .on_press(Message::CatalogPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+        let divider = Space::new(Length::Fill, Length::Shrink);
+        let about_btn = Button::new(&mut self.about_btn, Text::new("About"))
+            .on_press(Message::AboutPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+        let settings_btn = Button::new(&mut self.settings_btn, Text::new("Settings"))
+            .on_press(Message::SettingsPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+
+        let row = Row::new()
+            .width(Length::Fill)
+            .align_items(Align::Center)
+            .spacing(10)
+            .push(plugins_btn)
+            .push(catalog_btn)
+            .push(divider)
+            .push(about_btn)
+            .push(settings_btn);
+
+        let navigation_container = Container::new(row)
             .width(Length::Fill)
             .padding(10)
             .style(style::PluginRow);

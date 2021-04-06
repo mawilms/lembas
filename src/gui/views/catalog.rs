@@ -1,16 +1,13 @@
 use crate::core::Plugin;
-use crate::gui::elements::PluginPanel;
 use crate::gui::main_window::Message;
 use crate::gui::style;
 use iced::{
     pick_list, scrollable, text_input, Align, Column, Container, Element, Length, PickList, Row,
-    Scrollable, TextInput,
+    Scrollable, Text, TextInput,
 };
 
 #[derive(Default, Debug, Clone)]
 pub struct Catalog {
-    plugin_panel: PluginPanel,
-
     pick_list: pick_list::State<Amount>,
     selected_amount: Amount,
     input: text_input::State,
@@ -53,8 +50,6 @@ impl std::fmt::Display for Amount {
 
 impl Catalog {
     pub fn view(&mut self) -> Element<Message> {
-        let Self { plugin_panel, .. } = self;
-
         let search_plugins = TextInput::new(
             &mut self.input,
             "Search plugins...",
@@ -76,6 +71,19 @@ impl Catalog {
             .push(search_plugins)
             .push(pick_list);
 
+        let plugin_name = Text::new("Plugin").width(Length::FillPortion(5));
+        let current_version = Text::new("Current Version").width(Length::FillPortion(3));
+        let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
+        let upgrade = Text::new("Upgrade").width(Length::FillPortion(2));
+
+        let plugin_panel = Row::new()
+            .width(Length::Fill)
+            .align_items(Align::Center)
+            .push(plugin_name)
+            .push(current_version)
+            .push(latest_version)
+            .push(upgrade);
+
         let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
             .spacing(5)
             .width(Length::Fill)
@@ -91,7 +99,7 @@ impl Catalog {
             .spacing(10)
             .align_items(Align::Center)
             .push(row)
-            .push(plugin_panel.view())
+            .push(plugin_panel)
             .push(plugins_scrollable);
 
         Container::new(content)
