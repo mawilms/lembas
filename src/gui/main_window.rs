@@ -1,4 +1,4 @@
-use crate::core::{create_plugins_db, update_local_plugins, Plugin};
+use crate::core::{create_plugins_db, update_local_plugins};
 use crate::gui::style;
 use crate::gui::views::{About as AboutView, CatalogView, PluginsView, View};
 use iced::{
@@ -41,7 +41,7 @@ pub enum Message {
     // Catalog View
     CatalogInputChanged(String),
     AmountFiltered(Amount),
-    PluginSearched(Vec<Plugin>),
+    //PluginSearched(Vec<Plugin>),
 
     PluginAction(PluginMessage),
 }
@@ -84,20 +84,21 @@ impl Application for Lembas {
     fn update(&mut self, message: Message) -> Command<Message> {
         match self {
             Lembas::Loading => {
-                if let Message::Loaded(state) = message {
+                if let Message::Loaded(_state) = message {
                     *self = Lembas::Loaded(State { ..State::default() })
                 }
             }
             Lembas::Loaded(state) => match message {
-                Message::Loaded(_) => {}
-                Message::PluginsPressed => {}
-                Message::CatalogPressed => {}
-                Message::AboutPressed => {}
-                Message::SettingsPressed => {}
-                Message::CatalogInputChanged(_) => {}
-                Message::AmountFiltered(_) => {}
-                Message::PluginSearched(_) => {}
-                Message::PluginAction(_) => {}
+                Message::PluginsPressed => {
+                    state.view = View::Plugins;
+                }
+                Message::CatalogPressed => {
+                    state.view = View::Catalog;
+                }
+                Message::AboutPressed => {
+                    state.view = View::About;
+                }
+                _ => {}
             },
         }
         Command::none()
@@ -111,7 +112,7 @@ impl Application for Lembas {
                 plugins_view,
                 catalog_view,
                 about_view,
-                input_value,
+                input_value: _,
                 plugins_btn,
                 catalog_btn,
                 about_btn,
@@ -192,13 +193,6 @@ impl Lembas {
     pub async fn init_application() -> State {
         State::default()
     }
-}
-
-#[derive(Debug, Clone)]
-enum ApplicationError {
-    Load,
-    Install,
-    Synchronize,
 }
 
 fn loading_data<'a>() -> Element<'a, Message> {
