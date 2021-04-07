@@ -97,6 +97,8 @@ pub struct PluginRow {
     pub title: String,
     pub current_version: String,
     pub latest_version: String,
+
+    install_btn_state: button::State,
     opened: bool,
     toggle_view_btn: button::State,
 }
@@ -108,6 +110,7 @@ impl PluginRow {
             title,
             current_version,
             latest_version,
+            install_btn_state: button::State::default(),
             toggle_view_btn: button::State::new(),
             opened: false,
         }
