@@ -3,7 +3,6 @@ use crate::core::{
     get_installed_plugins, get_plugin, get_plugins, installer, synchronizer::install_plugin,
     update_local_plugins, Plugin,
 };
-//use crate::gui::main_window::Message;
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -13,7 +12,6 @@ use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
-    Loading,
     Loaded(State),
 }
 
@@ -113,23 +111,6 @@ impl Plugins {
 
     pub fn update(&mut self, message: PluginMessage) {
         match self {
-            Plugins::Loading => {
-                let plugins = get_installed_plugins();
-                let mut states: Vec<PluginRow> = Vec::new();
-                for plugin in plugins {
-                    states.push(PluginRow::new(
-                        plugin.plugin_id,
-                        &plugin.title,
-                        &plugin.current_version,
-                        &plugin.latest_version,
-                    ));
-                }
-                *self = Plugins::Loaded(State {
-                    plugins: states,
-                    ..State::default()
-                });
-                self.view();
-            }
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
                     RowMessage::UpgradePressed(plugin) => {
@@ -161,18 +142,13 @@ impl Plugins {
                         ..State::default()
                     });
                 }
-                PluginMessage::Loading => println!("Bla"),
-                PluginMessage::PluginInputChanged(_) => {}
-                PluginMessage::RefreshPressed => {}
-                PluginMessage::UpdateAllPressed => {}
-                PluginMessage::PluginsSynchronized(_) => {}
+                _ => {}
             },
         }
     }
 
     pub fn view(&mut self) -> Element<PluginMessage> {
         match self {
-            Plugins::Loading => loading_message(),
             Plugins::Loaded(State {
                 plugin_scrollable_state,
                 input_value,
@@ -250,21 +226,6 @@ impl Plugins {
             }
         }
     }
-}
-
-fn loading_message<'a>() -> Element<'a, PluginMessage> {
-    Container::new(
-        Text::new("Plugins loading...")
-            .horizontal_alignment(HorizontalAlignment::Center)
-            .vertical_alignment(VerticalAlignment::Center)
-            .size(20),
-    )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_y()
-    .center_x()
-    .style(style::Content)
-    .into()
 }
 
 // Single row that has a toggle effect to show additional data
