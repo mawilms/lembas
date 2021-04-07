@@ -55,7 +55,6 @@ pub enum Message {
     // Plugin View
     UpgradePressed(Plugin),
     ToggleView,
-    ToggleRow(bool),
     Plugin(usize, RowMessage),
 }
 
@@ -172,7 +171,7 @@ impl Application for MainWindow {
                         &plugin.latest_version,
                     ));
                 }
-                self.plugins_view.s
+                //self.plugins_view.s
                 self.view = View::Plugins;
                 Command::none()
             }
@@ -210,10 +209,6 @@ impl Application for MainWindow {
 
             Message::ToggleView => {
                 println!("Toggle");
-                Command::none()
-            }
-            Message::ToggleRow(_) => {
-                println!("Row clicked");
                 Command::none()
             }
             Message::UpgradePressed(_) => Command::none(),

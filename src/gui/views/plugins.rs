@@ -78,16 +78,19 @@ impl Plugins {
                     .push(latest_version)
                     .push(upgrade);
 
-                let mut plugins_scrollable = Scrollable::new(&mut plugin_scrollable_state)
+                let plugins = plugins
+                    .iter_mut()
+                    .enumerate()
+                    .fold(Column::new().spacing(5), |col, (i, p)| {
+                        col.push(p.view().map(move |msg| Message::Plugin(i, msg)))
+                    });
+
+                let plugins_scrollable = Scrollable::new(&mut plugin_scrollable_state)
+                    .push(plugins)
                     .spacing(5)
                     .width(Length::Fill)
                     .align_items(Align::Center)
                     .style(style::Scrollable);
-
-                for plugin in plugins {
-                    plugins_scrollable =
-                        plugins_scrollable.push(plugin.view().map(Message::Plugin));
-                }
 
                 let content = Column::new()
                     .width(Length::Fill)
