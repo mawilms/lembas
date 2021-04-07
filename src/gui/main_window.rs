@@ -3,7 +3,7 @@ use crate::gui::style;
 use crate::gui::views::{About as AboutView, CatalogView, PluginsView, View};
 use iced::{
     button, Align, Application, Button, Column, Command, Container, Element, HorizontalAlignment,
-    Length, Row, Settings, Space, Text,
+    Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 
 use super::views::{catalog::Amount, plugins::PluginMessage};
@@ -31,7 +31,6 @@ pub struct State {
 #[derive(Debug, Clone)]
 pub enum Message {
     Loaded(State),
-    PluginsSynchronized(Result<(), ApplicationError>),
 
     // Navigation Panel
     PluginsPressed,
@@ -84,56 +83,25 @@ impl Application for Lembas {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match self {
-            Lembas::Loading => match message {
-                Message::Loaded(state) => {
-                    println!("Bla1243");
+            Lembas::Loading => {
+                if let Message::Loaded(state) = message {
                     *self = Lembas::Loaded(State { ..State::default() })
                 }
-                _ => {}
-            },
-            Lembas::Loaded(state) => {
-                println!("Bla");
             }
+            Lembas::Loaded(state) => match message {
+                Message::Loaded(_) => {}
+                Message::PluginsPressed => {}
+                Message::CatalogPressed => {}
+                Message::AboutPressed => {}
+                Message::SettingsPressed => {}
+                Message::CatalogInputChanged(_) => {}
+                Message::AmountFiltered(_) => {}
+                Message::PluginSearched(_) => {}
+                Message::PluginAction(_) => {}
+            },
         }
         Command::none()
     }
-
-    // match message {
-    //     Message::PluginsPressed => {
-    //         //     Command::perform(
-    //         //     Self::load_installed_plugins(),
-    //         //     Message::InstalledPluginsLoaded,
-    //         // )
-    //         Command::none()
-    //     }
-    //     Message::CatalogPressed => {
-    //         Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
-    //     }
-    //     Message::AboutPressed => {
-    //         self.view = View::About;
-    //         Command::none()
-    //     }
-    //     Message::SettingsPressed | Message::PluginsSynchronized(_) => Command::none(),
-    //     Message::UpdateAllPressed => {
-    //         let plugins = self.plugins_view.plugins.clone();
-    //         Command::perform(
-    //             Self::update_plugins(plugins),
-    //             Message::InstalledPluginsLoaded,
-    //         )
-    //     }
-    //     Message::AmountFiltered(_) => Command::none(),
-    //     Message::CatalogInputChanged(state) => {
-    //         self.catalog_view.input_value = state;
-    //         Command::perform(
-    //             Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
-    //             Message::PluginSearched,
-    //         )
-    //     }
-    //     Message::PluginAction(msg) => {
-    //         self.plugins_view.update(msg);
-    //         Command::none()
-    //     }
-    // }
 
     fn view(&mut self) -> Element<Message> {
         match self {
@@ -184,10 +152,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        println!("Hallo");
-                        let main_container = plugins_view
-                            .view()
-                            .map(Message::PluginAction);
+                        let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
                             .push(navigation_container)
@@ -238,12 +203,15 @@ enum ApplicationError {
 
 fn loading_data<'a>() -> Element<'a, Message> {
     Container::new(
-        Text::new("Loading...")
+        Text::new("Plugins loading...")
             .horizontal_alignment(HorizontalAlignment::Center)
-            .size(50),
+            .vertical_alignment(VerticalAlignment::Center)
+            .size(20),
     )
     .width(Length::Fill)
     .height(Length::Fill)
     .center_y()
+    .center_x()
+    .style(style::Content)
     .into()
 }

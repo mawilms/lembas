@@ -7,7 +7,7 @@ use crate::core::{
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
+    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
 };
 use std::path::Path;
 
@@ -19,7 +19,21 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        Self::Loading
+        let installed_plugins = get_installed_plugins();
+        let mut plugins: Vec<PluginRow> = Vec::new();
+        for plugin in installed_plugins {
+            plugins.push(PluginRow::new(
+                plugin.plugin_id,
+                &plugin.title,
+                &plugin.current_version,
+                &plugin.latest_version,
+            ));
+        }
+
+        Self::Loaded(State {
+            plugins,
+            ..State::default()
+        })
     }
 }
 
@@ -35,8 +49,10 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
+    Loading,
     InstalledPluginsLoaded(Vec<Plugin>),
     AllPluginsLoaded(Vec<Plugin>),
+    PluginsSynchronized(Result<(), ApplicationError>),
 
     // Navigation View
     PluginInputChanged(String),
@@ -73,7 +89,7 @@ impl Plugins {
         result
     }
 
-    pub async fn load_installed_plugins() -> Vec<Plugin> {
+    fn load_installed_plugins() -> Vec<Plugin> {
         get_installed_plugins()
     }
 
@@ -97,17 +113,24 @@ impl Plugins {
 
     pub fn update(&mut self, message: PluginMessage) {
         match self {
-            Plugins::Loading => {}
-            Plugins::Loaded(state) => match message {
-                PluginMessage::PluginInputChanged(_) => {}
-                PluginMessage::RefreshPressed => {}
-                PluginMessage::UpdateAllPressed => {
-                    let plugins = state.plugins.clone();
-                    Command::perform(
-                        Self::update_plugins(plugins),
-                        PluginMessage::InstalledPluginsLoaded,
-                    );
+            Plugins::Loading => {
+                let plugins = get_installed_plugins();
+                let mut states: Vec<PluginRow> = Vec::new();
+                for plugin in plugins {
+                    states.push(PluginRow::new(
+                        plugin.plugin_id,
+                        &plugin.title,
+                        &plugin.current_version,
+                        &plugin.latest_version,
+                    ));
                 }
+                *self = Plugins::Loaded(State {
+                    plugins: states,
+                    ..State::default()
+                });
+                self.view();
+            }
+            Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
                     RowMessage::UpgradePressed(plugin) => {
                         let plugin = plugin.clone();
@@ -116,16 +139,14 @@ impl Plugins {
                             PluginMessage::InstalledPluginsLoaded,
                         );
                     }
-                    RowMessage::InstallPressed(_) => {
-                        println!("Upgrade");
-                        //Command::none()
-                    }
+                    RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
                         state.plugins[index].update(msg);
-                        //Command::none()
                     }
                 },
-                PluginMessage::InstalledPluginsLoaded(state) => {
+
+                PluginMessage::AllPluginsLoaded(state)
+                | PluginMessage::InstalledPluginsLoaded(state) => {
                     let mut states: Vec<PluginRow> = Vec::new();
                     for plugin in state {
                         states.push(PluginRow::new(
@@ -135,22 +156,16 @@ impl Plugins {
                             &plugin.latest_version,
                         ));
                     }
-                    //self.plugins_view.s
-                    // self.view = View::Plugins;
+                    *self = Plugins::Loaded(State {
+                        plugins: states,
+                        ..State::default()
+                    });
                 }
-                PluginMessage::AllPluginsLoaded(state) => {
-                    let mut states: Vec<PluginRow> = Vec::new();
-                    for plugin in state {
-                        states.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                        ));
-                    }
-                    // self.catalog_view.plugins = states;
-                    // self.view = View::Catalog;
-                }
+                PluginMessage::Loading => println!("Bla"),
+                PluginMessage::PluginInputChanged(_) => {}
+                PluginMessage::RefreshPressed => {}
+                PluginMessage::UpdateAllPressed => {}
+                PluginMessage::PluginsSynchronized(_) => {}
             },
         }
     }
@@ -241,11 +256,14 @@ fn loading_message<'a>() -> Element<'a, PluginMessage> {
     Container::new(
         Text::new("Plugins loading...")
             .horizontal_alignment(HorizontalAlignment::Center)
-            .size(50),
+            .vertical_alignment(VerticalAlignment::Center)
+            .size(20),
     )
     .width(Length::Fill)
     .height(Length::Fill)
     .center_y()
+    .center_x()
+    .style(style::Content)
     .into()
 }
 
