@@ -231,7 +231,6 @@ impl Application for MainWindow {
                 }
                 RowMessage::ToggleView => {
                     self.plugins_view.plugins[i].update(msg);
-                    println!("Clicked");
                     Command::none()
                 }
             },
