@@ -1,6 +1,6 @@
 use crate::core::{create_plugins_db, update_local_plugins};
 use crate::gui::style;
-use crate::gui::views::{About as AboutView, CatalogView, PluginsView, View};
+use crate::gui::views::{About as AboutView, CatalogMessage, CatalogView, PluginsView, View};
 use iced::{
     button, Align, Application, Button, Column, Command, Container, Element, HorizontalAlignment,
     Length, Row, Settings, Space, Text, VerticalAlignment,
@@ -42,6 +42,7 @@ pub enum Message {
     CatalogInputChanged(String),
     AmountFiltered(Amount),
     //PluginSearched(Vec<Plugin>),
+    CatalogAction(CatalogMessage),
 
     PluginAction(PluginMessage),
 }
@@ -161,7 +162,7 @@ impl Application for Lembas {
                             .into()
                     }
                     View::Catalog => {
-                        let main_container = catalog_view.view();
+                        let main_container = catalog_view.view().map(Message::CatalogAction);
                         Column::new()
                             .width(Length::Fill)
                             .push(navigation_container)

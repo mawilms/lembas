@@ -5,8 +5,8 @@ use crate::core::{
 };
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element, Length,
+    Row, Scrollable, Text, TextInput,
 };
 use std::path::Path;
 
