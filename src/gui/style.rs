@@ -60,13 +60,49 @@ impl container::StyleSheet for Content {
     }
 }
 
-pub struct PluginRow;
-impl container::StyleSheet for PluginRow {
+pub struct NavigationContainer;
+impl container::StyleSheet for NavigationContainer {
     fn style(&self) -> container::Style {
         container::Style {
             background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
+        }
+    }
+}
+
+pub enum PluginRow {
+    Enabled,
+    Disabled,
+}
+impl button::StyleSheet for PluginRow {
+    fn active(&self) -> button::Style {
+        match self {
+            Self::Enabled => button::Style {
+                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+                text_color: Color::WHITE,
+                ..button::Style::default()
+            },
+            Self::Disabled => button::Style {
+                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+                text_color: Color::WHITE,
+                ..button::Style::default()
+            },
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        match self {
+            Self::Enabled => button::Style {
+                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+                text_color: Color::WHITE,
+                ..self.active()
+            },
+            Self::Disabled => button::Style {
+                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+                text_color: Color::WHITE,
+                ..self.active()
+            },
         }
     }
 }

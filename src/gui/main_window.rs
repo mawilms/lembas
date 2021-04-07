@@ -13,7 +13,7 @@ use std::path::Path;
 
 use super::views::{
     catalog::Amount,
-    plugins::{PluginMessage, PluginState},
+    plugins::{PluginRow, RowMessage},
 };
 
 #[derive(Debug, Clone)]
@@ -52,7 +52,11 @@ pub enum Message {
     AmountFiltered(Amount),
     PluginSearched(Vec<Plugin>),
 
-    Plugin(PluginMessage),
+    // Plugin View
+    UpgradePressed(Plugin),
+    ToggleView,
+    ToggleRow(bool),
+    Plugin(usize, RowMessage),
 }
 
 impl Default for MainWindow {
@@ -75,12 +79,12 @@ impl Default for MainWindow {
 }
 
 impl MainWindow {
-    async fn install_plugin(plugin: PluginState) -> Vec<Plugin> {
-        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
+    async fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
+        let filename = format!("{}_{}.zip", &plugin.id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.plugin_id, &plugin.title
+            &plugin.id, &plugin.title
         );
 
         if installer::install(&path, &target).is_ok() {
@@ -94,7 +98,7 @@ impl MainWindow {
         }
     }
 
-    async fn update_plugins(plugins: Vec<PluginState>) -> Vec<Plugin> {
+    async fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
         // TODO Implement here
         let result: Vec<Plugin> = Vec::new();
         result
@@ -145,9 +149,9 @@ impl Application for MainWindow {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::AllPluginsLoaded(state) | Message::PluginSearched(state) => {
-                let mut states: Vec<PluginState> = Vec::new();
+                let mut states: Vec<PluginRow> = Vec::new();
                 for plugin in state {
-                    states.push(PluginState::new(
+                    states.push(PluginRow::new(
                         plugin.plugin_id,
                         &plugin.title,
                         &plugin.current_version,
@@ -159,9 +163,9 @@ impl Application for MainWindow {
                 Command::none()
             }
             Message::InstalledPluginsLoaded(state) => {
-                let mut states: Vec<PluginState> = Vec::new();
+                let mut states: Vec<PluginRow> = Vec::new();
                 for plugin in state {
-                    states.push(PluginState::new(
+                    states.push(PluginRow::new(
                         plugin.plugin_id,
                         &plugin.title,
                         &plugin.current_version,
@@ -203,17 +207,33 @@ impl Application for MainWindow {
                     Message::PluginSearched,
                 )
             }
-            Message::Plugin(PluginMessage::InstallPressed(plugin)) => {
-                let plugin = plugin.clone();
-                Command::perform(
-                    Self::install_plugin(plugin),
-                    Message::InstalledPluginsLoaded,
-                )
-            }
-            Message::Plugin(PluginMessage::UpgradePressed(_)) => {
-                println!("Upgrade");
+
+            Message::ToggleView => {
+                println!("Toggle");
                 Command::none()
             }
+            Message::ToggleRow(_) => {
+                println!("Row clicked");
+                Command::none()
+            }
+            Message::UpgradePressed(_) => Command::none(),
+            Message::Plugin(i, msg) => match msg {
+                RowMessage::UpgradePressed(plugin) => {
+                    let plugin = plugin.clone();
+                    Command::perform(
+                        Self::install_plugin(plugin),
+                        Message::InstalledPluginsLoaded,
+                    )
+                }
+                RowMessage::InstallPressed(_) => {
+                    println!("Upgrade");
+                    Command::none()
+                }
+                RowMessage::ToggleView => {
+                    self.plugins_view.plugins[i].update(msg);
+                    Command::none()
+                }
+            },
         }
     }
 
@@ -257,7 +277,7 @@ impl Application for MainWindow {
         let navigation_container = Container::new(row)
             .width(Length::Fill)
             .padding(10)
-            .style(style::PluginRow);
+            .style(style::NavigationContainer);
 
         match view {
             View::Plugins => {

@@ -5,11 +5,12 @@ use iced::{
     Scrollable, Text, TextInput,
 };
 
+// View that is rendered to show the user installed plugins
 #[derive(Default, Debug, Clone)]
 pub struct Plugins {
     plugin_scrollable_state: scrollable::State,
     input_value: String,
-    pub plugins: Vec<PluginState>,
+    pub plugins: Vec<PluginRow>,
     input: text_input::State,
     refresh_button: button::State,
     update_all_button: button::State,
@@ -17,6 +18,8 @@ pub struct Plugins {
 
 impl Plugins {
     pub fn view(&mut self) -> Element<Message> {
+        let Self { plugins, .. } = self;
+
         let refresh_button = Button::new(&mut self.refresh_button, Text::new("Refresh"))
             .on_press(Message::RefreshPressed)
             .padding(5)
@@ -25,7 +28,7 @@ impl Plugins {
             .on_press(Message::UpdateAllPressed)
             .padding(5)
             .style(style::PrimaryButton::Enabled);
-        let installed_plugins = Text::new(format!("{} plugins installed", self.plugins.len()));
+        let installed_plugins = Text::new(format!("{} plugins installed", plugins.len()));
         let search_plugins = TextInput::new(
             &mut self.input,
             "Search plugins...",
@@ -55,16 +58,20 @@ impl Plugins {
             .push(latest_version)
             .push(upgrade);
 
-        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
+        let plugins = self
+            .plugins
+            .iter_mut()
+            .enumerate()
+            .fold(Column::new().spacing(5), |col, (i, p)| {
+                col.push(p.view().map(move |msg| Message::Plugin(i, msg)))
+            });
+
+        let plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
+            .push(plugins)
             .spacing(5)
             .width(Length::Fill)
             .align_items(Align::Center)
             .style(style::Scrollable);
-
-        for plugin in &mut self.plugins {
-            plugins_scrollable =
-                plugins_scrollable.push(plugin.view().map(Message::Plugin));
-        }
 
         let content = Column::new()
             .width(Length::Fill)
@@ -83,105 +90,154 @@ impl Plugins {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct PluginState {
-    pub plugin_id: i32,
+// Single row that has a toggle effect to show additional data
+#[derive(Clone, Debug)]
+pub struct PluginRow {
+    pub id: i32,
     pub title: String,
     pub current_version: String,
     pub latest_version: String,
-    pub install_btn_state: button::State,
+
+    install_btn_state: button::State,
+    opened: bool,
+    toggle_view_btn: button::State,
 }
 
-#[derive(Debug, Clone)]
-pub enum PluginMessage {
-    UpgradePressed(PluginState),
-    InstallPressed(PluginState),
+#[derive(Clone, Debug)]
+pub enum RowMessage {
+    ToggleView,
+
+    UpgradePressed(PluginRow),
+    InstallPressed(PluginRow),
 }
 
-impl PluginState {
-    pub fn new(plugin_id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
+impl PluginRow {
+    pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
         Self {
-            plugin_id,
+            id,
             title: title.to_string(),
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),
             install_btn_state: button::State::default(),
+            toggle_view_btn: button::State::new(),
+            opened: false,
         }
     }
 
-    pub fn view(&mut self) -> Element<PluginMessage> {
-        let plugin = self.clone();
-
-        if self.current_version == self.latest_version {
-            let row = Row::new()
-                .align_items(Align::Center)
-                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                .push(Text::new("").width(Length::FillPortion(2)));
-            Container::new(row)
-                .width(Length::Fill)
-                .padding(5)
-                .style(style::PluginRow)
-                .into()
-        } else {
-            let row = Row::new()
-                .align_items(Align::Center)
-                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
-                        .on_press(PluginMessage::UpgradePressed(plugin))
-                        .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Enabled),
-                );
-            Container::new(row)
-                .width(Length::Fill)
-                .padding(5)
-                .style(style::PluginRow)
-                .into()
+    pub fn update(&mut self, message: RowMessage) {
+        match message {
+            RowMessage::ToggleView => {
+                if self.opened {
+                    self.opened = false;
+                } else {
+                    self.opened = true;
+                }
+            }
+            RowMessage::UpgradePressed(_) => {}
+            RowMessage::InstallPressed(_) => {}
         }
     }
 
-    pub fn catalog_view(&mut self) -> Element<PluginMessage> {
-        let plugin = self.clone();
+    pub fn view(&mut self) -> Element<RowMessage> {
+        let container = Container::new(Text::new("Hallo"))
+            .width(Length::Fill)
+            .padding(15);
 
-        if self.current_version.is_empty() {
-            let row = Row::new()
-                .align_items(Align::Center)
-                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+        if self.opened {
+            if self.current_version == self.latest_version {
+                Column::new()
+                    .push(
+                        Button::new(
+                            &mut self.toggle_view_btn,
+                            Row::new()
+                                .align_items(Align::Center)
+                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                                .push(
+                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
+                                )
+                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                                .push(Text::new("").width(Length::FillPortion(2))),
+                        )
+                        .padding(10)
+                        .width(Length::Fill)
+                        .on_press(RowMessage::ToggleView)
+                        .style(style::PluginRow::Enabled),
+                    )
+                    .push(container)
+                    .into()
+            } else {
+                let plugin = self.clone();
+
+                Column::new()
+                    .push(
+                        Button::new(
+                            &mut self.toggle_view_btn,
+                            Row::new()
+                                .align_items(Align::Center)
+                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                                .push(
+                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
+                                )
+                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                                .push(
+                                    Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
+                                        .on_press(RowMessage::UpgradePressed(plugin))
+                                        .width(Length::FillPortion(2))
+                                        .style(style::InstallButton::Enabled)
+                                        .width(Length::FillPortion(2)),
+                                ),
+                        )
+                        .padding(10)
+                        .width(Length::Fill)
+                        .on_press(RowMessage::ToggleView)
+                        .style(style::PluginRow::Enabled),
+                    )
+                    .push(container)
+                    .into()
+            }
+        } else if self.current_version == self.latest_version {
+            Column::new()
                 .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Install"))
-                        .on_press(PluginMessage::InstallPressed(plugin))
-                        .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Enabled),
-                );
-
-            Container::new(row)
-                .width(Length::Fill)
-                .padding(5)
-                .style(style::PluginRow)
+                    Button::new(
+                        &mut self.toggle_view_btn,
+                        Row::new()
+                            .align_items(Align::Center)
+                            .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
+                            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                            .push(Text::new("").width(Length::FillPortion(2))),
+                    )
+                    .padding(10)
+                    .width(Length::Fill)
+                    .on_press(RowMessage::ToggleView)
+                    .style(style::PluginRow::Enabled),
+                )
                 .into()
         } else {
-            let row = Row::new()
-                .align_items(Align::Center)
-                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                .push(
-                    Button::new(&mut self.install_btn_state, Text::new("Installed"))
-                        .on_press(PluginMessage::InstallPressed(plugin))
-                        .width(Length::FillPortion(2))
-                        .style(style::InstallButton::Disabled),
-                );
+            let plugin = self.clone();
 
-            Container::new(row)
-                .width(Length::Fill)
-                .padding(5)
-                .style(style::PluginRow)
+            Column::new()
+                .push(
+                    Button::new(
+                        &mut self.toggle_view_btn,
+                        Row::new()
+                            .align_items(Align::Center)
+                            .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
+                            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                            .push(
+                                Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
+                                    .on_press(RowMessage::UpgradePressed(plugin))
+                                    .width(Length::FillPortion(2))
+                                    .style(style::InstallButton::Enabled)
+                                    .width(Length::FillPortion(2)),
+                            ),
+                    )
+                    .padding(10)
+                    .width(Length::Fill)
+                    .on_press(RowMessage::ToggleView)
+                    .style(style::PluginRow::Enabled),
+                )
                 .into()
         }
     }
