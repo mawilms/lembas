@@ -56,7 +56,7 @@ pub enum Message {
     UpgradePressed(Plugin),
     ToggleView,
     ToggleRow(bool),
-    Plugin(PluginMessage),
+    Plugin(usize, PluginMessage),
 }
 
 impl Default for MainWindow {
@@ -207,17 +207,7 @@ impl Application for MainWindow {
                     Message::PluginSearched,
                 )
             }
-            Message::Plugin(PluginMessage::InstallPressed(plugin)) => {
-                let plugin = plugin.clone();
-                Command::perform(
-                    Self::install_plugin(plugin),
-                    Message::InstalledPluginsLoaded,
-                )
-            }
-            Message::Plugin(PluginMessage::UpgradePressed(_)) => {
-                println!("Upgrade");
-                Command::none()
-            }
+
             Message::ToggleView => {
                 println!("Toggle");
                 Command::none()
@@ -227,6 +217,19 @@ impl Application for MainWindow {
                 Command::none()
             }
             Message::UpgradePressed(_) => Command::none(),
+            Message::Plugin(_, msg) => match msg {
+                PluginMessage::UpgradePressed(plugin) => {
+                    let plugin = plugin.clone();
+                    Command::perform(
+                        Self::install_plugin(plugin),
+                        Message::InstalledPluginsLoaded,
+                    )
+                }
+                PluginMessage::InstallPressed(_) => {
+                    println!("Upgrade");
+                    Command::none()
+                }
+            },
         }
     }
 

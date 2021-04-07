@@ -58,53 +58,20 @@ impl Plugins {
             .push(latest_version)
             .push(upgrade);
 
-        let mut plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
+        let plugins = self
+            .plugins
+            .iter_mut()
+            .enumerate()
+            .fold(Column::new().spacing(5), |col, (i, p)| {
+                col.push(p.view().map(move |msg| Message::Plugin(i, msg)))
+            });
+
+        let plugins_scrollable = Scrollable::new(&mut self.plugin_scrollable_state)
+            .push(plugins)
             .spacing(5)
             .width(Length::Fill)
             .align_items(Align::Center)
             .style(style::Scrollable);
-
-        let mut plugin_row: PluginRow;
-        // for plugin in plugins {
-        //     plugins_scrollable = plugins_scrollable.push(
-        //         PluginRow::new(
-        //             plugin.plugin_id,
-        //             plugin.title.clone(),
-        //             plugin.current_version.clone(),
-        //             plugin.latest_version.clone(),
-        //         )
-        //         .view(),
-        //     );
-        // }
-
-        // !!! This section causes problems. It's planned to render the toggleable rows inside the scrollable and to handle click events !!!
-        for plugin in plugins {
-            let pla = plugin.clone();
-            let mut plugin_row = PluginRow::new(
-                pla.plugin_id,
-                pla.title,
-                pla.current_version,
-                pla.latest_version,
-            );
-            plugins_scrollable = plugins_scrollable.push(plugin_row.view());
-        }
-
-        // let bla = plugins.into_iter().map(|plugin| {
-        //     plugins_scrollable.push(
-        //         PluginRow::new(
-        //             plugin.plugin_id,
-        //             plugin.title.clone(),
-        //             plugin.current_version.clone(),
-        //             plugin.latest_version.clone(),
-        //         )
-        //         .view(),
-        //     )
-        // });
-
-        // for plugin in &mut self.plugins {
-        //     plugins_scrollable =
-        //         plugins_scrollable.push(plugin.view().map(Message::Plugin));
-        // }
 
         let content = Column::new()
             .width(Length::Fill)
@@ -114,7 +81,6 @@ impl Plugins {
             .push(plugin_panel)
             .push(plugins_scrollable);
 
-        /// !!! Here happens the error: cannot return value referencing local variable `plugin_row` returns a value referencing data owned by the current function !!!
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
