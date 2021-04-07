@@ -110,7 +110,6 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
-        println!("Hallo");
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
@@ -123,7 +122,6 @@ impl Plugins {
                     }
                     RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
-                        println!("Boom");
                         state.plugins[index].update(msg);
                     }
                 },
@@ -265,7 +263,6 @@ impl PluginRow {
     }
 
     pub fn update(&mut self, message: RowMessage) {
-        println!("Hallo");
         match message {
             RowMessage::ToggleView => {
                 if self.opened {

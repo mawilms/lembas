@@ -102,14 +102,7 @@ impl Application for Lembas {
                 Message::AboutPressed => {
                     state.view = View::About;
                 }
-                Message::PluginAction(msg) => match msg {
-                    PluginMessage::Plugin(index, message) => match message {
-                        RowMessage::ToggleView => state.plugins_view.pl
-                        super::views::plugins::RowMessage::UpgradePressed(_) => {}
-                        super::views::plugins::RowMessage::InstallPressed(_) => {}
-                    },
-                    _ => {}
-                },
+                Message::PluginAction(msg) => state.plugins_view.update(msg),
                 _ => {}
             },
         }
