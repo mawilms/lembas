@@ -1,9 +1,15 @@
-use crate::gui::main_window::Message;
+use crate::core::config::CONFIGURATION;
+use crate::core::{
+    get_installed_plugins, get_plugin, get_plugins, installer, synchronizer::install_plugin,
+    update_local_plugins, Plugin,
+};
+//use crate::gui::main_window::Message;
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
 };
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -27,8 +33,129 @@ pub struct State {
     update_all_button: button::State,
 }
 
+#[derive(Debug, Clone)]
+pub enum PluginMessage {
+    InstalledPluginsLoaded(Vec<Plugin>),
+    AllPluginsLoaded(Vec<Plugin>),
+
+    // Navigation View
+    PluginInputChanged(String),
+    RefreshPressed,
+    UpdateAllPressed,
+
+    // Plugin View
+    Plugin(usize, RowMessage),
+}
+
 impl Plugins {
-    pub fn view(&mut self) -> Element<Message> {
+    async fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
+        let filename = format!("{}_{}.zip", &plugin.id, &plugin.title);
+        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+        let target = format!(
+            "https://www.lotrointerface.com/downloads/download{}-{}",
+            &plugin.id, &plugin.title
+        );
+
+        if installer::install(&path, &target).is_ok() {
+            installer::zip_operation(path.as_path());
+            install_plugin(&plugin);
+            get_installed_plugins()
+        } else {
+            // TODO: Implement proper error handling
+            let result: Vec<Plugin> = Vec::new();
+            result
+        }
+    }
+
+    async fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
+        // TODO Implement here
+        let result: Vec<Plugin> = Vec::new();
+        result
+    }
+
+    pub async fn load_installed_plugins() -> Vec<Plugin> {
+        get_installed_plugins()
+    }
+
+    async fn load_plugins() -> Vec<Plugin> {
+        get_plugins()
+    }
+
+    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+        get_plugin(&name)
+    }
+
+    async fn refresh_db() -> Result<(), ApplicationError> {
+        match update_local_plugins() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                println!("{:?}", &error);
+                Err(ApplicationError::Synchronize)
+            }
+        }
+    }
+
+    pub fn update(&mut self, message: PluginMessage) {
+        match self {
+            Plugins::Loading => {}
+            Plugins::Loaded(state) => match message {
+                PluginMessage::PluginInputChanged(_) => {}
+                PluginMessage::RefreshPressed => {}
+                PluginMessage::UpdateAllPressed => {
+                    let plugins = state.plugins.clone();
+                    Command::perform(
+                        Self::update_plugins(plugins),
+                        PluginMessage::InstalledPluginsLoaded,
+                    );
+                }
+                PluginMessage::Plugin(index, msg) => match msg {
+                    RowMessage::UpgradePressed(plugin) => {
+                        let plugin = plugin.clone();
+                        Command::perform(
+                            Self::install_plugin(plugin),
+                            PluginMessage::InstalledPluginsLoaded,
+                        );
+                    }
+                    RowMessage::InstallPressed(_) => {
+                        println!("Upgrade");
+                        //Command::none()
+                    }
+                    RowMessage::ToggleView => {
+                        state.plugins[index].update(msg);
+                        //Command::none()
+                    }
+                },
+                PluginMessage::InstalledPluginsLoaded(state) => {
+                    let mut states: Vec<PluginRow> = Vec::new();
+                    for plugin in state {
+                        states.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ));
+                    }
+                    //self.plugins_view.s
+                    // self.view = View::Plugins;
+                }
+                PluginMessage::AllPluginsLoaded(state) => {
+                    let mut states: Vec<PluginRow> = Vec::new();
+                    for plugin in state {
+                        states.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ));
+                    }
+                    // self.catalog_view.plugins = states;
+                    // self.view = View::Catalog;
+                }
+            },
+        }
+    }
+
+    pub fn view(&mut self) -> Element<PluginMessage> {
         match self {
             Plugins::Loading => loading_message(),
             Plugins::Loaded(State {
@@ -39,21 +166,20 @@ impl Plugins {
                 refresh_button,
                 update_all_button,
             }) => {
-                let refresh_button = Button::new(&mut refresh_button, Text::new("Refresh"))
-                    .on_press(Message::RefreshPressed)
+                let refresh_button = Button::new(refresh_button, Text::new("Refresh"))
+                    .on_press(PluginMessage::RefreshPressed)
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
-                let update_all_button =
-                    Button::new(&mut update_all_button, Text::new("Update all"))
-                        .on_press(Message::UpdateAllPressed)
-                        .padding(5)
-                        .style(style::PrimaryButton::Enabled);
+                let update_all_button = Button::new(update_all_button, Text::new("Update all"))
+                    .on_press(PluginMessage::UpdateAllPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
                 let installed_plugins = Text::new(format!("{} plugins installed", plugins.len()));
                 let search_plugins = TextInput::new(
-                    &mut input,
+                    input,
                     "Search plugins...",
                     &input_value,
-                    Message::PluginInputChanged,
+                    PluginMessage::PluginInputChanged,
                 );
 
                 let control_panel = Row::new()
@@ -82,10 +208,10 @@ impl Plugins {
                     .iter_mut()
                     .enumerate()
                     .fold(Column::new().spacing(5), |col, (i, p)| {
-                        col.push(p.view().map(move |msg| Message::Plugin(i, msg)))
+                        col.push(p.view().map(move |msg| PluginMessage::Plugin(i, msg)))
                     });
 
-                let plugins_scrollable = Scrollable::new(&mut plugin_scrollable_state)
+                let plugins_scrollable = Scrollable::new(plugin_scrollable_state)
                     .push(plugins)
                     .spacing(5)
                     .width(Length::Fill)
@@ -111,9 +237,9 @@ impl Plugins {
     }
 }
 
-fn loading_message<'a>() -> Element<'a, Message> {
+fn loading_message<'a>() -> Element<'a, PluginMessage> {
     Container::new(
-        Text::new("Loading...")
+        Text::new("Plugins loading...")
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(50),
     )
@@ -274,4 +400,11 @@ impl PluginRow {
                 .into()
         }
     }
+}
+
+#[derive(Debug, Clone)]
+enum ApplicationError {
+    Load,
+    Install,
+    Synchronize,
 }
