@@ -6,7 +6,10 @@ use iced::{
     Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 
-use super::views::{catalog::Amount, plugins::PluginMessage};
+use super::views::{
+    catalog::Amount,
+    plugins::{PluginMessage, RowMessage},
+};
 
 #[derive(Debug, Clone)]
 pub enum Lembas {
@@ -99,6 +102,14 @@ impl Application for Lembas {
                 Message::AboutPressed => {
                     state.view = View::About;
                 }
+                Message::PluginAction(msg) => match msg {
+                    PluginMessage::Plugin(index, message) => match message {
+                        RowMessage::ToggleView => state.plugins_view.pl
+                        super::views::plugins::RowMessage::UpgradePressed(_) => {}
+                        super::views::plugins::RowMessage::InstallPressed(_) => {}
+                    },
+                    _ => {}
+                },
                 _ => {}
             },
         }
