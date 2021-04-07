@@ -5,7 +5,7 @@ use iced::{
     Scrollable, Text, TextInput,
 };
 
-use super::plugins::PluginState;
+use super::plugins::PluginRow;
 
 #[derive(Default, Debug, Clone)]
 pub struct Catalog {
@@ -15,7 +15,7 @@ pub struct Catalog {
     plugin_scrollable_state: scrollable::State,
     pub input_value: String,
 
-    pub plugins: Vec<PluginState>,
+    pub plugins: Vec<PluginRow>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,15 +91,15 @@ impl Catalog {
         //     .align_items(Align::Center)
         //     .style(style::Scrollable); TODO: Scrollable funzt nicht mehr
 
-        let plugins = self
-            .plugins
-            .iter_mut()
-            .enumerate()
-            .fold(Column::new(), |mut col, (i, p)| {
-                col.push(p.catalog_view().map(move |msg| Message::Plugin(i, msg)))
-            });
+        // let plugins = self
+        //     .plugins
+        //     .iter_mut()
+        //     .enumerate()
+        //     .fold(Column::new(), |mut col, (i, p)| {
+        //         col.push(p.catalog_view().map(move |msg| Message::Plugin(i, msg)))
+        //     });
 
-        let bla = Container::new(plugins);
+        // let bla = Container::new(plugins);
 
         // plugins_scrollable.push(bla);
 
@@ -108,8 +108,8 @@ impl Catalog {
             .spacing(10)
             .align_items(Align::Center)
             .push(row)
-            .push(plugin_panel)
-            .push(bla);
+            .push(plugin_panel);
+        //.push(bla);
 
         Container::new(content)
             .width(Length::Fill)
