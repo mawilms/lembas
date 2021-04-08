@@ -1,4 +1,4 @@
-use dirs::{data_dir, home_dir};
+use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
 use std::fs;
 use std::path::Path;
@@ -10,8 +10,9 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub settings: String,
-    pub plugins: String,
-    pub plugins_file: String,
+    pub plugins_dir: String,
+    pub db_file: String,
+    pub cache_dir: String,
 }
 
 impl Default for Config {
@@ -30,8 +31,14 @@ impl Default for Config {
 
         Self {
             settings: settings_path.into_os_string().into_string().unwrap(),
-            plugins: plugins_path.into_os_string().into_string().unwrap(),
-            plugins_file: path.into_os_string().into_string().unwrap(),
+            plugins_dir: plugins_path.into_os_string().into_string().unwrap(),
+            db_file: path.into_os_string().into_string().unwrap(),
+            cache_dir: cache_dir()
+                .unwrap()
+                .join("lembas")
+                .into_os_string()
+                .into_string()
+                .unwrap(),
         }
     }
 }
