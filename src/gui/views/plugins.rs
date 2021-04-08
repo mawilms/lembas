@@ -47,7 +47,6 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
-    Loading,
     InstalledPluginsLoaded(Vec<Plugin>),
     AllPluginsLoaded(Vec<Plugin>),
     PluginsSynchronized(Result<(), ApplicationError>),
@@ -62,7 +61,7 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    async fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
+    fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
         let plugin = Plugin::new(
             plugin.id,
             &plugin.title,
@@ -87,7 +86,7 @@ impl Plugins {
         }
     }
 
-    async fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
+    fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
         // TODO Implement here
         let result: Vec<Plugin> = Vec::new();
         result
@@ -97,15 +96,15 @@ impl Plugins {
         get_installed_plugins()
     }
 
-    async fn load_plugins() -> Vec<Plugin> {
+    fn load_plugins() -> Vec<Plugin> {
         get_plugins()
     }
 
-    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+    fn get_catalog_plugin(name: String) -> Vec<Plugin> {
         get_plugin(&name)
     }
 
-    async fn refresh_db() -> Result<(), ApplicationError> {
+    fn refresh_db() -> Result<(), ApplicationError> {
         match update_local_plugins() {
             Ok(_) => Ok(()),
             Err(error) => {
@@ -120,11 +119,7 @@ impl Plugins {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
                     RowMessage::UpgradePressed(plugin) => {
-                        let plugin = plugin.clone();
-                        Command::perform(
-                            Self::install_plugin(plugin),
-                            PluginMessage::InstalledPluginsLoaded,
-                        );
+                        Self::install_plugin(plugin);
                     }
                     RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
@@ -151,6 +146,12 @@ impl Plugins {
                         plugins: states,
                         ..State::default()
                     });
+                }
+                PluginMessage::RefreshPressed => {
+                    Self::refresh_db();
+                }
+                PluginMessage::UpdateAllPressed => {
+                    println!("Update all");
                 }
                 _ => {}
             },
