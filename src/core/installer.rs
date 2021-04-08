@@ -10,7 +10,6 @@ pub struct Installer {}
 impl Installer {
     #[tokio::main]
     pub async fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        // Daten für Download, Extrahieren, Löschen und Eintrag in DB
         let response = reqwest::get(&format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.plugin_id, &plugin.title
@@ -37,17 +36,13 @@ impl Installer {
         Ok(())
     }
 
-    pub fn update(plugin: &Plugin) {}
-
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
             .join("lembas")
             .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
-        let file = File::open(cache_path)?;
+        let file = File::open(&cache_path)?;
         let mut zip_archive = zip::ZipArchive::new(file)?;
         zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins_dir))?;
-
-        fs::remove_file(cache_path)?;
 
         Ok(())
     }
