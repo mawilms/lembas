@@ -213,7 +213,7 @@ impl Lembas {
                 decorations: true,
                 ..iced::window::Settings::default()
             },
-            default_text_size: 16,
+            default_text_size: 18,
             // https://github.com/hecrj/iced/issues/537
             antialiasing: false,
             ..iced::Settings::default()
