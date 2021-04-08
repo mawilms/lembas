@@ -8,8 +8,8 @@ use crate::gui::views::About as AboutView;
 pub use about::About;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 use iced::{
-    button, Align, Application, Button, Column, Command, Container, Element, HorizontalAlignment,
-    Length, Row, Settings, Space, Text, VerticalAlignment,
+    button, window::Settings as Window, Align, Application, Button, Column, Command, Container,
+    Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
 
@@ -206,8 +206,18 @@ impl Application for Lembas {
 
 impl Lembas {
     pub fn start() {
-        let mut settings: Settings<()> = Settings::default();
-        settings.window.size = (900, 620);
+        let settings: Settings<()> = Settings {
+            window: Window {
+                size: (900, 620),
+                resizable: true,
+                decorations: true,
+                ..iced::window::Settings::default()
+            },
+            default_text_size: 16,
+            // https://github.com/hecrj/iced/issues/537
+            antialiasing: false,
+            ..iced::Settings::default()
+        };
         //settings.default_font = Some(RING_BEARER);
         Lembas::run(settings).unwrap_err();
     }
