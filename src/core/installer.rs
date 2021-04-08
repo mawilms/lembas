@@ -8,12 +8,16 @@ use super::Plugin;
 pub struct Installer {}
 
 impl Installer {
-    /// Downloads and extracts the specified plugin
     #[tokio::main]
-    pub async fn install(path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
-        let response = reqwest::get(target).await?;
+    pub async fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        // Daten für Download, Extrahieren, Löschen und Eintrag in DB
+        let response = reqwest::get(&format!(
+            "https://www.lotrointerface.com/downloads/download{}-{}",
+            &plugin.plugin_id, &plugin.title
+        ))
+        .await?;
 
-        let mut file = match File::create(&path) {
+        let mut file = match File::create(&format!("{}_{}.zip", &plugin.plugin_id, &plugin.title)) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(file) => file,
         };
@@ -32,13 +36,16 @@ impl Installer {
 
     pub fn update(plugin: &Plugin) {}
 
-    pub fn zip_operation(path: &Path) {
-        let file = File::open(path).expect("Couldn't read file");
-        let mut zip_archive = zip::ZipArchive::new(file).expect("Couldn't read the zip archive");
-        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins))
-            .expect("Couldn't extract plugin");
+    pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let path = Path::new(&CONFIGURATION.plugins)
+            .join(&format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+        let file = File::open(path)?;
+        let mut zip_archive = zip::ZipArchive::new(file)?;
+        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins))?;
 
-        fs::remove_file(path).expect("Couldn't delete old archive");
+        fs::remove_file(path)?;
+
+        Ok(())
     }
 }
 
