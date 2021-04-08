@@ -5,8 +5,8 @@ use crate::core::{
 };
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element, Length,
-    Row, Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
+    Scrollable, Text, TextInput,
 };
 use std::path::Path;
 
@@ -68,22 +68,8 @@ impl Plugins {
             &plugin.current_version,
             &plugin.latest_version,
         );
-        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
-        let path = Path::new(&CONFIGURATION.plugins_dir).join(&filename);
-        let target = format!(
-            "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.plugin_id, &plugin.title
-        );
-
-        if Installer::install(&path, &target).is_ok() {
-            Installer::zip_operation(path.as_path());
-            install_plugin(&plugin);
-            get_installed_plugins()
-        } else {
-            // TODO: Implement proper error handling
-            let result: Vec<Plugin> = Vec::new();
-            result
-        }
+        let result: Vec<Plugin> = Vec::new();
+        result
     }
 
     fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
