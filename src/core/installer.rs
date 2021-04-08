@@ -1,5 +1,5 @@
 use crate::core::config::CONFIGURATION;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 
@@ -8,12 +8,18 @@ use super::Plugin;
 pub struct Installer {}
 
 impl Installer {
-    /// Downloads and extracts the specified plugin
     #[tokio::main]
-    pub async fn install(path: &PathBuf, target: &str) -> Result<(), Box<dyn Error>> {
-        let response = reqwest::get(target).await?;
+    pub async fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let response = reqwest::get(&format!(
+            "https://www.lotrointerface.com/downloads/download{}-{}",
+            &plugin.plugin_id, &plugin.title
+        ))
+        .await?;
 
-        let mut file = match File::create(&path) {
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+        let mut file = match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(file) => file,
         };
@@ -24,21 +30,31 @@ impl Installer {
     }
 
     pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
-        let path = Path::new(&CONFIGURATION.plugins).join(name);
+        let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
         fs::remove_file(path)?;
 
         Ok(())
     }
 
-    pub fn update(plugin: &Plugin) {}
+    pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+        let file = File::open(&cache_path)?;
+        let mut zip_archive = zip::ZipArchive::new(file)?;
+        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins_dir))?;
 
-    pub fn zip_operation(path: &Path) {
-        let file = File::open(path).expect("Couldn't read file");
-        let mut zip_archive = zip::ZipArchive::new(file).expect("Couldn't read the zip archive");
-        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins))
-            .expect("Couldn't extract plugin");
+        Ok(())
+    }
 
-        fs::remove_file(path).expect("Couldn't delete old archive");
+    pub fn delete_archive(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+
+        fs::remove_file(cache_path)?;
+
+        Ok(())
     }
 }
 
