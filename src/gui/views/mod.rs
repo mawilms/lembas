@@ -120,6 +120,7 @@ impl Application for Lembas {
                     state.view = View::About;
                 }
                 Message::PluginAction(msg) => state.plugins_view.update(msg),
+                Message::CatalogAction(msg) => state.catalog_view.update(msg),
                 _ => {}
             },
         }

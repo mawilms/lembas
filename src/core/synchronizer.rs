@@ -48,7 +48,7 @@ impl Synchronizer {
         Ok(())
     }
 
-    fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+    pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let existing_plugin = Self::get_plugin(&plugin.title);
         if existing_plugin.len() == 1 {
             Self::update_plugin(&plugin);
