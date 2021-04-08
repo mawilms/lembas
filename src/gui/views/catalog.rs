@@ -1,4 +1,4 @@
-use crate::core::get_plugins;
+use crate::core::Synchronizer;
 use crate::gui::style;
 use iced::{
     button, pick_list, scrollable, text_input, Align, Button, Column, Container, Element, Length,
@@ -12,7 +12,7 @@ pub enum Catalog {
 
 impl Default for Catalog {
     fn default() -> Self {
-        let all_plugins = get_plugins();
+        let all_plugins = Synchronizer::get_plugins();
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in all_plugins {
             plugins.push(PluginRow::new(
@@ -128,7 +128,7 @@ impl Catalog {
                 let plugins = plugins
                     .iter_mut()
                     .enumerate()
-                    .fold(Column::new(), |col, (i, p)| {
+                    .fold(Column::new().spacing(5), |col, (i, p)| {
                         col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
                     });
 

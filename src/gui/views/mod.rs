@@ -2,7 +2,7 @@ pub mod about;
 pub mod catalog;
 pub mod plugins;
 
-use crate::core::{create_plugins_db, update_local_plugins};
+use crate::core::Synchronizer;
 use crate::gui::style;
 use crate::gui::views::About as AboutView;
 pub use about::About;
@@ -69,8 +69,8 @@ pub enum Message {
 
 impl Default for State {
     fn default() -> Self {
-        create_plugins_db();
-        update_local_plugins();
+        Synchronizer::create_plugins_db();
+        Synchronizer::update_local_plugins();
 
         Self {
             view: View::default(),
