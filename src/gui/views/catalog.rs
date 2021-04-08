@@ -96,7 +96,7 @@ impl Catalog {
                             &plugin.latest_version,
                         );
                         match Installer::download(&plugin) {
-                            // TODO: Version wird noch nicht automatisch eingetragen. Kein async
+                            // TODO: Async fehlt noch
                             Ok(_) => {
                                 state.plugins[index].status = "Downloaded".to_string();
                                 match Installer::extract(&plugin) {
@@ -105,8 +105,17 @@ impl Catalog {
                                         match Installer::delete_archive(&plugin) {
                                             Ok(_) => match Synchronizer::insert_plugin(&plugin) {
                                                 Ok(_) => {
-                                                    state.plugins[index].status =
-                                                        "Installed".to_string();
+                                                    let plugins = Synchronizer::get_plugins();
+                                                    let mut rows: Vec<PluginRow> = Vec::new();
+                                                    for element in plugins {
+                                                        rows.push(PluginRow::new(
+                                                            element.plugin_id,
+                                                            &element.title,
+                                                            &element.current_version,
+                                                            &element.latest_version,
+                                                        ))
+                                                    }
+                                                    state.plugins = rows;
                                                 }
                                                 Err(_) => {
                                                     state.plugins[index].status =
@@ -363,7 +372,7 @@ impl PluginRow {
                     )
                     .padding(10)
                     .width(Length::Fill)
-                    .on_press(RowMessage::InstallPressed(plugin)) // TODO: Toggle methode wieder einbinden. Aus Testzwecken zurzeit Install Message
+                    .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
                 .into()
