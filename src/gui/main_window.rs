@@ -1,20 +1,21 @@
-use crate::core::config::CONFIGURATION;
-use crate::core::{
-    create_plugins_db, get_installed_plugins, get_plugin, get_plugins, installer,
-    synchronizer::install_plugin, update_local_plugins, Plugin,
-};
+use crate::core::{create_plugins_db, update_local_plugins};
 use crate::gui::style;
-use crate::gui::views::{About as AboutView, Catalog as CatalogView, Plugins as PluginsView, View};
+use crate::gui::views::{About as AboutView, CatalogMessage, CatalogView, PluginsView, View};
 use iced::{
-    button, Align, Application, Button, Column, Command, Container, Element, Length, Row, Settings,
-    Space, Text,
+    button, Align, Application, Button, Column, Command, Container, Element, HorizontalAlignment,
+    Length, Row, Settings, Space, Text, VerticalAlignment,
 };
-use std::path::Path;
 
-use super::views::catalog::Amount;
+use super::views::{catalog::Amount, plugins::PluginMessage};
 
 #[derive(Debug, Clone)]
-pub struct MainWindow {
+pub enum Lembas {
+    Loading,
+    Loaded(State),
+}
+
+#[derive(Debug, Clone)]
+pub struct State {
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -29,9 +30,7 @@ pub struct MainWindow {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    InstalledPluginsLoaded(Vec<Plugin>),
-    AllPluginsLoaded(Vec<Plugin>),
-    PluginsSynchronized(Result<(), ApplicationError>),
+    Loaded(State),
 
     // Navigation Panel
     PluginsPressed,
@@ -39,24 +38,16 @@ pub enum Message {
     AboutPressed,
     SettingsPressed,
 
-    // Navigation View
-    PluginInputChanged(String),
-    RefreshPressed,
-    UpdateAllPressed,
-
     // Catalog View
     CatalogInputChanged(String),
     AmountFiltered(Amount),
-    PluginSearched(Vec<Plugin>),
-    InstallPressed(Plugin),
+    //PluginSearched(Vec<Plugin>),
+    CatalogAction(CatalogMessage),
 
-    // Plugin View
-    UpgradePressed(Plugin),
-    PluginDownloaded(Result<(String, Plugin), String>),
-    PluginExtracted(Result<String, String>),
+    PluginAction(PluginMessage),
 }
 
-impl Default for MainWindow {
+impl Default for State {
     fn default() -> Self {
         create_plugins_db();
         update_local_plugins();
@@ -75,94 +66,15 @@ impl Default for MainWindow {
     }
 }
 
-impl MainWindow {
-    // async fn download_plugin(plugin: Plugin) -> Result<String, String> {
-    //     let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
-    //     let path = Path::new(&CONFIGURATION.plugins).join(&filename);
-    //     let target = format!(
-    //         "https://www.lotrointerface.com/downloads/download{}-{}",
-    //         &plugin.plugin_id, &plugin.title
-    //     );
-
-    //     if installer::install(&path, &target).is_ok() {
-    //         installer::zip_operation(path.as_path());
-    //         install_plugin(&plugin);
-    //         get_installed_plugins();
-    //         Ok(String::from("Bla"))
-    //     } else {
-    //         // TODO: Implement proper error handling
-    //         let result: Vec<Plugin> = Vec::new();
-    //         result;
-    //         Err(String::from("Bla"))
-    //     }
-    // }
-
-    async fn download_plugin(plugin: Plugin) -> Result<(String, Plugin), String> {
-        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
-        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
-        let target = format!(
-            "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.plugin_id, &plugin.title
-        );
-        if installer::install(&path, &target).is_ok() {
-            Ok((String::from("Downloaded"), plugin))
-        } else {
-            Err(String::from("Download failed"))
-        }
-    }
-
-    async fn extract_plugin(plugin: Plugin) -> Result<String, String> {
-        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
-        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
-        installer::zip_operation(path.as_path());
-        match install_plugin(&plugin) {
-            Ok(state) => Ok(String::from("Extracted")),
-            Err(_) => Err(String::from("Extraction failed")),
-        }
-        // get_installed_plugins();
-    }
-
-    async fn update_plugins(plugins: Vec<Plugin>) -> Vec<Plugin> {
-        // TODO Implement here
-        let result: Vec<Plugin> = Vec::new();
-        result
-    }
-
-    async fn load_installed_plugins() -> Vec<Plugin> {
-        get_installed_plugins()
-    }
-
-    async fn load_plugins() -> Vec<Plugin> {
-        get_plugins()
-    }
-
-    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        get_plugin(&name)
-    }
-
-    async fn refresh_db() -> Result<(), ApplicationError> {
-        match update_local_plugins() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                println!("{:?}", &error);
-                Err(ApplicationError::Synchronize)
-            }
-        }
-    }
-}
-
-impl Application for MainWindow {
+impl Application for Lembas {
     type Executor = iced::executor::Default;
     type Message = Message;
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
-            Self::default(),
-            Command::perform(
-                Self::load_installed_plugins(),
-                Message::InstalledPluginsLoaded,
-            ),
+            Self::Loading,
+            Command::perform(Self::init_application(), Message::Loaded),
         )
     }
 
@@ -171,158 +83,131 @@ impl Application for MainWindow {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        match message {
-            Message::AllPluginsLoaded(state) | Message::PluginSearched(state) => {
-                self.catalog_view.plugins = state;
-                self.view = View::Catalog;
-                Command::none()
-            }
-            Message::InstalledPluginsLoaded(state) => {
-                self.plugins_view.plugins = state;
-                self.view = View::Plugins;
-                Command::none()
-            }
-            Message::PluginsPressed => Command::perform(
-                Self::load_installed_plugins(),
-                Message::InstalledPluginsLoaded,
-            ),
-            Message::CatalogPressed => {
-                Command::perform(Self::load_plugins(), Message::AllPluginsLoaded)
-            }
-            Message::AboutPressed => {
-                self.view = View::About;
-                Command::none()
-            }
-            Message::SettingsPressed | Message::PluginsSynchronized(_) => Command::none(),
-            Message::PluginInputChanged(_) => Command::none(),
-            Message::RefreshPressed => {
-                Command::perform(Self::refresh_db(), Message::PluginsSynchronized)
-            }
-            Message::UpdateAllPressed => {
-                let plugins = self.plugins_view.plugins.clone();
-                Command::perform(
-                    Self::update_plugins(plugins),
-                    Message::InstalledPluginsLoaded,
-                )
-            }
-            Message::AmountFiltered(_) => Command::none(),
-            Message::CatalogInputChanged(state) => {
-                self.catalog_view.input_value = state;
-                Command::perform(
-                    Self::get_catalog_plugin(self.catalog_view.input_value.clone()),
-                    Message::PluginSearched,
-                )
-            }
-            Message::InstallPressed(plugin) => {
-                let plugin = plugin.clone();
-                Command::perform(Self::download_plugin(plugin), Message::PluginDownloaded)
-            }
-            Message::UpgradePressed(_) => {
-                println!("Upgrade");
-                Command::none()
-            }
-            Message::PluginDownloaded(state) => match state {
-                Ok((msg, plugin)) => {
-                    println!("{}", msg);
-                    Command::perform(Self::extract_plugin(plugin), Message::PluginExtracted)
+        match self {
+            Lembas::Loading => {
+                if let Message::Loaded(_state) = message {
+                    *self = Lembas::Loaded(State { ..State::default() })
                 }
-                Err(msg) => {
-                    println!("{}", msg);
-                    Command::none()
+            }
+            Lembas::Loaded(state) => match message {
+                Message::PluginsPressed => {
+                    state.view = View::Plugins;
                 }
-            },
-            Message::PluginExtracted(state) => match state {
-                Ok(msg) | Err(msg) => {
-                    println!("{}", msg);
-                    Command::none()
+                Message::CatalogPressed => {
+                    state.view = View::Catalog;
                 }
+                Message::AboutPressed => {
+                    state.view = View::About;
+                }
+                Message::PluginAction(msg) => state.plugins_view.update(msg),
+                _ => {}
             },
         }
+        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
-        let Self {
-            view,
-            plugins_view,
-            catalog_view,
-            about_view,
-            ..
-        } = self;
+        match self {
+            Lembas::Loading => loading_data(),
+            Lembas::Loaded(State {
+                view,
+                plugins_view,
+                catalog_view,
+                about_view,
+                input_value: _,
+                plugins_btn,
+                catalog_btn,
+                about_btn,
+                settings_btn,
+            }) => {
+                let plugins_btn = Button::new(plugins_btn, Text::new("My Plugins"))
+                    .on_press(Message::PluginsPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
+                let catalog_btn = Button::new(catalog_btn, Text::new("Catalog"))
+                    .on_press(Message::CatalogPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
+                let divider = Space::new(Length::Fill, Length::Shrink);
+                let about_btn = Button::new(about_btn, Text::new("About"))
+                    .on_press(Message::AboutPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
+                let settings_btn = Button::new(settings_btn, Text::new("Settings"))
+                    .on_press(Message::SettingsPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
 
-        let plugins_btn = Button::new(&mut self.plugins_btn, Text::new("My Plugins"))
-            .on_press(Message::PluginsPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-        let catalog_btn = Button::new(&mut self.catalog_btn, Text::new("Catalog"))
-            .on_press(Message::CatalogPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-        let divider = Space::new(Length::Fill, Length::Shrink);
-        let about_btn = Button::new(&mut self.about_btn, Text::new("About"))
-            .on_press(Message::AboutPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-        let settings_btn = Button::new(&mut self.settings_btn, Text::new("Settings"))
-            .on_press(Message::SettingsPressed)
-            .padding(5)
-            .style(style::PrimaryButton::Enabled);
-
-        let row = Row::new()
-            .width(Length::Fill)
-            .align_items(Align::Center)
-            .spacing(10)
-            .push(plugins_btn)
-            .push(catalog_btn)
-            .push(divider)
-            .push(about_btn)
-            .push(settings_btn);
-
-        let navigation_container = Container::new(row)
-            .width(Length::Fill)
-            .padding(10)
-            .style(style::PluginRow);
-
-        match view {
-            View::Plugins => {
-                let main_container = plugins_view.view();
-                Column::new()
+                let row = Row::new()
                     .width(Length::Fill)
-                    .push(navigation_container)
-                    .push(main_container)
-                    .into()
-            }
-            View::Catalog => {
-                let main_container = catalog_view.view();
-                Column::new()
+                    .align_items(Align::Center)
+                    .spacing(10)
+                    .push(plugins_btn)
+                    .push(catalog_btn)
+                    .push(divider)
+                    .push(about_btn)
+                    .push(settings_btn);
+
+                let navigation_container = Container::new(row)
                     .width(Length::Fill)
-                    .push(navigation_container)
-                    .push(main_container)
-                    .into()
-            }
-            View::About => {
-                let main_container = about_view.view();
-                Column::new()
-                    .width(Length::Fill)
-                    .push(navigation_container)
-                    .push(main_container)
-                    .into()
+                    .padding(10)
+                    .style(style::NavigationContainer);
+
+                match view {
+                    View::Plugins => {
+                        let main_container = plugins_view.view().map(Message::PluginAction);
+                        Column::new()
+                            .width(Length::Fill)
+                            .push(navigation_container)
+                            .push(main_container)
+                            .into()
+                    }
+                    View::Catalog => {
+                        let main_container = catalog_view.view().map(Message::CatalogAction);
+                        Column::new()
+                            .width(Length::Fill)
+                            .push(navigation_container)
+                            .push(main_container)
+                            .into()
+                    }
+                    View::About => {
+                        let main_container = about_view.view();
+                        Column::new()
+                            .width(Length::Fill)
+                            .push(navigation_container)
+                            .push(main_container)
+                            .into()
+                    }
+                }
             }
         }
     }
 }
 
-impl MainWindow {
+impl Lembas {
     pub fn start() {
         let mut settings: Settings<()> = Settings::default();
         settings.window.size = (900, 620);
         //settings.default_font = Some(RING_BEARER);
-        MainWindow::run(settings).unwrap_err();
+        Lembas::run(settings).unwrap_err();
+    }
+
+    pub async fn init_application() -> State {
+        State::default()
     }
 }
 
-#[derive(Debug, Clone)]
-enum ApplicationError {
-    Load,
-    Install,
-    Synchronize,
+fn loading_data<'a>() -> Element<'a, Message> {
+    Container::new(
+        Text::new("Plugins loading...")
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .vertical_alignment(VerticalAlignment::Center)
+            .size(20),
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .center_y()
+    .center_x()
+    .style(style::Content)
+    .into()
 }

@@ -1,6 +1,5 @@
 use crate::core::config::CONFIGURATION;
 use crate::core::Plugin;
-use iced::button;
 use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
@@ -77,8 +76,6 @@ pub fn get_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
-                status: "Install".to_string(),
             })
         })
         .unwrap();
@@ -102,8 +99,6 @@ pub fn get_installed_plugins() -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
-                status: "Install".to_string(),
             })
         })
         .unwrap();
@@ -127,8 +122,6 @@ pub fn get_plugin(name: &str) -> Vec<Plugin> {
                 title: row.get(1).unwrap(),
                 current_version: row.get(2).unwrap(),
                 latest_version: row.get(3).unwrap(),
-                install_btn_state: button::State::default(),
-                status: "Install".to_string(),
             })
         })
         .unwrap();
