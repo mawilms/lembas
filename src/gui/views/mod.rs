@@ -13,7 +13,7 @@ use iced::{
 };
 pub use plugins::Plugins as PluginsView;
 
-use super::views::{catalog::Amount, plugins::PluginMessage};
+use super::views::plugins::PluginMessage;
 
 #[derive(Debug, Clone)]
 pub enum View {
@@ -58,12 +58,7 @@ pub enum Message {
     AboutPressed,
     SettingsPressed,
 
-    // Catalog View
-    CatalogInputChanged(String),
-    AmountFiltered(Amount),
-    //PluginSearched(Vec<Plugin>),
     CatalogAction(CatalogMessage),
-
     PluginAction(PluginMessage),
 }
 
