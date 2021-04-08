@@ -1,7 +1,7 @@
 use crate::core::config::CONFIGURATION;
 use crate::core::{
-    get_installed_plugins, get_plugin, get_plugins, installer, synchronizer::install_plugin,
-    update_local_plugins, Plugin,
+    get_installed_plugins, get_plugin, get_plugins, installer::Installer,
+    synchronizer::install_plugin, update_local_plugins, Plugin,
 };
 use crate::gui::style;
 use iced::{
@@ -47,7 +47,6 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
-    Loading,
     InstalledPluginsLoaded(Vec<Plugin>),
     AllPluginsLoaded(Vec<Plugin>),
     PluginsSynchronized(Result<(), ApplicationError>),
@@ -62,16 +61,22 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    async fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
-        let filename = format!("{}_{}.zip", &plugin.id, &plugin.title);
+    fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
+        let plugin = Plugin::new(
+            plugin.id,
+            &plugin.title,
+            &plugin.current_version,
+            &plugin.latest_version,
+        );
+        let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
         let path = Path::new(&CONFIGURATION.plugins).join(&filename);
         let target = format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.id, &plugin.title
+            &plugin.plugin_id, &plugin.title
         );
 
-        if installer::install(&path, &target).is_ok() {
-            installer::zip_operation(path.as_path());
+        if Installer::install(&path, &target).is_ok() {
+            Installer::zip_operation(path.as_path());
             install_plugin(&plugin);
             get_installed_plugins()
         } else {
@@ -81,7 +86,7 @@ impl Plugins {
         }
     }
 
-    async fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
+    fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
         // TODO Implement here
         let result: Vec<Plugin> = Vec::new();
         result
@@ -91,15 +96,15 @@ impl Plugins {
         get_installed_plugins()
     }
 
-    async fn load_plugins() -> Vec<Plugin> {
+    fn load_plugins() -> Vec<Plugin> {
         get_plugins()
     }
 
-    async fn get_catalog_plugin(name: String) -> Vec<Plugin> {
+    fn get_catalog_plugin(name: String) -> Vec<Plugin> {
         get_plugin(&name)
     }
 
-    async fn refresh_db() -> Result<(), ApplicationError> {
+    fn refresh_db() -> Result<(), ApplicationError> {
         match update_local_plugins() {
             Ok(_) => Ok(()),
             Err(error) => {
@@ -113,17 +118,15 @@ impl Plugins {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
-                    RowMessage::UpgradePressed(plugin) => {
-                        let plugin = plugin.clone();
-                        Command::perform(
-                            Self::install_plugin(plugin),
-                            PluginMessage::InstalledPluginsLoaded,
-                        );
+                    RowMessage::UpdatePressed(plugin) => {
+                        Self::install_plugin(plugin);
                     }
                     RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
                         state.plugins[index].update(msg);
                     }
+                    RowMessage::PluginDownloaded(_) => {}
+                    RowMessage::PluginExtracted(_) => {}
                     RowMessage::DeletePressed(_) => {}
                     RowMessage::WebsitePressed(_) => {}
                 },
@@ -143,6 +146,13 @@ impl Plugins {
                         plugins: states,
                         ..State::default()
                     });
+                }
+                PluginMessage::RefreshPressed => {
+                    println!("Refreshed");
+                    Self::refresh_db();
+                }
+                PluginMessage::UpdateAllPressed => {
+                    println!("Update all");
                 }
                 _ => {}
             },
@@ -249,8 +259,10 @@ pub struct PluginRow {
 pub enum RowMessage {
     ToggleView,
 
-    UpgradePressed(PluginRow),
+    UpdatePressed(PluginRow),
     InstallPressed(PluginRow),
+    PluginDownloaded(Result<(String, PluginRow), String>),
+    PluginExtracted(Result<String, String>),
     DeletePressed(PluginRow),
     WebsitePressed(PluginRow),
 }
@@ -279,10 +291,25 @@ impl PluginRow {
                     self.opened = true;
                 }
             }
-            RowMessage::UpgradePressed(_) => {}
+            RowMessage::UpdatePressed(plugin) => {
+                let plugin = Plugin::new(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.current_version,
+                    &plugin.latest_version,
+                );
+                Installer::update(&plugin);
+                println!("Pressed");
+            }
             RowMessage::InstallPressed(_) => {}
-            RowMessage::DeletePressed(_) => {}
-            RowMessage::WebsitePressed(_) => {}
+            RowMessage::PluginDownloaded(_) => {}
+            RowMessage::PluginExtracted(_) => {}
+            RowMessage::DeletePressed(_) => {
+                println!("Delete pressed")
+            }
+            RowMessage::WebsitePressed(_) => {
+                println!("Website pressed")
+            }
         }
     }
 
@@ -352,10 +379,10 @@ impl PluginRow {
                                 )
                                 .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                                 .push(
-                                    Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
-                                        .on_press(RowMessage::UpgradePressed(plugin))
+                                    Button::new(&mut self.install_btn_state, Text::new("Update"))
+                                        .on_press(RowMessage::UpdatePressed(plugin))
                                         .width(Length::FillPortion(2))
-                                        .style(style::InstallButton::Enabled)
+                                        .style(style::PrimaryButton::Enabled)
                                         .width(Length::FillPortion(2)),
                                 ),
                         )
@@ -396,10 +423,10 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(
-                                Button::new(&mut self.install_btn_state, Text::new("Upgrade"))
-                                    .on_press(RowMessage::UpgradePressed(plugin))
+                                Button::new(&mut self.install_btn_state, Text::new("Update"))
+                                    .on_press(RowMessage::UpdatePressed(plugin))
                                     .width(Length::FillPortion(2))
-                                    .style(style::InstallButton::Enabled)
+                                    .style(style::PrimaryButton::Enabled)
                                     .width(Length::FillPortion(2)),
                             ),
                     )

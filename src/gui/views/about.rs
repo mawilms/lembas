@@ -1,5 +1,5 @@
-use crate::gui::main_window::Message;
 use crate::gui::style;
+use crate::gui::views::Message;
 use iced::{Align, Column, Container, Element, Length, Text};
 
 #[derive(Default, Debug, Clone)]
