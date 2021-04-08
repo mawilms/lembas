@@ -96,8 +96,8 @@ impl Catalog {
                             &plugin.latest_version,
                         );
                         match Installer::download(&plugin) {
+                            // TODO: Version wird noch nicht automatisch eingetragen. Kein async
                             Ok(_) => {
-                                println!("Erfolgreich");
                                 state.plugins[index].status = "Downloaded".to_string();
                                 match Installer::extract(&plugin) {
                                     Ok(_) => {
@@ -106,7 +106,7 @@ impl Catalog {
                                             Ok(_) => match Synchronizer::insert_plugin(&plugin) {
                                                 Ok(_) => {
                                                     state.plugins[index].status =
-                                                        "Installed".to_string()
+                                                        "Installed".to_string();
                                                 }
                                                 Err(_) => {
                                                     state.plugins[index].status =
@@ -188,7 +188,7 @@ impl Catalog {
                     .spacing(5)
                     .width(Length::Fill)
                     .align_items(Align::Center)
-                    .style(style::Scrollable); //TODO: Scrollable funzt nicht mehr
+                    .style(style::Scrollable);
 
                 let content = Column::new()
                     .width(Length::Fill)
@@ -238,6 +238,18 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Installed".to_string(),
+                install_btn_state: button::State::default(),
+                toggle_view_btn: button::State::new(),
+                website_btn_state: button::State::default(),
+                opened: false,
+            }
+        } else if !current_version.is_empty() {
+            Self {
+                id,
+                title: title.to_string(),
+                current_version: current_version.to_string(),
+                latest_version: latest_version.to_string(),
+                status: "Update".to_string(),
                 install_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 website_btn_state: button::State::default(),
@@ -308,65 +320,6 @@ impl PluginRow {
             .padding(15);
 
         if self.opened {
-            if self.current_version.is_empty() {
-                Column::new()
-                    .push(
-                        Button::new(
-                            &mut self.toggle_view_btn,
-                            Row::new()
-                                .align_items(Align::Center)
-                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                                .push(
-                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
-                                )
-                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                                .push(
-                                    Button::new(&mut self.install_btn_state, Text::new("Install"))
-                                        .on_press(RowMessage::InstallPressed(plugin))
-                                        .width(Length::FillPortion(2))
-                                        .style(style::InstallButton::Enabled)
-                                        .width(Length::FillPortion(2)),
-                                ),
-                        )
-                        .padding(10)
-                        .width(Length::Fill)
-                        .on_press(RowMessage::ToggleView)
-                        .style(style::PluginRow::Enabled),
-                    )
-                    .push(container)
-                    .into()
-            } else {
-                Column::new()
-                    .push(
-                        Button::new(
-                            &mut self.toggle_view_btn,
-                            Row::new()
-                                .align_items(Align::Center)
-                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                                .push(
-                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
-                                )
-                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                                .push(
-                                    Button::new(
-                                        &mut self.install_btn_state,
-                                        Text::new("Installed"),
-                                    )
-                                    .on_press(RowMessage::InstallPressed(plugin))
-                                    .width(Length::FillPortion(2))
-                                    .style(style::InstallButton::Enabled)
-                                    .width(Length::FillPortion(2)),
-                                ),
-                        )
-                        .padding(10)
-                        .width(Length::Fill)
-                        .on_press(RowMessage::ToggleView)
-                        .style(style::PluginRow::Enabled),
-                    )
-                    .push(container)
-                    .into()
-            }
-        } else if self.current_version.is_empty() {
             Column::new()
                 .push(
                     Button::new(
@@ -377,7 +330,8 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(
-                                Button::new(&mut self.install_btn_state, Text::new("Install"))
+                                Button::new(&mut self.install_btn_state, Text::new(&plugin.status))
+                                    .on_press(RowMessage::InstallPressed(plugin))
                                     .width(Length::FillPortion(2))
                                     .style(style::InstallButton::Enabled)
                                     .width(Length::FillPortion(2)),
@@ -388,6 +342,7 @@ impl PluginRow {
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
+                .push(container)
                 .into()
         } else {
             Column::new()
@@ -400,7 +355,7 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(
-                                Button::new(&mut self.install_btn_state, Text::new("Installed"))
+                                Button::new(&mut self.install_btn_state, Text::new(&plugin.status))
                                     .width(Length::FillPortion(2))
                                     .style(style::InstallButton::Enabled)
                                     .width(Length::FillPortion(2)),
@@ -408,7 +363,7 @@ impl PluginRow {
                     )
                     .padding(10)
                     .width(Length::Fill)
-                    .on_press(RowMessage::ToggleView)
+                    .on_press(RowMessage::InstallPressed(plugin)) // TODO: Toggle methode wieder einbinden. Aus Testzwecken zurzeit Install Message
                     .style(style::PluginRow::Enabled),
                 )
                 .into()
