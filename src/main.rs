@@ -3,5 +3,5 @@ mod core;
 mod gui;
 
 fn main() {
-    gui::main_window::MainWindow::start();
+    gui::main_window::Lembas::start();
 }
