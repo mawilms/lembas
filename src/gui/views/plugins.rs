@@ -69,7 +69,7 @@ impl Plugins {
             &plugin.latest_version,
         );
         let filename = format!("{}_{}.zip", &plugin.plugin_id, &plugin.title);
-        let path = Path::new(&CONFIGURATION.plugins).join(&filename);
+        let path = Path::new(&CONFIGURATION.plugins_dir).join(&filename);
         let target = format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.plugin_id, &plugin.title

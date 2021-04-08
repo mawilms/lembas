@@ -1,5 +1,5 @@
 use crate::core::config::CONFIGURATION;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 
@@ -17,7 +17,10 @@ impl Installer {
         ))
         .await?;
 
-        let mut file = match File::create(&format!("{}_{}.zip", &plugin.plugin_id, &plugin.title)) {
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+        let mut file = match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(file) => file,
         };
@@ -28,7 +31,7 @@ impl Installer {
     }
 
     pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
-        let path = Path::new(&CONFIGURATION.plugins).join(name);
+        let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
         fs::remove_file(path)?;
 
         Ok(())
@@ -37,13 +40,24 @@ impl Installer {
     pub fn update(plugin: &Plugin) {}
 
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let path = Path::new(&CONFIGURATION.plugins)
-            .join(&format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
-        let file = File::open(path)?;
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+        let file = File::open(cache_path)?;
         let mut zip_archive = zip::ZipArchive::new(file)?;
-        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins))?;
+        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins_dir))?;
 
-        fs::remove_file(path)?;
+        fs::remove_file(cache_path)?;
+
+        Ok(())
+    }
+
+    pub fn delete_archive(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+            .join("lembas")
+            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+
+        fs::remove_file(cache_path)?;
 
         Ok(())
     }
