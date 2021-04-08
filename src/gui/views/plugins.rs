@@ -124,6 +124,8 @@ impl Plugins {
                     RowMessage::ToggleView => {
                         state.plugins[index].update(msg);
                     }
+                    RowMessage::DeletePressed(_) => {}
+                    RowMessage::WebsitePressed(_) => {}
                 },
 
                 PluginMessage::AllPluginsLoaded(state)
@@ -237,6 +239,8 @@ pub struct PluginRow {
     pub latest_version: String,
 
     install_btn_state: button::State,
+    delete_btn_state: button::State,
+    website_btn_state: button::State,
     opened: bool,
     toggle_view_btn: button::State,
 }
@@ -247,6 +251,8 @@ pub enum RowMessage {
 
     UpgradePressed(PluginRow),
     InstallPressed(PluginRow),
+    DeletePressed(PluginRow),
+    WebsitePressed(PluginRow),
 }
 
 impl PluginRow {
@@ -257,6 +263,8 @@ impl PluginRow {
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),
             install_btn_state: button::State::default(),
+            delete_btn_state: button::State::default(),
+            website_btn_state: button::State::default(),
             toggle_view_btn: button::State::new(),
             opened: false,
         }
@@ -273,11 +281,39 @@ impl PluginRow {
             }
             RowMessage::UpgradePressed(_) => {}
             RowMessage::InstallPressed(_) => {}
+            RowMessage::DeletePressed(_) => {}
+            RowMessage::WebsitePressed(_) => {}
         }
     }
 
     pub fn view(&mut self) -> Element<RowMessage> {
-        let container = Container::new(Text::new("Hallo"))
+        let plugin = self.clone();
+        let description_label = Text::new("Description");
+        let description = Text::new("Hallo Welt");
+        let description_section = Column::new()
+            .push(description_label)
+            .push(description)
+            .width(Length::Fill);
+
+        let website_btn = Button::new(&mut self.website_btn_state, Text::new("Website"))
+            .padding(2)
+            .on_press(RowMessage::ToggleView)
+            .style(style::PluginRow::Enabled);
+
+        let delete_btn = Button::new(&mut self.delete_btn_state, Text::new("Delete"))
+            .padding(2)
+            .on_press(RowMessage::ToggleView)
+            .style(style::PluginRow::Enabled);
+
+        let button_row = Row::new()
+            .push(website_btn)
+            .push(delete_btn)
+            .width(Length::Fill)
+            .align_items(Align::End);
+
+        let toggle_section = Column::new().push(description_section).push(button_row);
+
+        let container = Container::new(toggle_section)
             .width(Length::Fill)
             .padding(15);
 
@@ -304,8 +340,6 @@ impl PluginRow {
                     .push(container)
                     .into()
             } else {
-                let plugin = self.clone();
-
                 Column::new()
                     .push(
                         Button::new(
@@ -352,8 +386,6 @@ impl PluginRow {
                 )
                 .into()
         } else {
-            let plugin = self.clone();
-
             Column::new()
                 .push(
                     Button::new(
