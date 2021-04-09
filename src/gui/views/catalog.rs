@@ -367,7 +367,8 @@ impl PluginRow {
                                 Button::new(&mut self.install_btn_state, Text::new(&plugin.status))
                                     .width(Length::FillPortion(2))
                                     .style(style::InstallButton::Enabled)
-                                    .width(Length::FillPortion(2)),
+                                    .width(Length::FillPortion(2))
+                                    .on_press(RowMessage::InstallPressed(plugin)),
                             ),
                     )
                     .padding(10)
