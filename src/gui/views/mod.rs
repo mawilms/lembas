@@ -64,9 +64,6 @@ pub enum Message {
 
 impl Default for State {
     fn default() -> Self {
-        Synchronizer::create_plugins_db();
-        Synchronizer::update_local_plugins();
-
         Self {
             view: View::default(),
             plugins_view: PluginsView::default(),
@@ -219,6 +216,9 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
+        Synchronizer::create_plugins_db();
+        Synchronizer::update_local_plugins();
+
         State::default()
     }
 }

@@ -362,7 +362,6 @@ impl PluginRow {
                                 .push(
                                     Button::new(&mut self.install_btn_state, Text::new("Update"))
                                         .on_press(RowMessage::UpdatePressed(plugin))
-                                        .width(Length::FillPortion(2))
                                         .style(style::PrimaryButton::Enabled)
                                         .width(Length::FillPortion(2)),
                                 ),

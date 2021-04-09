@@ -4,6 +4,7 @@ use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
 
+// TODO: Das ganze Update und Versioning Konstrukt ist sehr fragil da ich mich auf den lokalen Versionen befinde. Refactoring ist später nötig
 pub struct Synchronizer {}
 
 impl Synchronizer {
@@ -18,7 +19,20 @@ impl Synchronizer {
         for (_, element) in response {
             remote_plugins.push(element);
         }
-        Self::write_plugins(&remote_plugins)?;
+        let conn = Connection::open(&CONFIGURATION.db_file)?;
+
+        for plugin in remote_plugins {
+            let installed_plugin = Synchronizer::get_plugin(&plugin.title);
+            if installed_plugin.len() == 1 {
+                conn.execute(
+                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+                    params![plugin.plugin_id, plugin.title, installed_plugin[0].current_version, plugin.latest_version])?;
+            } else {
+                conn.execute(
+                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+                    params![plugin.plugin_id, plugin.title, "", plugin.latest_version])?;
+            }
+        }
 
         Ok(())
     }
@@ -49,11 +63,23 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        // let installed_plugin = Self::get_plugin(&plugin.title);
+        // if installed_plugin.len() == 1 {
+        //     let conn = Connection::open(&CONFIGURATION.db_file)?;
+        //     conn.execute(
+        //     "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+        //     params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version])?;
+        // } else {
+        //     let conn = Connection::open(&CONFIGURATION.db_file)?;
+        //     conn.execute(
+        //         "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+        //         params![plugin.plugin_id, plugin.title, "", plugin.latest_version])?;
+        // }
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         conn.execute(
-            "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-            params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version],
-        )?;
+                "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+                params![plugin.plugin_id, plugin.title, "", plugin.latest_version])?;
+
         Ok(())
     }
 
