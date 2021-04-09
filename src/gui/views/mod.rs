@@ -2,7 +2,7 @@ pub mod about;
 pub mod catalog;
 pub mod plugins;
 
-use crate::core::{create_plugins_db, update_local_plugins};
+use crate::core::Synchronizer;
 use crate::gui::style;
 use crate::gui::views::About as AboutView;
 pub use about::About;
@@ -13,7 +13,7 @@ use iced::{
 };
 pub use plugins::Plugins as PluginsView;
 
-use super::views::{catalog::Amount, plugins::PluginMessage};
+use super::views::plugins::PluginMessage;
 
 #[derive(Debug, Clone)]
 pub enum View {
@@ -58,20 +58,12 @@ pub enum Message {
     AboutPressed,
     SettingsPressed,
 
-    // Catalog View
-    CatalogInputChanged(String),
-    AmountFiltered(Amount),
-    //PluginSearched(Vec<Plugin>),
     CatalogAction(CatalogMessage),
-
     PluginAction(PluginMessage),
 }
 
 impl Default for State {
     fn default() -> Self {
-        create_plugins_db();
-        update_local_plugins();
-
         Self {
             view: View::default(),
             plugins_view: PluginsView::default(),
@@ -120,6 +112,7 @@ impl Application for Lembas {
                     state.view = View::About;
                 }
                 Message::PluginAction(msg) => state.plugins_view.update(msg),
+                Message::CatalogAction(msg) => state.catalog_view.update(msg),
                 _ => {}
             },
         }
@@ -223,6 +216,9 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
+        Synchronizer::create_plugins_db();
+        Synchronizer::update_local_plugins();
+
         State::default()
     }
 }

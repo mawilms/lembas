@@ -1,14 +1,9 @@
-use crate::core::config::CONFIGURATION;
-use crate::core::{
-    get_installed_plugins, get_plugin, get_plugins, installer::Installer,
-    synchronizer::install_plugin, update_local_plugins, Plugin,
-};
+use crate::core::{installer::Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
     Scrollable, Text, TextInput,
 };
-use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -17,7 +12,7 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        let installed_plugins = get_installed_plugins();
+        let installed_plugins = Synchronizer::get_installed_plugins();
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
             plugins.push(PluginRow::new(
@@ -79,19 +74,19 @@ impl Plugins {
     }
 
     fn load_installed_plugins() -> Vec<Plugin> {
-        get_installed_plugins()
+        Synchronizer::get_installed_plugins()
     }
 
     fn load_plugins() -> Vec<Plugin> {
-        get_plugins()
+        Synchronizer::get_plugins()
     }
 
     fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        get_plugin(&name)
+        Synchronizer::get_plugin(&name)
     }
 
     fn refresh_db() -> Result<(), ApplicationError> {
-        match update_local_plugins() {
+        match Synchronizer::update_local_plugins() {
             Ok(_) => Ok(()),
             Err(error) => {
                 println!("{:?}", &error);
@@ -284,7 +279,7 @@ impl PluginRow {
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                Installer::update(&plugin);
+                //Installer::update(&plugin);
                 println!("Pressed");
             }
             RowMessage::InstallPressed(_) => {}
@@ -367,7 +362,6 @@ impl PluginRow {
                                 .push(
                                     Button::new(&mut self.install_btn_state, Text::new("Update"))
                                         .on_press(RowMessage::UpdatePressed(plugin))
-                                        .width(Length::FillPortion(2))
                                         .style(style::PrimaryButton::Enabled)
                                         .width(Length::FillPortion(2)),
                                 ),

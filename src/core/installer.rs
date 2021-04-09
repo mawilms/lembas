@@ -17,7 +17,6 @@ impl Installer {
         .await?;
 
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join("lembas")
             .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
         let mut file = match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
@@ -38,7 +37,6 @@ impl Installer {
 
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join("lembas")
             .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
         let file = File::open(&cache_path)?;
         let mut zip_archive = zip::ZipArchive::new(file)?;
@@ -49,7 +47,6 @@ impl Installer {
 
     pub fn delete_archive(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join("lembas")
             .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
 
         fs::remove_file(cache_path)?;
