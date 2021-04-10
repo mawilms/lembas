@@ -96,14 +96,17 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
+        println!("{:?}", message);
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
                     RowMessage::UpdatePressed(plugin) => {
+                        println!("Hallo");
                         Self::install_plugin(plugin);
                     }
                     RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
+                        println!("Hallo12");
                         state.plugins[index].update(msg);
                     }
                     RowMessage::PluginDownloaded(_) => {}
@@ -229,7 +232,7 @@ pub struct PluginRow {
     pub current_version: String,
     pub latest_version: String,
 
-    install_btn_state: button::State,
+    update_btn_state: button::State,
     delete_btn_state: button::State,
     website_btn_state: button::State,
     opened: bool,
@@ -255,7 +258,7 @@ impl PluginRow {
             title: title.to_string(),
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),
-            install_btn_state: button::State::default(),
+            update_btn_state: button::State::default(),
             delete_btn_state: button::State::default(),
             website_btn_state: button::State::default(),
             toggle_view_btn: button::State::new(),
@@ -273,7 +276,45 @@ impl PluginRow {
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                //Installer::update(&plugin);
+                // match Installer::download(&plugin) {
+                //     // TODO: Async fehlt noch
+                //     Ok(_) => {
+                //         state.plugins[index].status = "Downloaded".to_string();
+                //         match Installer::extract(&plugin) {
+                //             Ok(_) => {
+                //                 state.plugins[index].status = "Unpacked".to_string();
+                //                 match Installer::delete_archive(&plugin) {
+                //                     Ok(_) => match Synchronizer::insert_plugin(&plugin) {
+                //                         Ok(_) => {
+                //                             let plugins = Synchronizer::get_plugins();
+                //                             let mut rows: Vec<PluginRow> = Vec::new();
+                //                             for element in plugins {
+                //                                 rows.push(PluginRow::new(
+                //                                     element.plugin_id,
+                //                                     &element.title,
+                //                                     &element.current_version,
+                //                                     &element.latest_version,
+                //                                 ))
+                //                             }
+                //                             state.plugins = rows;
+                //                         }
+                //                         Err(_) => {
+                //                             state.plugins[index].status =
+                //                                 "Installation failed".to_string()
+                //                         }
+                //                     },
+                //                     Err(_) => {
+                //                         state.plugins[index].status =
+                //                             "Installation failed".to_string()
+                //                     }
+                //                 }
+                //             }
+                //             Err(_) => state.plugins[index].status = "Unpacking failed".to_string(),
+                //         }
+                //     }
+                //     Err(_) => state.plugins[index].status = "Download failed".to_string(),
+                // }
+
                 println!("Pressed");
             }
             RowMessage::InstallPressed(_) => {}
@@ -330,11 +371,11 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
-                                Button::new(&mut self.install_btn_state, Text::new("."))
+                                Button::new(&mut self.update_btn_state, Text::new("."))
                                     .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
                             } else {
-                                Button::new(&mut self.install_btn_state, Text::new("Update"))
+                                Button::new(&mut self.update_btn_state, Text::new("Update"))
                                     .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)
@@ -358,11 +399,11 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
-                                Button::new(&mut self.install_btn_state, Text::new("."))
+                                Button::new(&mut self.update_btn_state, Text::new("."))
                                     .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
                             } else {
-                                Button::new(&mut self.install_btn_state, Text::new("Update"))
+                                Button::new(&mut self.update_btn_state, Text::new("Update"))
                                     .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)
