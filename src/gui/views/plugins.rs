@@ -101,18 +101,20 @@ impl Plugins {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => match msg {
                     RowMessage::UpdatePressed(plugin) => {
-                        println!("Hallo");
                         Self::install_plugin(plugin);
                     }
                     RowMessage::InstallPressed(_) => println!("Install"),
                     RowMessage::ToggleView => {
-                        println!("Hallo12");
                         state.plugins[index].update(msg);
                     }
                     RowMessage::PluginDownloaded(_) => {}
                     RowMessage::PluginExtracted(_) => {}
-                    RowMessage::DeletePressed(_) => {}
-                    RowMessage::WebsitePressed(_) => {}
+                    RowMessage::DeletePressed(_) => {
+                        println!("Delete pressed");
+                    }
+                    RowMessage::WebsitePressed(_) => {
+                        println!("Website pressed");
+                    }
                 },
 
                 PluginMessage::AllPluginsLoaded(state)
@@ -331,6 +333,8 @@ impl PluginRow {
 
     pub fn view(&mut self) -> Element<RowMessage> {
         let plugin = self.clone();
+        let bla = self.clone();
+        let bli = self.clone();
         let description_label = Text::new("Description");
         let description = Text::new("Hallo Welt");
         let description_section = Column::new()
@@ -340,12 +344,12 @@ impl PluginRow {
 
         let website_btn = Button::new(&mut self.website_btn_state, Text::new("Website"))
             .padding(2)
-            .on_press(RowMessage::ToggleView)
+            .on_press(RowMessage::WebsitePressed(bla))
             .style(style::PluginRow::Enabled);
 
         let delete_btn = Button::new(&mut self.delete_btn_state, Text::new("Delete"))
             .padding(2)
-            .on_press(RowMessage::ToggleView)
+            .on_press(RowMessage::DeletePressed(bli))
             .style(style::PluginRow::Enabled);
 
         let button_row = Row::new()

@@ -8,8 +8,8 @@ use crate::gui::views::About as AboutView;
 pub use about::About;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 use iced::{
-    button, window::Settings as Window, Align, Application, Button, Column, Command, Container,
-    Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
+    button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
+    Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
 
@@ -94,7 +94,7 @@ impl Application for Lembas {
         String::from("Lembas")
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(_state) = message {
