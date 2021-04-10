@@ -178,7 +178,7 @@ impl Plugins {
                 let plugin_name = Text::new("Plugin").width(Length::FillPortion(5));
                 let current_version = Text::new("Current Version").width(Length::FillPortion(3));
                 let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
-                let upgrade = Text::new("Upgrade").width(Length::FillPortion(2));
+                let update = Text::new("Update").width(Length::FillPortion(2));
 
                 let plugin_panel = Row::new()
                     .width(Length::Fill)
@@ -186,7 +186,7 @@ impl Plugins {
                     .push(plugin_name)
                     .push(current_version)
                     .push(latest_version)
-                    .push(upgrade);
+                    .push(update);
 
                 let plugins = plugins
                     .iter_mut()
