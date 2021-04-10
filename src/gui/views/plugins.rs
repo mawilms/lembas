@@ -265,13 +265,7 @@ impl PluginRow {
 
     pub fn update(&mut self, message: RowMessage) {
         match message {
-            RowMessage::ToggleView => {
-                if self.opened {
-                    self.opened = false;
-                } else {
-                    self.opened = true;
-                }
-            }
+            RowMessage::ToggleView => self.opened = !self.opened,
             RowMessage::UpdatePressed(plugin) => {
                 let plugin = Plugin::new(
                     plugin.id,
@@ -326,55 +320,6 @@ impl PluginRow {
             .padding(15);
 
         if self.opened {
-            if self.current_version == self.latest_version {
-                Column::new()
-                    .push(
-                        Button::new(
-                            &mut self.toggle_view_btn,
-                            Row::new()
-                                .align_items(Align::Center)
-                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                                .push(
-                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
-                                )
-                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                                .push(Text::new("").width(Length::FillPortion(2))),
-                        )
-                        .padding(10)
-                        .width(Length::Fill)
-                        .on_press(RowMessage::ToggleView)
-                        .style(style::PluginRow::Enabled),
-                    )
-                    .push(container)
-                    .into()
-            } else {
-                Column::new()
-                    .push(
-                        Button::new(
-                            &mut self.toggle_view_btn,
-                            Row::new()
-                                .align_items(Align::Center)
-                                .push(Text::new(&self.title).width(Length::FillPortion(5)))
-                                .push(
-                                    Text::new(&self.current_version).width(Length::FillPortion(3)),
-                                )
-                                .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                                .push(
-                                    Button::new(&mut self.install_btn_state, Text::new("Update"))
-                                        .on_press(RowMessage::UpdatePressed(plugin))
-                                        .style(style::PrimaryButton::Enabled)
-                                        .width(Length::FillPortion(2)),
-                                ),
-                        )
-                        .padding(10)
-                        .width(Length::Fill)
-                        .on_press(RowMessage::ToggleView)
-                        .style(style::PluginRow::Enabled),
-                    )
-                    .push(container)
-                    .into()
-            }
-        } else if self.current_version == self.latest_version {
             Column::new()
                 .push(
                     Button::new(
@@ -384,13 +329,23 @@ impl PluginRow {
                             .push(Text::new(&self.title).width(Length::FillPortion(5)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(Text::new("").width(Length::FillPortion(2))),
+                            .push(if self.latest_version == self.current_version {
+                                Button::new(&mut self.install_btn_state, Text::new("."))
+                                    .style(style::TransparentButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                            } else {
+                                Button::new(&mut self.install_btn_state, Text::new("Update"))
+                                    .style(style::PrimaryButton::Enabled)
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .style(style::PrimaryButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                            }),
                     )
                     .padding(10)
-                    .width(Length::Fill)
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
+                .push(container)
                 .into()
         } else {
             Column::new()
@@ -402,16 +357,19 @@ impl PluginRow {
                             .push(Text::new(&self.title).width(Length::FillPortion(5)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(
-                                Button::new(&mut self.install_btn_state, Text::new("Update"))
-                                    .on_press(RowMessage::UpdatePressed(plugin))
+                            .push(if self.latest_version == self.current_version {
+                                Button::new(&mut self.install_btn_state, Text::new("."))
+                                    .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
+                            } else {
+                                Button::new(&mut self.install_btn_state, Text::new("Update"))
                                     .style(style::PrimaryButton::Enabled)
-                                    .width(Length::FillPortion(2)),
-                            ),
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .style(style::PrimaryButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                            }),
                     )
                     .padding(10)
-                    .width(Length::Fill)
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
