@@ -96,27 +96,28 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
-        println!("{:?}", message);
         match self {
             Plugins::Loaded(state) => match message {
-                PluginMessage::Plugin(index, msg) => match msg {
-                    RowMessage::UpdatePressed(plugin) => {
-                        Self::install_plugin(plugin);
-                    }
-                    RowMessage::InstallPressed(_) => println!("Install"),
-                    RowMessage::ToggleView => {
-                        state.plugins[index].update(msg);
-                    }
-                    RowMessage::PluginDownloaded(_) => {}
-                    RowMessage::PluginExtracted(_) => {}
-                    RowMessage::DeletePressed(_) => {
-                        println!("Delete pressed");
-                    }
-                    RowMessage::WebsitePressed(_) => {
-                        println!("Website pressed");
-                    }
-                },
-
+                PluginMessage::Plugin(index, msg) => {
+                    state.plugins[index].update(msg);
+                }
+                // match msg {
+                //     RowMessage::UpdatePressed(plugin) => {
+                //         Self::install_plugin(plugin);
+                //     }
+                //     RowMessage::InstallPressed(_) => println!("Install"),
+                //     RowMessage::ToggleView => {
+                //         state.plugins[index].update(msg);
+                //     }
+                //     RowMessage::PluginDownloaded(_) => {}
+                //     RowMessage::PluginExtracted(_) => {}
+                //     RowMessage::DeletePressed(_) => {
+                //         println!("Delete pressed");
+                //     }
+                //     RowMessage::WebsitePressed(_) => {
+                //         println!("Website pressed");
+                //     }
+                // },
                 PluginMessage::AllPluginsLoaded(state)
                 | PluginMessage::InstalledPluginsLoaded(state) => {
                     let mut states: Vec<PluginRow> = Vec::new();
@@ -139,6 +140,9 @@ impl Plugins {
                 }
                 PluginMessage::UpdateAllPressed => {
                     println!("Update all");
+                    // for i in 1..state.plugins.len() {
+                    //     state.plugins[i].update(RowMessage::UpdatePressed(bla));
+                    // }
                 }
                 _ => {}
             },
@@ -233,6 +237,7 @@ pub struct PluginRow {
     pub title: String,
     pub current_version: String,
     pub latest_version: String,
+    pub status: String,
 
     update_btn_state: button::State,
     delete_btn_state: button::State,
@@ -260,6 +265,7 @@ impl PluginRow {
             title: title.to_string(),
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),
+            status: "".to_string(),
             update_btn_state: button::State::default(),
             delete_btn_state: button::State::default(),
             website_btn_state: button::State::default(),
@@ -331,7 +337,7 @@ impl PluginRow {
         }
     }
 
-    pub fn view(&mut self) -> Element<RowMessage> {
+    pub fn view(&mut self) -> Element<'_, RowMessage> {
         let plugin = self.clone();
         let bla = self.clone();
         let bli = self.clone();
