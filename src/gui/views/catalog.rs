@@ -136,6 +136,7 @@ impl Catalog {
                             Err(_) => state.plugins[index].status = "Download failed".to_string(),
                         }
                     }
+                    RowMessage::WebsitePressed(_) => {}
                 },
             },
         }
@@ -236,6 +237,7 @@ pub enum RowMessage {
     ToggleView,
 
     InstallPressed(PluginRow),
+    WebsitePressed(PluginRow),
 }
 
 impl PluginRow {
@@ -299,6 +301,13 @@ impl PluginRow {
                     Ok(_) => println!("Hallo"),
                     Err(_) => println!("Fail"),
                 }
+            }
+            RowMessage::WebsitePressed(row) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    row.id, row.title,
+                ))
+                .unwrap();
             }
         }
     }
