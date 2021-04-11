@@ -290,7 +290,7 @@ impl PluginRow {
                                 match Installer::extract(&install_plugin) {
                                     Ok(_) => {
                                         plugin.status = "Unpacked".to_string();
-                                        match Installer::delete_archive(&install_plugin) {
+                                        match Installer::delete_cache_folder(&install_plugin) {
                                             Ok(_) => {
                                                 match Synchronizer::insert_plugin(&install_plugin) {
                                                     Ok(_) => {

@@ -102,7 +102,7 @@ impl Catalog {
                                 match Installer::extract(&plugin) {
                                     Ok(_) => {
                                         state.plugins[index].status = "Unpacked".to_string();
-                                        match Installer::delete_archive(&plugin) {
+                                        match Installer::delete_cache_folder(&plugin) {
                                             Ok(_) => match Synchronizer::insert_plugin(&plugin) {
                                                 Ok(_) => {
                                                     let plugins = Synchronizer::get_plugins();
@@ -122,13 +122,15 @@ impl Catalog {
                                                         "Installation failed".to_string()
                                                 }
                                             },
-                                            Err(_) => {
+                                            Err(bla) => {
+                                                println!("{:?}", bla);
                                                 state.plugins[index].status =
                                                     "Installation failed".to_string()
                                             }
                                         }
                                     }
-                                    Err(_) => {
+                                    Err(bla) => {
+                                        println!("{:?}", bla);
                                         state.plugins[index].status = "Unpacking failed".to_string()
                                     }
                                 }
