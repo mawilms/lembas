@@ -4,6 +4,7 @@ use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
     Scrollable, Text, TextInput,
 };
+use webbrowser;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -315,8 +316,12 @@ impl PluginRow {
                     Err(_) => row.status = "Delete failed".to_string(),
                 }
             }
-            RowMessage::WebsitePressed(_) => {
-                println!("Website pressed")
+            RowMessage::WebsitePressed(row) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    row.id, row.title,
+                ))
+                .unwrap();
             }
         }
     }
