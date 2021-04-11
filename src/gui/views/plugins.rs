@@ -101,23 +101,6 @@ impl Plugins {
                 PluginMessage::Plugin(index, msg) => {
                     state.plugins[index].update(msg);
                 }
-                // match msg {
-                //     RowMessage::UpdatePressed(plugin) => {
-                //         Self::install_plugin(plugin);
-                //     }
-                //     RowMessage::InstallPressed(_) => println!("Install"),
-                //     RowMessage::ToggleView => {
-                //         state.plugins[index].update(msg);
-                //     }
-                //     RowMessage::PluginDownloaded(_) => {}
-                //     RowMessage::PluginExtracted(_) => {}
-                //     RowMessage::DeletePressed(_) => {
-                //         println!("Delete pressed");
-                //     }
-                //     RowMessage::WebsitePressed(_) => {
-                //         println!("Website pressed");
-                //     }
-                // },
                 PluginMessage::AllPluginsLoaded(state)
                 | PluginMessage::InstalledPluginsLoaded(state) => {
                     let mut states: Vec<PluginRow> = Vec::new();
@@ -251,9 +234,6 @@ pub enum RowMessage {
     ToggleView,
 
     UpdatePressed(PluginRow),
-    InstallPressed(PluginRow),
-    PluginDownloaded(Result<(String, PluginRow), String>),
-    PluginExtracted(Result<String, String>),
     DeletePressed(PluginRow),
     WebsitePressed(PluginRow),
 }
@@ -325,11 +305,15 @@ impl PluginRow {
 
                 println!("Pressed");
             }
-            RowMessage::InstallPressed(_) => {}
-            RowMessage::PluginDownloaded(_) => {}
-            RowMessage::PluginExtracted(_) => {}
-            RowMessage::DeletePressed(_) => {
-                println!("Delete pressed")
+            RowMessage::DeletePressed(mut row) => {
+                println!("Delete pressed");
+                match Installer::delete(&row.title) {
+                    Ok(()) => match Synchronizer::delete_plugin(&row.title) {
+                        Ok(_) => row.status = "Deleted".to_string(),
+                        Err(_) => row.status = "Delete failed".to_string(),
+                    },
+                    Err(_) => row.status = "Delete failed".to_string(),
+                }
             }
             RowMessage::WebsitePressed(_) => {
                 println!("Website pressed")
