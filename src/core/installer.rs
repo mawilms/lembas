@@ -1,8 +1,9 @@
 use crate::core::config::CONFIGURATION;
 use fs_extra::dir::{move_dir, CopyOptions};
-use std::path::Path;
+use std::ffi::OsStr;
 use std::{error::Error, fs::File};
 use std::{fs, io, io::prelude::*};
+use std::{fs::remove_dir_all, path::Path};
 
 use super::Plugin;
 
@@ -63,11 +64,13 @@ impl Installer {
         let folders = fs::read_dir(&Path::new(tmp_path)).unwrap();
 
         for file in folders {
-            let file_str = file.unwrap().path().to_str().unwrap().to_string();
+            let file_str = file.unwrap().file_name().into_string().unwrap();
             if !file_str.contains("plugin.zip") {
+                let _ = remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&file_str));
+
                 let options = CopyOptions::new();
                 move_dir(
-                    Path::new(&tmp_path).join(file_str),
+                    Path::new(&tmp_path).join(&file_str),
                     &CONFIGURATION.plugins_dir,
                     &options,
                 )
