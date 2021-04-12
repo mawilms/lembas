@@ -425,15 +425,25 @@ impl PluginRow {
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
-                                Button::new(&mut self.update_btn_state, Text::new("."))
-                                    .style(style::TransparentButton::Enabled)
-                                    .width(Length::FillPortion(2))
+                                Button::new(
+                                    &mut self.update_btn_state,
+                                    Text::new(".")
+                                        .width(Length::Fill)
+                                        .horizontal_alignment(HorizontalAlignment::Center),
+                                )
+                                .style(style::TransparentButton::Enabled)
+                                .width(Length::FillPortion(2))
                             } else {
-                                Button::new(&mut self.update_btn_state, Text::new("Update"))
-                                    .style(style::PrimaryButton::Enabled)
-                                    .on_press(RowMessage::UpdatePressed(plugin))
-                                    .style(style::PrimaryButton::Enabled)
-                                    .width(Length::FillPortion(2))
+                                Button::new(
+                                    &mut self.update_btn_state,
+                                    Text::new("Update")
+                                        .width(Length::Fill)
+                                        .horizontal_alignment(HorizontalAlignment::Center),
+                                )
+                                .style(style::PrimaryButton::Enabled)
+                                .on_press(RowMessage::UpdatePressed(plugin))
+                                .style(style::PrimaryButton::Enabled)
+                                .width(Length::FillPortion(2))
                             }),
                     )
                     .on_press(RowMessage::ToggleView)

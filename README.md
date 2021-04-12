@@ -27,4 +27,4 @@ Lembas is a plugin management tool completely written in Rust for the game "Lord
 
 ## Special thanks
 
-I want to especially thank [@hecrj](https://github.com/hecrj) and Brock from the [Iced zulip server](https://iced.zulipchat.com). Both were very helpful and their tipps were essential for this app.
+I want to especially thank Brock and [@hecrj](https://github.com/hecrj) from the [Iced zulip server](https://iced.zulipchat.com). Both were very helpful and their tipps were essential for this app. I also want to thank [Thornbach](https://fungalmancy.netlify.app/) for this great icon.
