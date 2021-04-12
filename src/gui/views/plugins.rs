@@ -1,8 +1,8 @@
 use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
-    Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
+    Length, Row, Scrollable, Space, Text, TextInput, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
@@ -127,7 +127,8 @@ impl Plugins {
                     "Search plugins...",
                     &input_value,
                     PluginMessage::PluginInputChanged,
-                );
+                )
+                .padding(5);
 
                 let control_panel = Row::new()
                     .width(Length::Fill)
@@ -138,7 +139,7 @@ impl Plugins {
                     .push(installed_plugins)
                     .push(search_plugins);
 
-                let plugin_name = Text::new("Plugin").width(Length::FillPortion(5));
+                let plugin_name = Text::new("Plugin").width(Length::FillPortion(6));
                 let current_version = Text::new("Current Version").width(Length::FillPortion(3));
                 let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
                 let update = Text::new("Update").width(Length::FillPortion(2));
@@ -358,29 +359,33 @@ impl PluginRow {
         let description_section = Column::new()
             .push(description_label)
             .push(description)
+            .spacing(10)
             .width(Length::Fill);
 
         let website_btn = Button::new(&mut self.website_btn_state, Text::new("Website"))
-            .padding(2)
+            .padding(5)
             .on_press(RowMessage::WebsitePressed(bla))
-            .style(style::PluginRow::Enabled);
+            .style(style::PrimaryButton::Enabled);
 
         let delete_btn = Button::new(&mut self.delete_btn_state, Text::new("Delete"))
-            .padding(2)
+            .padding(5)
             .on_press(RowMessage::DeletePressed(bli))
-            .style(style::PluginRow::Enabled);
+            .style(style::PrimaryButton::Enabled);
 
         let button_row = Row::new()
+            .push(Space::new(Length::Fill, Length::Shrink))
             .push(website_btn)
             .push(delete_btn)
             .width(Length::Fill)
+            .spacing(10)
             .align_items(Align::End);
 
         let toggle_section = Column::new().push(description_section).push(button_row);
 
         let container = Container::new(toggle_section)
             .width(Length::Fill)
-            .padding(15);
+            .padding(15)
+            .style(style::NavigationContainer);
 
         if self.opened {
             Column::new()
@@ -389,7 +394,7 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
@@ -404,7 +409,6 @@ impl PluginRow {
                                     .width(Length::FillPortion(2))
                             }),
                     )
-                    .padding(10)
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
@@ -417,7 +421,7 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(5)))
+                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
@@ -432,7 +436,6 @@ impl PluginRow {
                                     .width(Length::FillPortion(2))
                             }),
                     )
-                    .padding(10)
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
                 )
