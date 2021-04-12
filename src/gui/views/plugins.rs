@@ -4,6 +4,7 @@ use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
     Scrollable, Text, TextInput,
 };
+use webbrowser;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -67,27 +68,11 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
-        println!("{:?}", message);
         match self {
             Plugins::Loaded(state) => match message {
-                PluginMessage::Plugin(index, msg) => match msg {
-                    RowMessage::UpdatePressed(plugin) => {
-                        Self::install_plugin(plugin);
-                    }
-                    RowMessage::InstallPressed(_) => println!("Install"),
-                    RowMessage::ToggleView => {
-                        state.plugins[index].update(msg);
-                    }
-                    RowMessage::PluginDownloaded(_) => {}
-                    RowMessage::PluginExtracted(_) => {}
-                    RowMessage::DeletePressed(_) => {
-                        println!("Delete pressed");
-                    }
-                    RowMessage::WebsitePressed(_) => {
-                        println!("Website pressed");
-                    }
-                },
-
+                PluginMessage::Plugin(index, msg) => {
+                    state.plugins[index].update(msg);
+                }
                 PluginMessage::AllPluginsLoaded(state)
                 | PluginMessage::InstalledPluginsLoaded(state) => {
                     let mut states: Vec<PluginRow> = Vec::new();
@@ -110,6 +95,9 @@ impl Plugins {
                 }
                 PluginMessage::UpdateAllPressed => {
                     println!("Update all");
+                    // for i in 1..state.plugins.len() {
+                    //     state.plugins[i].update(RowMessage::UpdatePressed(bla));
+                    // }
                 }
                 _ => {}
             },
@@ -204,6 +192,7 @@ pub struct PluginRow {
     pub title: String,
     pub current_version: String,
     pub latest_version: String,
+    pub status: String,
 
     update_btn_state: button::State,
     delete_btn_state: button::State,
@@ -217,92 +206,151 @@ pub enum RowMessage {
     ToggleView,
 
     UpdatePressed(PluginRow),
-    InstallPressed(PluginRow),
-    PluginDownloaded(Result<(String, PluginRow), String>),
-    PluginExtracted(Result<String, String>),
     DeletePressed(PluginRow),
     WebsitePressed(PluginRow),
 }
 
 impl PluginRow {
     pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
-        Self {
-            id,
-            title: title.to_string(),
-            current_version: current_version.to_string(),
-            latest_version: latest_version.to_string(),
-            update_btn_state: button::State::default(),
-            delete_btn_state: button::State::default(),
-            website_btn_state: button::State::default(),
-            toggle_view_btn: button::State::new(),
-            opened: false,
+        if current_version == latest_version {
+            Self {
+                id,
+                title: title.to_string(),
+                current_version: current_version.to_string(),
+                latest_version: latest_version.to_string(),
+                status: "".to_string(),
+                update_btn_state: button::State::default(),
+                delete_btn_state: button::State::default(),
+                website_btn_state: button::State::default(),
+                toggle_view_btn: button::State::new(),
+                opened: false,
+            }
+        } else {
+            Self {
+                id,
+                title: title.to_string(),
+                current_version: current_version.to_string(),
+                latest_version: latest_version.to_string(),
+                status: "Update".to_string(),
+                update_btn_state: button::State::default(),
+                delete_btn_state: button::State::default(),
+                website_btn_state: button::State::default(),
+                toggle_view_btn: button::State::new(),
+                opened: false,
+            }
         }
     }
 
     pub fn update(&mut self, message: RowMessage) {
         match message {
             RowMessage::ToggleView => self.opened = !self.opened,
-            RowMessage::UpdatePressed(plugin) => {
-                let plugin = Plugin::new(
+            RowMessage::UpdatePressed(mut plugin) => {
+                let install_plugin = Plugin::new(
                     plugin.id,
                     &plugin.title,
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                // match Installer::download(&plugin) {
-                //     // TODO: Async fehlt noch
-                //     Ok(_) => {
-                //         state.plugins[index].status = "Downloaded".to_string();
-                //         match Installer::extract(&plugin) {
-                //             Ok(_) => {
-                //                 state.plugins[index].status = "Unpacked".to_string();
-                //                 match Installer::delete_archive(&plugin) {
-                //                     Ok(_) => match Synchronizer::insert_plugin(&plugin) {
-                //                         Ok(_) => {
-                //                             let plugins = Synchronizer::get_plugins();
-                //                             let mut rows: Vec<PluginRow> = Vec::new();
-                //                             for element in plugins {
-                //                                 rows.push(PluginRow::new(
-                //                                     element.plugin_id,
-                //                                     &element.title,
-                //                                     &element.current_version,
-                //                                     &element.latest_version,
-                //                                 ))
-                //                             }
-                //                             state.plugins = rows;
-                //                         }
-                //                         Err(_) => {
-                //                             state.plugins[index].status =
-                //                                 "Installation failed".to_string()
-                //                         }
-                //                     },
-                //                     Err(_) => {
-                //                         state.plugins[index].status =
-                //                             "Installation failed".to_string()
-                //                     }
-                //                 }
-                //             }
-                //             Err(_) => state.plugins[index].status = "Unpacking failed".to_string(),
-                //         }
-                //     }
-                //     Err(_) => state.plugins[index].status = "Download failed".to_string(),
-                // }
+                match Installer::download(&install_plugin) {
+                    // TODO: Async fehlt noch
+                    Ok(_) => {
+                        plugin.status = "Downloaded".to_string();
+                        match Installer::delete(&install_plugin.title) {
+                            // TODO: Aktuell noch verbugt da delete Probleme macht
+                            Ok(_) => {
+                                match Installer::extract(&install_plugin) {
+                                    Ok(_) => {
+                                        plugin.status = "Unpacked".to_string();
+                                        match Installer::delete_cache_folder(&install_plugin) {
+                                            Ok(_) => {
+                                                match Synchronizer::insert_plugin(&install_plugin) {
+                                                    Ok(_) => {
+                                                        // let plugins = Synchronizer::get_plugins();
+                                                        // let mut rows: Vec<PluginRow> = Vec::new();
+                                                        // for element in plugins {
+                                                        //     rows.push(PluginRow::new(
+                                                        //         element.plugin_id,
+                                                        //         &element.title,
+                                                        //         &element.current_version,
+                                                        //         &element.latest_version,
+                                                        //     ))
+                                                        // }
+                                                        // state.plugins = rows;
+                                                        // TODO: Currently missing that we load the new list
+                                                        plugin.status =
+                                                            "Installation completed".to_string()
+                                                    }
+                                                    Err(_) => {
+                                                        plugin.status =
+                                                            "Installation failed".to_string()
+                                                    }
+                                                }
+                                            }
+                                            Err(_) => {
+                                                plugin.status = "Installation failed".to_string()
+                                            }
+                                        }
+                                    }
+                                    Err(_) => plugin.status = "Unpacking failed".to_string(),
+                                }
+                            }
+                            Err(_) => {
+                                plugin.status = "Installation failed".to_string();
+                            }
+                        }
 
-                println!("Pressed");
+                        // match Installer::extract(&install_plugin) {
+                        //     Ok(_) => {
+                        //         plugin.status = "Unpacked".to_string();
+                        //         match Installer::delete_archive(&install_plugin) {
+                        //             Ok(_) => match Synchronizer::insert_plugin(&install_plugin) {
+                        //                 Ok(_) => {
+                        //                     // let plugins = Synchronizer::get_plugins();
+                        //                     // let mut rows: Vec<PluginRow> = Vec::new();
+                        //                     // for element in plugins {
+                        //                     //     rows.push(PluginRow::new(
+                        //                     //         element.plugin_id,
+                        //                     //         &element.title,
+                        //                     //         &element.current_version,
+                        //                     //         &element.latest_version,
+                        //                     //     ))
+                        //                     // }
+                        //                     // state.plugins = rows;
+                        //                     // TODO: Currently missing that we load the new list
+                        //                     plugin.status = "Installation completed".to_string()
+                        //                 }
+                        //                 Err(_) => plugin.status = "Installation failed".to_string(),
+                        //             },
+                        //             Err(_) => plugin.status = "Installation failed".to_string(),
+                        //         }
+                        //     }
+                        //     Err(_) => plugin.status = "Unpacking failed".to_string(),
+                        // }
+                    }
+                    Err(_) => plugin.status = "Download failed".to_string(),
+                }
             }
-            RowMessage::InstallPressed(_) => {}
-            RowMessage::PluginDownloaded(_) => {}
-            RowMessage::PluginExtracted(_) => {}
-            RowMessage::DeletePressed(_) => {
-                println!("Delete pressed")
+            RowMessage::DeletePressed(mut row) => {
+                println!("Delete pressed");
+                match Installer::delete(&row.title) {
+                    Ok(()) => match Synchronizer::delete_plugin(&row.title) {
+                        Ok(_) => row.status = "Deleted".to_string(),
+                        Err(_) => row.status = "Delete failed".to_string(),
+                    },
+                    Err(_) => row.status = "Delete failed".to_string(),
+                }
             }
-            RowMessage::WebsitePressed(_) => {
-                println!("Website pressed")
+            RowMessage::WebsitePressed(row) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    row.id, row.title,
+                ))
+                .unwrap();
             }
         }
     }
 
-    pub fn view(&mut self) -> Element<RowMessage> {
+    pub fn view(&mut self) -> Element<'_, RowMessage> {
         let plugin = self.clone();
         let bla = self.clone();
         let bli = self.clone();
@@ -350,7 +398,7 @@ impl PluginRow {
                                     .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
                             } else {
-                                Button::new(&mut self.update_btn_state, Text::new("Update"))
+                                Button::new(&mut self.update_btn_state, Text::new(&self.status))
                                     .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)

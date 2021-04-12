@@ -1,7 +1,9 @@
 use crate::core::config::CONFIGURATION;
-use std::path::Path;
+use fs_extra::dir::{move_dir, CopyOptions};
+use std::ffi::OsStr;
 use std::{error::Error, fs::File};
-use std::{fs, io::prelude::*};
+use std::{fs, io, io::prelude::*};
+use std::{fs::remove_dir_all, path::Path};
 
 use super::Plugin;
 
@@ -16,8 +18,14 @@ impl Installer {
         ))
         .await?;
 
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
+            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+
+        fs::create_dir(&tmp_file_path)?;
+
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title))
+            .join("plugin.zip");
         let mut file = match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(file) => file,
@@ -29,27 +37,54 @@ impl Installer {
     }
 
     pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
-        let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
-        fs::remove_file(path)?;
+        // let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
+        // fs::remove_file(path)?;
 
         Ok(())
     }
 
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
+            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title))
+            .join("plugin.zip");
         let file = File::open(&cache_path)?;
         let mut zip_archive = zip::ZipArchive::new(file)?;
-        zip::ZipArchive::extract(&mut zip_archive, Path::new(&CONFIGURATION.plugins_dir))?;
+
+        zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
+
+        Self::move_files(&tmp_file_path.to_str().unwrap());
 
         Ok(())
     }
 
-    pub fn delete_archive(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}.zip", &plugin.plugin_id, &plugin.title));
+    fn move_files(tmp_path: &str) {
+        let folders = fs::read_dir(&Path::new(tmp_path)).unwrap();
 
-        fs::remove_file(cache_path)?;
+        for file in folders {
+            let file_str = file.unwrap().file_name().into_string().unwrap();
+            if !file_str.contains("plugin.zip") {
+                let _ = remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&file_str));
+
+                let options = CopyOptions::new();
+                move_dir(
+                    Path::new(&tmp_path).join(&file_str),
+                    &CONFIGURATION.plugins_dir,
+                    &options,
+                )
+                .unwrap();
+            }
+        }
+    }
+
+    // TODO: Rekursives löschen noch nicht eingebaut
+    pub fn delete_cache_folder(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
+            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+
+        fs::remove_dir_all(tmp_file_path)?;
 
         Ok(())
     }

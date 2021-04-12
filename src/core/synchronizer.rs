@@ -54,13 +54,6 @@ impl Synchronizer {
         .unwrap();
     }
 
-    fn write_plugins(plugins: &[Plugin]) -> Result<(), Box<dyn Error>> {
-        for value in plugins {
-            Self::insert_plugin(&value)?;
-        }
-        Ok(())
-    }
-
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         conn.execute(
@@ -70,9 +63,9 @@ impl Synchronizer {
         Ok(())
     }
 
-    pub fn delete_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+    pub fn delete_plugin(title: &str) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
-        conn.execute("DELETE FROM plugins WHERE title=?1;", params![plugin.title])?;
+        conn.execute("DELETE FROM plugins WHERE title=?1;", params![title])?;
         Ok(())
     }
 
