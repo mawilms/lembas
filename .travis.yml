@@ -1,7 +1,0 @@
-language: rust
-rust:
-  - stable
-script:
-  - rustup component add clippy 
-  - cargo clippy
-  - cargo test
