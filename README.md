@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="src/gui/assets/bread_light.svg" width="30%">
+
 # Lembas
 
 [![Build Status](https://www.travis-ci.com/mawilms/CloudZip.svg?branch=master)](https://www.travis-ci.com/mawilms/lembas)
