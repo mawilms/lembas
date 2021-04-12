@@ -1,6 +1,9 @@
 use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
-use iced::{Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, button, scrollable, text_input};
+use iced::{
+    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
+    Length, Row, Scrollable, Text, TextInput,
+};
 
 #[derive(Debug, Clone)]
 pub enum Catalog {
@@ -48,59 +51,9 @@ impl Catalog {
         match self {
             Catalog::Loaded(state) => match message {
                 Message::CatalogInputChanged(_) => {}
-                Message::Catalog(index, msg) => match msg {
-                    RowMessage::InstallPressed(plugin) => {
-                        let plugin = Plugin::new(
-                            plugin.id,
-                            &plugin.title,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                        );
-                        match Installer::download(&plugin) {
-                            // TODO: Async fehlt noch
-                            Ok(_) => {
-                                state.plugins[index].status = "Downloaded".to_string();
-                                match Installer::extract(&plugin) {
-                                    Ok(_) => {
-                                        state.plugins[index].status = "Unpacked".to_string();
-                                        match Installer::delete_cache_folder(&plugin) {
-                                            Ok(_) => match Synchronizer::insert_plugin(&plugin) {
-                                                Ok(_) => {
-                                                    let plugins = Synchronizer::get_plugins();
-                                                    let mut rows: Vec<PluginRow> = Vec::new();
-                                                    for element in plugins {
-                                                        rows.push(PluginRow::new(
-                                                            element.plugin_id,
-                                                            &element.title,
-                                                            &element.current_version,
-                                                            &element.latest_version,
-                                                        ))
-                                                    }
-                                                    state.plugins = rows;
-                                                }
-                                                Err(_) => {
-                                                    state.plugins[index].status =
-                                                        "Installation failed".to_string()
-                                                }
-                                            },
-                                            Err(bla) => {
-                                                println!("{:?}", bla);
-                                                state.plugins[index].status =
-                                                    "Installation failed".to_string()
-                                            }
-                                        }
-                                    }
-                                    Err(bla) => {
-                                        println!("{:?}", bla);
-                                        state.plugins[index].status = "Unpacking failed".to_string()
-                                    }
-                                }
-                            }
-                            Err(_) => state.plugins[index].status = "Download failed".to_string(),
-                        }
-                    }
-                    RowMessage::WebsitePressed(_) => {}
-                },
+                Message::Catalog(index, msg) => {
+                    state.plugins[index].update(msg);
+                }
             },
         }
     }
@@ -227,18 +180,44 @@ impl PluginRow {
 
     pub fn update(&mut self, message: RowMessage) {
         match message {
-            RowMessage::InstallPressed(state) => {
+            RowMessage::InstallPressed(plugin) => {
                 let plugin = Plugin::new(
-                    state.id,
-                    &state.title,
-                    &state.current_version,
-                    &state.latest_version,
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.current_version,
+                    &plugin.latest_version,
                 );
                 match Installer::download(&plugin) {
-                    Ok(_) => println!("Hallo"),
-                    Err(_) => println!("Fail"),
+                    // TODO: Async fehlt noch
+                    Ok(_) => {
+                        self.status = "Downloaded".to_string();
+                        match Installer::extract(&plugin) {
+                            Ok(_) => {
+                                self.status = "Unpacked".to_string();
+                                match Installer::delete_cache_folder(&plugin) {
+                                    Ok(_) => match Synchronizer::insert_plugin(&plugin) {
+                                        Ok(_) => {
+                                            // TODO: Currently missing that we load the new list
+                                            self.status = "Installation completed".to_string()
+                                        }
+                                        Err(_) => self.status = "Installation failed".to_string(),
+                                    },
+                                    Err(bla) => {
+                                        println!("{:?}", bla);
+                                        self.status = "Installation failed".to_string()
+                                    }
+                                }
+                            }
+                            Err(bla) => {
+                                println!("{:?}", bla);
+                                self.status = "Unpacking failed".to_string()
+                            }
+                        }
+                    }
+                    Err(_) => self.status = "Download failed".to_string(),
                 }
             }
+
             RowMessage::WebsitePressed(row) => {
                 webbrowser::open(&format!(
                     "https://www.lotrointerface.com/downloads/info{}-{}.html",
