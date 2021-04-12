@@ -27,7 +27,13 @@ lazy_static = "^1"
 tokio = { version = "^1", features = ["full"]}
 image = "^0"
 webbrowser = "^0"
-fs_extra = "^0"
+fs_extra = "^1"
+
+[build-dependencies]
+embed-resource = "^1"
+
+[target.'cfg(windows)'.dependencies]
+winapi = "^0"
 
 [profile.release]
 opt-level = "s"

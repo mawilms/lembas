@@ -202,7 +202,7 @@ impl Application for Lembas {
 
 impl Lembas {
     pub fn start() {
-        let icon: &[u8] = include_bytes!("../assets/icon.ico");
+        let icon: &[u8] = include_bytes!("../../../resources/assets/icon.ico");
 
         let image = image::load_from_memory(icon)
             .expect("loading icon")
