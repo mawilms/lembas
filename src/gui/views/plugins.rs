@@ -1,10 +1,9 @@
-use crate::core::{Plugin, Synchronizer};
+use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
     Scrollable, Text, TextInput,
 };
-use webbrowser;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
