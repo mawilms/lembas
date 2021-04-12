@@ -1,4 +1,4 @@
-use crate::core::{installer::Installer, Plugin, Synchronizer};
+use crate::core::{Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, Length, Row,
@@ -56,35 +56,6 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    fn install_plugin(plugin: PluginRow) -> Vec<Plugin> {
-        let plugin = Plugin::new(
-            plugin.id,
-            &plugin.title,
-            &plugin.current_version,
-            &plugin.latest_version,
-        );
-        let result: Vec<Plugin> = Vec::new();
-        result
-    }
-
-    fn update_plugins(plugins: Vec<PluginRow>) -> Vec<Plugin> {
-        // TODO Implement here
-        let result: Vec<Plugin> = Vec::new();
-        result
-    }
-
-    fn load_installed_plugins() -> Vec<Plugin> {
-        Synchronizer::get_installed_plugins()
-    }
-
-    fn load_plugins() -> Vec<Plugin> {
-        Synchronizer::get_plugins()
-    }
-
-    fn get_catalog_plugin(name: String) -> Vec<Plugin> {
-        Synchronizer::get_plugin(&name)
-    }
-
     fn refresh_db() -> Result<(), ApplicationError> {
         match Synchronizer::update_local_plugins() {
             Ok(_) => Ok(()),

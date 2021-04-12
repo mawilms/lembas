@@ -5,7 +5,7 @@ pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.69, 0.32);
 pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.54, 0.53, 0.31);
 pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.27, 0.16, 0.11);
 pub const NAVIGATION_COLOR: Color = Color::from_rgb(0.2, 0.11, 0.07);
-pub const COLUMN_COLOR_PRIMARY: Color = Color::from_rgb(0.55, 0.44, 0.27);
+pub const ROW_COLOR_PRIMARY: Color = Color::from_rgb(0.55, 0.44, 0.27);
 
 pub enum PrimaryButton {
     Enabled,
@@ -111,13 +111,8 @@ pub enum PluginRow {
 impl button::StyleSheet for PluginRow {
     fn active(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
-                text_color: Color::WHITE,
-                ..button::Style::default()
-            },
-            Self::Disabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            Self::Enabled | Self::Disabled => button::Style {
+                background: Some(Background::Color(ROW_COLOR_PRIMARY)),
                 text_color: Color::WHITE,
                 ..button::Style::default()
             },
@@ -126,13 +121,8 @@ impl button::StyleSheet for PluginRow {
 
     fn hovered(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
-                text_color: Color::WHITE,
-                ..self.active()
-            },
-            Self::Disabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            Self::Enabled | Self::Disabled => button::Style {
+                background: Some(Background::Color(ROW_COLOR_PRIMARY)),
                 text_color: Color::WHITE,
                 ..self.active()
             },
