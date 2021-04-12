@@ -1,8 +1,8 @@
 use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
 };
 
 #[derive(Debug, Clone)]
@@ -41,16 +41,31 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    SyncFinished(Vec<Plugin>),
     CatalogInputChanged(String),
-    //PluginSearched(Vec<Plugin>),
+    PluginSearched(Vec<Plugin>),
     Catalog(usize, RowMessage),
 }
 
 impl Catalog {
     pub fn update(&mut self, message: Message) {
+        println!("{:?}", message);
         match self {
             Catalog::Loaded(state) => match message {
+                Message::SyncFinished(all_plugins) => {
+                    let mut plugins: Vec<PluginRow> = Vec::new();
+                    for plugin in all_plugins {
+                        plugins.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ));
+                    }
+                    state.plugins = plugins;
+                }
                 Message::CatalogInputChanged(_) => {}
+                Message::PluginSearched(_) => {}
                 Message::Catalog(index, msg) => {
                     state.plugins[index].update(msg);
                 }
@@ -187,34 +202,28 @@ impl PluginRow {
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                match Installer::download(&plugin) {
-                    // TODO: Async fehlt noch
-                    Ok(_) => {
-                        self.status = "Downloaded".to_string();
-                        match Installer::extract(&plugin) {
-                            Ok(_) => {
-                                self.status = "Unpacked".to_string();
-                                match Installer::delete_cache_folder(&plugin) {
-                                    Ok(_) => match Synchronizer::insert_plugin(&plugin) {
-                                        Ok(_) => {
-                                            // TODO: Currently missing that we load the new list
-                                            self.status = "Installation completed".to_string()
-                                        }
-                                        Err(_) => self.status = "Installation failed".to_string(),
-                                    },
-                                    Err(bla) => {
-                                        println!("{:?}", bla);
-                                        self.status = "Installation failed".to_string()
-                                    }
+                if Installer::download(&plugin).is_ok() {
+                    self.status = "Downloaded".to_string();
+                    match Installer::extract(&plugin) {
+                        Ok(_) => {
+                            self.status = "Unpacked".to_string();
+                            if Installer::delete_cache_folder(&plugin).is_ok() {
+                                if Synchronizer::insert_plugin(&plugin).is_ok() {
+                                    self.status = "Installation completed".to_string();
+                                } else {
+                                    self.status = "Installation failed".to_string()
                                 }
-                            }
-                            Err(bla) => {
-                                println!("{:?}", bla);
-                                self.status = "Unpacking failed".to_string()
+                            } else {
+                                self.status = "Installation failed".to_string()
                             }
                         }
+                        Err(bla) => {
+                            println!("{:?}", bla);
+                            self.status = "Unpacking failed".to_string()
+                        }
                     }
-                    Err(_) => self.status = "Download failed".to_string(),
+                } else {
+                    self.status = "Download failed".to_string();
                 }
             }
 
