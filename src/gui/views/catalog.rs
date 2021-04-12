@@ -48,6 +48,10 @@ pub enum Message {
 }
 
 impl Catalog {
+    pub async fn synchronize_view() -> Vec<Plugin> {
+        Synchronizer::get_plugins()
+    }
+
     pub fn update(&mut self, message: Message) {
         println!("{:?}", message);
         match self {
@@ -65,7 +69,7 @@ impl Catalog {
                     state.plugins = plugins;
                 }
                 Message::CatalogInputChanged(_) => {}
-                Message::PluginSearched(_) => {}
+                Message::PluginSearched(state) => {}
                 Message::Catalog(index, msg) => {
                     state.plugins[index].update(msg);
                 }
@@ -193,7 +197,7 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) {
+    pub fn update(&mut self, message: RowMessage) -> Command<Message> {
         match message {
             RowMessage::InstallPressed(plugin) => {
                 let plugin = Plugin::new(
@@ -210,20 +214,28 @@ impl PluginRow {
                             if Installer::delete_cache_folder(&plugin).is_ok() {
                                 if Synchronizer::insert_plugin(&plugin).is_ok() {
                                     self.status = "Installation completed".to_string();
+                                    Command::perform(
+                                        Catalog::synchronize_view(),
+                                        Message::SyncFinished,
+                                    )
                                 } else {
-                                    self.status = "Installation failed".to_string()
+                                    self.status = "Installation failed".to_string();
+                                    Command::none()
                                 }
                             } else {
-                                self.status = "Installation failed".to_string()
+                                self.status = "Installation failed".to_string();
+                                Command::none()
                             }
                         }
                         Err(bla) => {
                             println!("{:?}", bla);
-                            self.status = "Unpacking failed".to_string()
+                            self.status = "Unpacking failed".to_string();
+                            Command::none()
                         }
                     }
                 } else {
                     self.status = "Download failed".to_string();
+                    Command::none()
                 }
             }
 
@@ -233,6 +245,7 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
+                Command::none()
             }
         }
     }
