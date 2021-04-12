@@ -173,14 +173,9 @@ pub enum InstallButton {
 impl button::StyleSheet for InstallButton {
     fn active(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style {
+            Self::Enabled | Self::Disabled => button::Style {
                 background: Some(Background::Color(Color::TRANSPARENT)),
-                text_color: BUTTON_COLOR_DEFAULT,
-                ..button::Style::default()
-            },
-            Self::Disabled => button::Style {
-                background: Some(Background::Color(Color::TRANSPARENT)),
-                text_color: BACKGROUND_COLOR,
+                text_color: Color::WHITE,
                 ..button::Style::default()
             },
         }
@@ -188,8 +183,7 @@ impl button::StyleSheet for InstallButton {
 
     fn hovered(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style { ..self.active() },
-            Self::Disabled => button::Style { ..self.active() },
+            Self::Enabled | Self::Disabled => button::Style { ..self.active() },
         }
     }
 }

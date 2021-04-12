@@ -2,7 +2,7 @@ use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Space, Text, TextInput, VerticalAlignment,
+    Length, Row, Scrollable, Space, Text, TextInput,
 };
 
 #[derive(Debug, Clone)]
@@ -265,17 +265,6 @@ impl PluginRow {
                                             Ok(_) => {
                                                 match Synchronizer::insert_plugin(&install_plugin) {
                                                     Ok(_) => {
-                                                        // let plugins = Synchronizer::get_plugins();
-                                                        // let mut rows: Vec<PluginRow> = Vec::new();
-                                                        // for element in plugins {
-                                                        //     rows.push(PluginRow::new(
-                                                        //         element.plugin_id,
-                                                        //         &element.title,
-                                                        //         &element.current_version,
-                                                        //         &element.latest_version,
-                                                        //     ))
-                                                        // }
-                                                        // state.plugins = rows;
                                                         // TODO: Currently missing that we load the new list
                                                         plugin.status =
                                                             "Installation completed".to_string()
@@ -298,34 +287,6 @@ impl PluginRow {
                                 plugin.status = "Installation failed".to_string();
                             }
                         }
-
-                        // match Installer::extract(&install_plugin) {
-                        //     Ok(_) => {
-                        //         plugin.status = "Unpacked".to_string();
-                        //         match Installer::delete_archive(&install_plugin) {
-                        //             Ok(_) => match Synchronizer::insert_plugin(&install_plugin) {
-                        //                 Ok(_) => {
-                        //                     // let plugins = Synchronizer::get_plugins();
-                        //                     // let mut rows: Vec<PluginRow> = Vec::new();
-                        //                     // for element in plugins {
-                        //                     //     rows.push(PluginRow::new(
-                        //                     //         element.plugin_id,
-                        //                     //         &element.title,
-                        //                     //         &element.current_version,
-                        //                     //         &element.latest_version,
-                        //                     //     ))
-                        //                     // }
-                        //                     // state.plugins = rows;
-                        //                     // TODO: Currently missing that we load the new list
-                        //                     plugin.status = "Installation completed".to_string()
-                        //                 }
-                        //                 Err(_) => plugin.status = "Installation failed".to_string(),
-                        //             },
-                        //             Err(_) => plugin.status = "Installation failed".to_string(),
-                        //         }
-                        //     }
-                        //     Err(_) => plugin.status = "Unpacking failed".to_string(),
-                        // }
                     }
                     Err(_) => plugin.status = "Download failed".to_string(),
                 }
@@ -354,6 +315,7 @@ impl PluginRow {
         let plugin = self.clone();
         let bla = self.clone();
         let bli = self.clone();
+
         let description_label = Text::new("Description");
         let description = Text::new("Hallo Welt");
         let description_section = Column::new()
@@ -394,6 +356,7 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
+                            .align_items(Align::Center)
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
@@ -403,7 +366,6 @@ impl PluginRow {
                                     .width(Length::FillPortion(2))
                             } else {
                                 Button::new(&mut self.update_btn_state, Text::new(&self.status))
-                                    .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)
                                     .width(Length::FillPortion(2))
@@ -442,7 +404,6 @@ impl PluginRow {
                                 )
                                 .style(style::PrimaryButton::Enabled)
                                 .on_press(RowMessage::UpdatePressed(plugin))
-                                .style(style::PrimaryButton::Enabled)
                                 .width(Length::FillPortion(2))
                             }),
                     )
