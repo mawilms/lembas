@@ -218,9 +218,7 @@ impl Lembas {
                 icon: Some(icon.unwrap()),
                 ..iced::window::Settings::default()
             },
-            default_text_size: 18,
-            // https://github.com/hecrj/iced/issues/537
-            antialiasing: false,
+            default_text_size: 17,
             ..iced::Settings::default()
         };
         //settings.default_font = Some(RING_BEARER);

@@ -67,6 +67,7 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
+        println!("Hallo");
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
@@ -266,12 +267,10 @@ impl PluginRow {
                                                 match Synchronizer::insert_plugin(&install_plugin) {
                                                     Ok(_) => {
                                                         // TODO: Currently missing that we load the new list
-                                                        plugin.status =
-                                                            "Installation completed".to_string()
+                                                        plugin.status = "Installed".to_string()
                                                     }
                                                     Err(_) => {
-                                                        plugin.status =
-                                                            "Installation failed".to_string()
+                                                        plugin.status = "Install failed".to_string()
                                                     }
                                                 }
                                             }

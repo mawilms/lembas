@@ -49,11 +49,11 @@ pub enum Message {
 
 impl Catalog {
     pub async fn synchronize_view() -> Vec<Plugin> {
+        println!("Synchro started");
         Synchronizer::get_plugins()
     }
 
     pub fn update(&mut self, message: Message) {
-        println!("{:?}", message);
         match self {
             Catalog::Loaded(state) => match message {
                 Message::SyncFinished(all_plugins) => {
@@ -208,30 +208,26 @@ impl PluginRow {
                 );
                 if Installer::download(&plugin).is_ok() {
                     self.status = "Downloaded".to_string();
-                    match Installer::extract(&plugin) {
-                        Ok(_) => {
-                            self.status = "Unpacked".to_string();
-                            if Installer::delete_cache_folder(&plugin).is_ok() {
-                                if Synchronizer::insert_plugin(&plugin).is_ok() {
-                                    self.status = "Installation completed".to_string();
-                                    Command::perform(
-                                        Catalog::synchronize_view(),
-                                        Message::SyncFinished,
-                                    )
-                                } else {
-                                    self.status = "Installation failed".to_string();
-                                    Command::none()
-                                }
+                    if Installer::extract(&plugin).is_ok() {
+                        self.status = "Unpacked".to_string();
+                        if Installer::delete_cache_folder(&plugin).is_ok() {
+                            if Synchronizer::insert_plugin(&plugin).is_ok() {
+                                self.status = "Installed".to_string();
+                                Command::perform(
+                                    Catalog::synchronize_view(),
+                                    Message::SyncFinished,
+                                )
                             } else {
                                 self.status = "Installation failed".to_string();
                                 Command::none()
                             }
-                        }
-                        Err(bla) => {
-                            println!("{:?}", bla);
-                            self.status = "Unpacking failed".to_string();
+                        } else {
+                            self.status = "Installation failed".to_string();
                             Command::none()
                         }
+                    } else {
+                        self.status = "Unpacking failed".to_string();
+                        Command::none()
                     }
                 } else {
                     self.status = "Download failed".to_string();
