@@ -798,6 +798,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs_extra"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1002768d4a253dd25308c2b0639c38389aeadfdd11d4fe0f1ac055a509010871"
+
+[[package]]
 name = "fuchsia-zircon"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1707,6 +1713,7 @@ name = "lembas"
 version = "0.0.1"
 dependencies = [
  "dirs 3.0.1",
+ "fs_extra",
  "futures",
  "iced",
  "lazy_static",
@@ -1715,6 +1722,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "webbrowser",
  "zip",
 ]
 
@@ -3324,6 +3332,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "webbrowser"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecad156490d6b620308ed411cfee90d280b3cbd13e189ea0d3fada8acc89158a"
+dependencies = [
+ "web-sys",
+ "widestring",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "wgpu"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3393,6 +3412,12 @@ dependencies = [
  "log",
  "wgpu",
 ]
+
+[[package]]
+name = "widestring"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c168940144dd21fd8046987c16a46a33d5fc84eec29ef9dcddc2ac9e31526b7c"
 
 [[package]]
 name = "winapi"

@@ -102,7 +102,7 @@ impl Catalog {
                                 match Installer::extract(&plugin) {
                                     Ok(_) => {
                                         state.plugins[index].status = "Unpacked".to_string();
-                                        match Installer::delete_archive(&plugin) {
+                                        match Installer::delete_cache_folder(&plugin) {
                                             Ok(_) => match Synchronizer::insert_plugin(&plugin) {
                                                 Ok(_) => {
                                                     let plugins = Synchronizer::get_plugins();
@@ -122,13 +122,15 @@ impl Catalog {
                                                         "Installation failed".to_string()
                                                 }
                                             },
-                                            Err(_) => {
+                                            Err(bla) => {
+                                                println!("{:?}", bla);
                                                 state.plugins[index].status =
                                                     "Installation failed".to_string()
                                             }
                                         }
                                     }
-                                    Err(_) => {
+                                    Err(bla) => {
+                                        println!("{:?}", bla);
                                         state.plugins[index].status = "Unpacking failed".to_string()
                                     }
                                 }
@@ -136,6 +138,7 @@ impl Catalog {
                             Err(_) => state.plugins[index].status = "Download failed".to_string(),
                         }
                     }
+                    RowMessage::WebsitePressed(_) => {}
                 },
             },
         }
@@ -236,6 +239,7 @@ pub enum RowMessage {
     ToggleView,
 
     InstallPressed(PluginRow),
+    WebsitePressed(PluginRow),
 }
 
 impl PluginRow {
@@ -299,6 +303,13 @@ impl PluginRow {
                     Ok(_) => println!("Hallo"),
                     Err(_) => println!("Fail"),
                 }
+            }
+            RowMessage::WebsitePressed(row) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    row.id, row.title,
+                ))
+                .unwrap();
             }
         }
     }

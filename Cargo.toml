@@ -25,6 +25,8 @@ rusqlite = { version = "^0", features = ["bundled"] }
 futures = "^0"
 lazy_static = "^1"
 tokio = { version = "^1", features = ["full"]}
+webbrowser = "^0"
+fs_extra = "^0"
 
 [profile.release]
 opt-level = "s"
