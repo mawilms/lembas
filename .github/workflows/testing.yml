@@ -2,7 +2,7 @@ name: Testing
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/*, bugfix/*, testing/*]
   pull_request:
     branches: [main]
 
@@ -23,3 +23,7 @@ jobs:
         run: cargo clippy
       - name: Run tests
         run: cargo test --verbose
+      - name: Cache
+        uses: actions/cache@v2.1.4
+        with:
+          path: target
