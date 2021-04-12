@@ -8,9 +8,12 @@ use crate::gui::views::About as AboutView;
 pub use about::About;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 use iced::{
-    button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
-    Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
+    button,
+    window::{Icon, Settings as Window},
+    Align, Application, Button, Clipboard, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
+use image::ImageFormat;
 pub use plugins::Plugins as PluginsView;
 
 use super::views::plugins::PluginMessage;
@@ -199,11 +202,20 @@ impl Application for Lembas {
 
 impl Lembas {
     pub fn start() {
+        let icon: &[u8] = include_bytes!("../assets/icon.ico");
+
+        let image = image::load_from_memory(icon)
+            .expect("loading icon")
+            .to_rgba8();
+        let (width, height) = image.dimensions();
+        let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
+
         let settings: Settings<()> = Settings {
             window: Window {
                 size: (900, 620),
                 resizable: true,
                 decorations: true,
+                icon: Some(icon.unwrap()),
                 ..iced::window::Settings::default()
             },
             default_text_size: 18,

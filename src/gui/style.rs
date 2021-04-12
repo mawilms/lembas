@@ -1,10 +1,11 @@
 use iced::{button, container, scrollable, Background, Color, Vector};
 // 331C12
-pub const BORDER_COLOR: Color = Color::from_rgb(0.54, 0.53, 0.31);
-pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.60, 0.69, 0.32);
-pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.54, 0.53, 0.31);
-pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.56, 0.32, 0.20);
-pub const COLUMN_COLOR_PRIMARY: Color = Color::from_rgb(0.25, 0.18, 0.13);
+pub const BORDER_COLOR: Color = Color::from_rgb(0.32, 0.41, 0.05);
+pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.39, 0.48, 0.1);
+pub const BUTTON_COLOR_HOVER: Color = Color::from_rgb(0.47, 0.58, 0.15);
+pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.27, 0.16, 0.11);
+pub const NAVIGATION_COLOR: Color = Color::from_rgb(0.2, 0.11, 0.07);
+pub const ROW_COLOR_PRIMARY: Color = Color::from_rgb(0.55, 0.44, 0.27);
 
 pub enum PrimaryButton {
     Enabled,
@@ -96,7 +97,7 @@ pub struct NavigationContainer;
 impl container::StyleSheet for NavigationContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            background: Some(Background::Color(NAVIGATION_COLOR)),
             text_color: Some(Color::WHITE),
             ..container::Style::default()
         }
@@ -110,13 +111,8 @@ pub enum PluginRow {
 impl button::StyleSheet for PluginRow {
     fn active(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
-                text_color: Color::WHITE,
-                ..button::Style::default()
-            },
-            Self::Disabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            Self::Enabled | Self::Disabled => button::Style {
+                background: Some(Background::Color(ROW_COLOR_PRIMARY)),
                 text_color: Color::WHITE,
                 ..button::Style::default()
             },
@@ -125,13 +121,8 @@ impl button::StyleSheet for PluginRow {
 
     fn hovered(&self) -> button::Style {
         match self {
-            Self::Enabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
-                text_color: Color::WHITE,
-                ..self.active()
-            },
-            Self::Disabled => button::Style {
-                background: Some(Background::Color(COLUMN_COLOR_PRIMARY)),
+            Self::Enabled | Self::Disabled => button::Style {
+                background: Some(Background::Color(ROW_COLOR_PRIMARY)),
                 text_color: Color::WHITE,
                 ..self.active()
             },
