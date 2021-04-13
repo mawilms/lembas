@@ -88,7 +88,7 @@ impl Catalog {
 
                 let plugin_amount = Text::new(format!("{} plugins found", plugins.len()));
 
-                let row = Row::new()
+                let search_row = Row::new()
                     .width(Length::Fill)
                     .align_items(Align::Center)
                     .spacing(10)
@@ -108,10 +108,12 @@ impl Catalog {
                     .push(latest_version)
                     .push(upgrade);
 
-                let plugins = plugins.iter_mut().enumerate().fold(
-                    Column::new().spacing(5).width(Length::Fill),
-                    |col, (i, p)| col.push(p.view().map(move |msg| Message::Catalog(i, msg))),
-                );
+                let plugins = plugins
+                    .iter_mut()
+                    .enumerate()
+                    .fold(Column::new().spacing(5), |col, (i, p)| {
+                        col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
+                    });
 
                 let plugins_scrollable = Scrollable::new(plugin_scrollable_state)
                     .push(plugins)
@@ -123,12 +125,11 @@ impl Catalog {
                     .width(Length::Fill)
                     .spacing(10)
                     .align_items(Align::Center)
-                    .push(row)
+                    .push(search_row)
                     .push(plugin_panel)
                     .push(plugins_scrollable);
 
                 Container::new(content)
-                    .width(Length::Fill)
                     .height(Length::Fill)
                     .padding(10)
                     .style(style::Content)

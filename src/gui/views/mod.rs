@@ -171,6 +171,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
+                        plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)

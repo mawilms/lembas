@@ -42,9 +42,7 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
-    InstalledPluginsLoaded(Vec<Plugin>),
-    AllPluginsLoaded(Vec<Plugin>),
-    PluginsSynchronized(Result<(), ApplicationError>),
+    LoadPlugins,
 
     // Navigation View
     PluginInputChanged(String),
@@ -72,22 +70,7 @@ impl Plugins {
                 PluginMessage::Plugin(index, msg) => {
                     state.plugins[index].update(msg);
                 }
-                PluginMessage::AllPluginsLoaded(state)
-                | PluginMessage::InstalledPluginsLoaded(state) => {
-                    let mut states: Vec<PluginRow> = Vec::new();
-                    for plugin in state {
-                        states.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                        ));
-                    }
-                    *self = Plugins::Loaded(State {
-                        plugins: states,
-                        ..State::default()
-                    });
-                }
+
                 PluginMessage::RefreshPressed => {
                     println!("Refreshed");
                     Self::refresh_db();
@@ -97,6 +80,19 @@ impl Plugins {
                     // for i in 1..state.plugins.len() {
                     //     state.plugins[i].update(RowMessage::UpdatePressed(bla));
                     // }
+                }
+                PluginMessage::LoadPlugins => {
+                    let mut plugins: Vec<PluginRow> = Vec::new();
+                    let installed_plugins = Synchronizer::get_installed_plugins();
+                    for plugin in installed_plugins {
+                        plugins.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ));
+                    }
+                    state.plugins = plugins;
                 }
                 _ => {}
             },
