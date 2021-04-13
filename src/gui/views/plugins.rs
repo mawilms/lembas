@@ -68,7 +68,19 @@ impl Plugins {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
-                    state.plugins[index].update(msg);
+                    if let Event::Synchronize = state.plugins[index].update(msg) {
+                        let mut plugins: Vec<PluginRow> = Vec::new();
+                        let all_plugins = Synchronizer::get_plugins();
+                        for plugin in all_plugins {
+                            plugins.push(PluginRow::new(
+                                plugin.plugin_id,
+                                &plugin.title,
+                                &plugin.current_version,
+                                &plugin.latest_version,
+                            ))
+                        }
+                        state.plugins = plugins;
+                    }
                 }
 
                 PluginMessage::RefreshPressed => {
@@ -206,6 +218,11 @@ pub enum RowMessage {
     WebsitePressed(PluginRow),
 }
 
+pub enum Event {
+    Nothing,
+    Synchronize,
+}
+
 impl PluginRow {
     pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
         if current_version == latest_version {
@@ -237,9 +254,12 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) {
+    pub fn update(&mut self, message: RowMessage) -> Event {
         match message {
-            RowMessage::ToggleView => self.opened = !self.opened,
+            RowMessage::ToggleView => {
+                self.opened = !self.opened;
+                Event::Nothing
+            }
             RowMessage::UpdatePressed(mut plugin) => {
                 let install_plugin = Plugin::new(
                     plugin.id,
@@ -247,52 +267,50 @@ impl PluginRow {
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                match Installer::download(&install_plugin) {
-                    // TODO: Async fehlt noch
-                    Ok(_) => {
-                        plugin.status = "Downloaded".to_string();
-                        match Installer::delete(&install_plugin.title) {
-                            // TODO: Aktuell noch verbugt da delete Probleme macht
-                            Ok(_) => {
-                                match Installer::extract(&install_plugin) {
-                                    Ok(_) => {
-                                        plugin.status = "Unpacked".to_string();
-                                        match Installer::delete_cache_folder(&install_plugin) {
-                                            Ok(_) => {
-                                                match Synchronizer::insert_plugin(&install_plugin) {
-                                                    Ok(_) => {
-                                                        // TODO: Currently missing that we load the new list
-                                                        plugin.status = "Installed".to_string()
-                                                    }
-                                                    Err(_) => {
-                                                        plugin.status = "Install failed".to_string()
-                                                    }
-                                                }
-                                            }
-                                            Err(_) => {
-                                                plugin.status = "Installation failed".to_string()
-                                            }
-                                        }
-                                    }
-                                    Err(_) => plugin.status = "Unpacking failed".to_string(),
+                if Installer::download(&install_plugin).is_ok() {
+                    plugin.status = "Downloaded".to_string();
+                    if Installer::delete(&install_plugin.title).is_ok() {
+                        if Installer::extract(&install_plugin).is_ok() {
+                            plugin.status = "Unpacked".to_string();
+                            if Installer::delete_cache_folder(&install_plugin).is_ok() {
+                                if let Ok(_) = Synchronizer::insert_plugin(&install_plugin) {
+                                    // TODO: Currently missing that we load the new list
+                                    plugin.status = "Installed".to_string();
+                                    Event::Synchronize
+                                } else {
+                                    plugin.status = "Install failed".to_string();
+                                    Event::Nothing
                                 }
-                            }
-                            Err(_) => {
+                            } else {
                                 plugin.status = "Installation failed".to_string();
+                                Event::Nothing
                             }
+                        } else {
+                            plugin.status = "Unpacking failed".to_string();
+                            Event::Nothing
                         }
+                    } else {
+                        plugin.status = "Installation failed".to_string();
+                        Event::Nothing
                     }
-                    Err(_) => plugin.status = "Download failed".to_string(),
+                } else {
+                    plugin.status = "Download failed".to_string();
+                    Event::Nothing
                 }
             }
             RowMessage::DeletePressed(mut row) => {
                 println!("Delete pressed");
-                match Installer::delete(&row.title) {
-                    Ok(()) => match Synchronizer::delete_plugin(&row.title) {
-                        Ok(_) => row.status = "Deleted".to_string(),
-                        Err(_) => row.status = "Delete failed".to_string(),
-                    },
-                    Err(_) => row.status = "Delete failed".to_string(),
+                if let Ok(()) = Installer::delete(&row.title) {
+                    if Synchronizer::delete_plugin(&row.title).is_ok() {
+                        row.status = "Deleted".to_string();
+                        Event::Nothing
+                    } else {
+                        row.status = "Delete failed".to_string();
+                        Event::Nothing
+                    }
+                } else {
+                    row.status = "Delete failed".to_string();
+                    Event::Nothing
                 }
             }
             RowMessage::WebsitePressed(row) => {
@@ -301,6 +319,7 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
+                Event::Nothing
             }
         }
     }
