@@ -139,7 +139,7 @@ impl scrollable::StyleSheet for Scrollable {
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
-                color: Color::from_rgb(0.85, 0.71, 0.49),
+                color: BUTTON_COLOR_DEFAULT,
                 border_radius: 2.0,
                 border_width: 0.0,
                 border_color: Color::TRANSPARENT,

@@ -1,8 +1,8 @@
 use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
+    Length, Row, Scrollable, Text, TextInput,
 };
 
 #[derive(Debug, Clone)]
@@ -41,33 +41,14 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    SyncFinished(Vec<Plugin>),
     CatalogInputChanged(String),
-    PluginSearched(Vec<Plugin>),
     Catalog(usize, RowMessage),
 }
 
 impl Catalog {
-    pub async fn synchronize_view() -> Vec<Plugin> {
-        println!("Synchro started");
-        Synchronizer::get_plugins()
-    }
-
     pub fn update(&mut self, message: Message) {
         match self {
             Catalog::Loaded(state) => match message {
-                Message::SyncFinished(all_plugins) => {
-                    let mut plugins: Vec<PluginRow> = Vec::new();
-                    for plugin in all_plugins {
-                        plugins.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                        ));
-                    }
-                    state.plugins = plugins;
-                }
                 Message::CatalogInputChanged(letter) => {
                     state.input_value = letter;
                     let mut plugins: Vec<PluginRow> = Vec::new();
@@ -80,10 +61,8 @@ impl Catalog {
                             &plugin.latest_version,
                         ))
                     }
-                    println!("{:?}", plugins);
                     state.plugins = plugins;
                 }
-                Message::PluginSearched(state) => {}
                 Message::Catalog(index, msg) => {
                     state.plugins[index].update(msg);
                 }
@@ -107,11 +86,14 @@ impl Catalog {
                 )
                 .padding(5);
 
+                let plugin_amount = Text::new(format!("{} plugins found", plugins.len()));
+
                 let row = Row::new()
                     .width(Length::Fill)
                     .align_items(Align::Center)
                     .spacing(10)
-                    .push(search_plugins);
+                    .push(search_plugins)
+                    .push(plugin_amount);
 
                 let plugin_name = Text::new("Plugin").width(Length::FillPortion(6));
                 let current_version = Text::new("Current Version").width(Length::FillPortion(3));
@@ -126,17 +108,14 @@ impl Catalog {
                     .push(latest_version)
                     .push(upgrade);
 
-                let plugins = plugins
-                    .iter_mut()
-                    .enumerate()
-                    .fold(Column::new().spacing(5), |col, (i, p)| {
-                        col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
-                    });
+                let plugins = plugins.iter_mut().enumerate().fold(
+                    Column::new().spacing(5).width(Length::Fill),
+                    |col, (i, p)| col.push(p.view().map(move |msg| Message::Catalog(i, msg))),
+                );
 
                 let plugins_scrollable = Scrollable::new(plugin_scrollable_state)
                     .push(plugins)
                     .spacing(5)
-                    .width(Length::Fill)
                     .align_items(Align::Center)
                     .style(style::Scrollable);
 
@@ -211,7 +190,7 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) -> Command<Message> {
+    pub fn update(&mut self, message: RowMessage) {
         match message {
             RowMessage::InstallPressed(plugin) => {
                 let plugin = Plugin::new(
@@ -227,22 +206,17 @@ impl PluginRow {
                         if Installer::delete_cache_folder(&plugin).is_ok() {
                             if Synchronizer::insert_plugin(&plugin).is_ok() {
                                 self.status = "Installed".to_string();
-                                Command::perform(Catalog::synchronize_view(), Message::SyncFinished)
                             } else {
                                 self.status = "Installation failed".to_string();
-                                Command::none()
                             }
                         } else {
                             self.status = "Installation failed".to_string();
-                            Command::none()
                         }
                     } else {
                         self.status = "Unpacking failed".to_string();
-                        Command::none()
                     }
                 } else {
                     self.status = "Download failed".to_string();
-                    Command::none()
                 }
             }
 
@@ -252,7 +226,6 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
-                Command::none()
             }
         }
     }
