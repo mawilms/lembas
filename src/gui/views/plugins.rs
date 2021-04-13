@@ -4,6 +4,7 @@ use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
     Length, Row, Scrollable, Space, Text, TextInput,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -194,18 +195,24 @@ impl Plugins {
 }
 
 // Single row that has a toggle effect to show additional data
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
 
+    #[serde(skip)]
     update_btn_state: button::State,
+    #[serde(skip)]
     delete_btn_state: button::State,
+    #[serde(skip)]
     website_btn_state: button::State,
+    #[serde(skip)]
     opened: bool,
+    #[serde(skip)]
     toggle_view_btn: button::State,
 }
 
