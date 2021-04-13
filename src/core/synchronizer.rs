@@ -21,7 +21,7 @@ impl Synchronizer {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
 
         for plugin in remote_plugins {
-            let installed_plugin = Synchronizer::get_plugin(&plugin.title);
+            let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
             if installed_plugin.len() == 1 {
                 conn.execute(
                     "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
@@ -137,11 +137,11 @@ impl Synchronizer {
         installed_plugins
     }
 
-    pub fn get_plugin(name: &str) -> Vec<Plugin> {
+    pub fn get_exact_plugin(name: &str) -> Vec<Plugin> {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1 LIMIT 1;")
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![name.to_lowercase()], |row| {

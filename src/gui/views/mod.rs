@@ -171,6 +171,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
+                        plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
@@ -218,9 +219,7 @@ impl Lembas {
                 icon: Some(icon.unwrap()),
                 ..iced::window::Settings::default()
             },
-            default_text_size: 18,
-            // https://github.com/hecrj/iced/issues/537
-            antialiasing: false,
+            default_text_size: 17,
             ..iced::Settings::default()
         };
         //settings.default_font = Some(RING_BEARER);

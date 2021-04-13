@@ -1,8 +1,7 @@
 use crate::core::config::CONFIGURATION;
 use fs_extra::dir::{move_dir, CopyOptions};
-use std::ffi::OsStr;
 use std::{error::Error, fs::File};
-use std::{fs, io, io::prelude::*};
+use std::{fs, io::prelude::*};
 use std::{fs::remove_dir_all, path::Path};
 
 use super::Plugin;
@@ -88,16 +87,4 @@ impl Installer {
 
         Ok(())
     }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn install() {
-        assert_eq!(2 + 2, 4);
-    }
-
-    fn update() {}
-
-    fn delete() {}
 }
