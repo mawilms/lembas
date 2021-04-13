@@ -2,7 +2,7 @@ use crate::core::{Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Space, Text, TextInput, VerticalAlignment,
+    Length, Row, Scrollable, Space, Text, TextInput,
 };
 
 #[derive(Debug, Clone)]
@@ -42,9 +42,7 @@ pub struct State {
 
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
-    InstalledPluginsLoaded(Vec<Plugin>),
-    AllPluginsLoaded(Vec<Plugin>),
-    PluginsSynchronized(Result<(), ApplicationError>),
+    LoadPlugins,
 
     // Navigation View
     PluginInputChanged(String),
@@ -70,24 +68,21 @@ impl Plugins {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
-                    state.plugins[index].update(msg);
-                }
-                PluginMessage::AllPluginsLoaded(state)
-                | PluginMessage::InstalledPluginsLoaded(state) => {
-                    let mut states: Vec<PluginRow> = Vec::new();
-                    for plugin in state {
-                        states.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                        ));
+                    if let Event::Synchronize = state.plugins[index].update(msg) {
+                        let mut plugins: Vec<PluginRow> = Vec::new();
+                        let all_plugins = Synchronizer::get_plugins();
+                        for plugin in all_plugins {
+                            plugins.push(PluginRow::new(
+                                plugin.plugin_id,
+                                &plugin.title,
+                                &plugin.current_version,
+                                &plugin.latest_version,
+                            ))
+                        }
+                        state.plugins = plugins;
                     }
-                    *self = Plugins::Loaded(State {
-                        plugins: states,
-                        ..State::default()
-                    });
                 }
+
                 PluginMessage::RefreshPressed => {
                     println!("Refreshed");
                     Self::refresh_db();
@@ -97,6 +92,19 @@ impl Plugins {
                     // for i in 1..state.plugins.len() {
                     //     state.plugins[i].update(RowMessage::UpdatePressed(bla));
                     // }
+                }
+                PluginMessage::LoadPlugins => {
+                    let mut plugins: Vec<PluginRow> = Vec::new();
+                    let installed_plugins = Synchronizer::get_installed_plugins();
+                    for plugin in installed_plugins {
+                        plugins.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ));
+                    }
+                    state.plugins = plugins;
                 }
                 _ => {}
             },
@@ -210,6 +218,11 @@ pub enum RowMessage {
     WebsitePressed(PluginRow),
 }
 
+pub enum Event {
+    Nothing,
+    Synchronize,
+}
+
 impl PluginRow {
     pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
         if current_version == latest_version {
@@ -241,9 +254,12 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) {
+    pub fn update(&mut self, message: RowMessage) -> Event {
         match message {
-            RowMessage::ToggleView => self.opened = !self.opened,
+            RowMessage::ToggleView => {
+                self.opened = !self.opened;
+                Event::Nothing
+            }
             RowMessage::UpdatePressed(mut plugin) => {
                 let install_plugin = Plugin::new(
                     plugin.id,
@@ -251,93 +267,50 @@ impl PluginRow {
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
-                match Installer::download(&install_plugin) {
-                    // TODO: Async fehlt noch
-                    Ok(_) => {
-                        plugin.status = "Downloaded".to_string();
-                        match Installer::delete(&install_plugin.title) {
-                            // TODO: Aktuell noch verbugt da delete Probleme macht
-                            Ok(_) => {
-                                match Installer::extract(&install_plugin) {
-                                    Ok(_) => {
-                                        plugin.status = "Unpacked".to_string();
-                                        match Installer::delete_cache_folder(&install_plugin) {
-                                            Ok(_) => {
-                                                match Synchronizer::insert_plugin(&install_plugin) {
-                                                    Ok(_) => {
-                                                        // let plugins = Synchronizer::get_plugins();
-                                                        // let mut rows: Vec<PluginRow> = Vec::new();
-                                                        // for element in plugins {
-                                                        //     rows.push(PluginRow::new(
-                                                        //         element.plugin_id,
-                                                        //         &element.title,
-                                                        //         &element.current_version,
-                                                        //         &element.latest_version,
-                                                        //     ))
-                                                        // }
-                                                        // state.plugins = rows;
-                                                        // TODO: Currently missing that we load the new list
-                                                        plugin.status =
-                                                            "Installation completed".to_string()
-                                                    }
-                                                    Err(_) => {
-                                                        plugin.status =
-                                                            "Installation failed".to_string()
-                                                    }
-                                                }
-                                            }
-                                            Err(_) => {
-                                                plugin.status = "Installation failed".to_string()
-                                            }
-                                        }
-                                    }
-                                    Err(_) => plugin.status = "Unpacking failed".to_string(),
+                if Installer::download(&install_plugin).is_ok() {
+                    plugin.status = "Downloaded".to_string();
+                    if Installer::delete(&install_plugin.title).is_ok() {
+                        if Installer::extract(&install_plugin).is_ok() {
+                            plugin.status = "Unpacked".to_string();
+                            if Installer::delete_cache_folder(&install_plugin).is_ok() {
+                                if let Ok(_) = Synchronizer::insert_plugin(&install_plugin) {
+                                    // TODO: Currently missing that we load the new list
+                                    plugin.status = "Installed".to_string();
+                                    Event::Synchronize
+                                } else {
+                                    plugin.status = "Install failed".to_string();
+                                    Event::Nothing
                                 }
-                            }
-                            Err(_) => {
+                            } else {
                                 plugin.status = "Installation failed".to_string();
+                                Event::Nothing
                             }
+                        } else {
+                            plugin.status = "Unpacking failed".to_string();
+                            Event::Nothing
                         }
-
-                        // match Installer::extract(&install_plugin) {
-                        //     Ok(_) => {
-                        //         plugin.status = "Unpacked".to_string();
-                        //         match Installer::delete_archive(&install_plugin) {
-                        //             Ok(_) => match Synchronizer::insert_plugin(&install_plugin) {
-                        //                 Ok(_) => {
-                        //                     // let plugins = Synchronizer::get_plugins();
-                        //                     // let mut rows: Vec<PluginRow> = Vec::new();
-                        //                     // for element in plugins {
-                        //                     //     rows.push(PluginRow::new(
-                        //                     //         element.plugin_id,
-                        //                     //         &element.title,
-                        //                     //         &element.current_version,
-                        //                     //         &element.latest_version,
-                        //                     //     ))
-                        //                     // }
-                        //                     // state.plugins = rows;
-                        //                     // TODO: Currently missing that we load the new list
-                        //                     plugin.status = "Installation completed".to_string()
-                        //                 }
-                        //                 Err(_) => plugin.status = "Installation failed".to_string(),
-                        //             },
-                        //             Err(_) => plugin.status = "Installation failed".to_string(),
-                        //         }
-                        //     }
-                        //     Err(_) => plugin.status = "Unpacking failed".to_string(),
-                        // }
+                    } else {
+                        plugin.status = "Installation failed".to_string();
+                        Event::Nothing
                     }
-                    Err(_) => plugin.status = "Download failed".to_string(),
+                } else {
+                    plugin.status = "Download failed".to_string();
+                    Event::Nothing
                 }
             }
             RowMessage::DeletePressed(mut row) => {
                 println!("Delete pressed");
-                match Installer::delete(&row.title) {
-                    Ok(()) => match Synchronizer::delete_plugin(&row.title) {
-                        Ok(_) => row.status = "Deleted".to_string(),
-                        Err(_) => row.status = "Delete failed".to_string(),
-                    },
-                    Err(_) => row.status = "Delete failed".to_string(),
+                if let Ok(()) = Installer::delete(&row.title) {
+                    if Synchronizer::delete_plugin(&row.title).is_ok() {
+                        row.status = "Deleted".to_string();
+                        Event::Nothing
+                    } else {
+                        row.status = "Delete failed".to_string();
+                        Event::Nothing
+                    }
+                } else {
+                    row.status = "Delete failed".to_string();
+                    Event::Nothing
                 }
             }
             RowMessage::WebsitePressed(row) => {
@@ -346,6 +319,7 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
+                Event::Nothing
             }
         }
     }
@@ -354,6 +328,7 @@ impl PluginRow {
         let plugin = self.clone();
         let bla = self.clone();
         let bli = self.clone();
+
         let description_label = Text::new("Description");
         let description = Text::new("Hallo Welt");
         let description_section = Column::new()
@@ -394,6 +369,7 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
+                            .align_items(Align::Center)
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
@@ -403,7 +379,6 @@ impl PluginRow {
                                     .width(Length::FillPortion(2))
                             } else {
                                 Button::new(&mut self.update_btn_state, Text::new(&self.status))
-                                    .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)
                                     .width(Length::FillPortion(2))
@@ -442,7 +417,6 @@ impl PluginRow {
                                 )
                                 .style(style::PrimaryButton::Enabled)
                                 .on_press(RowMessage::UpdatePressed(plugin))
-                                .style(style::PrimaryButton::Enabled)
                                 .width(Length::FillPortion(2))
                             }),
                     )
