@@ -171,7 +171,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        plugins_view.update(PluginMessage::LoadPlugins);
+                        //plugins_view.update(PluginMessage::LoadPlugins); TODO: Currently buggy because the opened state gets overwritten.
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
