@@ -68,7 +68,21 @@ impl Catalog {
                     }
                     state.plugins = plugins;
                 }
-                Message::CatalogInputChanged(_) => {}
+                Message::CatalogInputChanged(letter) => {
+                    state.input_value = letter;
+                    let mut plugins: Vec<PluginRow> = Vec::new();
+                    let queried_plugins = Synchronizer::search_plugin(&state.input_value);
+                    for plugin in queried_plugins {
+                        plugins.push(PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.current_version,
+                            &plugin.latest_version,
+                        ))
+                    }
+                    println!("{:?}", plugins);
+                    state.plugins = plugins;
+                }
                 Message::PluginSearched(state) => {}
                 Message::Catalog(index, msg) => {
                     state.plugins[index].update(msg);
@@ -213,10 +227,7 @@ impl PluginRow {
                         if Installer::delete_cache_folder(&plugin).is_ok() {
                             if Synchronizer::insert_plugin(&plugin).is_ok() {
                                 self.status = "Installed".to_string();
-                                Command::perform(
-                                    Catalog::synchronize_view(),
-                                    Message::SyncFinished,
-                                )
+                                Command::perform(Catalog::synchronize_view(), Message::SyncFinished)
                             } else {
                                 self.status = "Installation failed".to_string();
                                 Command::none()

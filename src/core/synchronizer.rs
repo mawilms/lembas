@@ -141,7 +141,7 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1 LIMIT 1;")
+            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![name.to_lowercase()], |row| {
@@ -154,6 +154,7 @@ impl Synchronizer {
             })
             .unwrap();
         for plugin in plugin_iter {
+            println!("{:?}", plugin);
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins

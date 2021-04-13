@@ -67,7 +67,6 @@ impl Plugins {
     }
 
     pub fn update(&mut self, message: PluginMessage) {
-        println!("Hallo");
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
