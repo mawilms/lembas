@@ -169,7 +169,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        //plugins_view.update(PluginMessage::LoadPlugins);
+                        //plugins_view.update(PluginMessage::LoadPlugins); TODO: Currently disabled because of a bug where the state of the actual row that was opened is overwritten
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
