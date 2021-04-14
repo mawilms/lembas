@@ -1,8 +1,6 @@
 use crate::core::config::CONFIGURATION;
-use crate::core::plugin_parser::Plugin as XMLContent;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
-use postgres::{Client, NoTls};
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
