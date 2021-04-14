@@ -1,12 +1,17 @@
 use crate::core::config::CONFIGURATION;
 use crate::core::Plugin;
-use rusqlite::NO_PARAMS;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error};
+
+// Ordner Name des Plugins speichern für Deinstallation
+// Bei Programmstart lokale Plugins abgleichen mit Datenbank
+// Remote Datenbank synchronisieren
 
 pub struct Synchronizer {}
 
 impl Synchronizer {
+    pub fn search_local() {}
+
     // Used to synchronize the local database with the remote plugin server
     #[tokio::main]
     pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
@@ -49,7 +54,7 @@ impl Synchronizer {
                     latest_version TEXT
                 );
         ",
-            NO_PARAMS,
+            [],
         )
         .unwrap();
     }
@@ -92,6 +97,7 @@ impl Synchronizer {
         all_plugins
     }
 
+    // TODO: Hier nach lokalen Plugins suchen
     pub fn get_installed_plugins() -> Vec<Plugin> {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
