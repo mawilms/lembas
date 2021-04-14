@@ -1,7 +1,7 @@
 use crate::core::config::CONFIGURATION;
 use crate::core::Plugin;
 use rusqlite::{params, Connection};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 // Ordner Name des Plugins speichern für Deinstallation
 // Bei Programmstart lokale Plugins abgleichen mit Datenbank
@@ -10,7 +10,12 @@ use std::{collections::HashMap, error::Error};
 pub struct Synchronizer {}
 
 impl Synchronizer {
-    pub fn search_local() {}
+    pub fn search_local() {
+        let entries = read_dir(Path::new(&CONFIGURATION.plugins_dir)).unwrap();
+        for entry in entries {
+            
+        }
+    }
 
     // Used to synchronize the local database with the remote plugin server
     #[tokio::main]
