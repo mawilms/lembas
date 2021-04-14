@@ -28,6 +28,8 @@ tokio = { version = "^1", features = ["full"]}
 image = "^0"
 webbrowser = "^0"
 fs_extra = "^1"
+xml-rs = "^0"
+globset = "^0"
 
 [profile.release]
 opt-level = "s"
