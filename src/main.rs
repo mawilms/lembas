@@ -5,6 +5,5 @@ mod core;
 mod gui;
 
 fn main() {
-    // gui::views::Lembas::start();
-    core::Synchronizer::search_local();
+    gui::views::Lembas::start();
 }

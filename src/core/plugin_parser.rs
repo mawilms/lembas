@@ -17,13 +17,13 @@ impl PluginParser {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Plugin {
     pub information: Information,
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Information {
     pub name: String,

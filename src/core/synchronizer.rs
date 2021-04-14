@@ -1,7 +1,8 @@
 use crate::core::config::CONFIGURATION;
-use crate::core::plugin_parser::Plugin as XMLPlugin;
+use crate::core::plugin_parser::Plugin as XMLContent;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
+use postgres::{Client, NoTls};
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
@@ -12,11 +13,11 @@ use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 pub struct Synchronizer {}
 
 impl Synchronizer {
+    // TODO: Es fehlt noch die Überprüfung ob ggf. ein Addon aus dem Ordner entfernt wurde
     pub fn search_local() -> Result<(), Box<dyn Error>> {
-        let mut dings: Vec<XMLPlugin> = Vec::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
-        let entries = read_dir(Path::new(&CONFIGURATION.plugins_dir)).unwrap();
-        for entry in entries {
+
+        for entry in read_dir(Path::new(&CONFIGURATION.plugins_dir))? {
             let directory = read_dir(
                 Path::new(&CONFIGURATION.plugins_dir)
                     .join(entry.unwrap().path())
@@ -24,15 +25,21 @@ impl Synchronizer {
                     .unwrap(),
             );
 
-            for file in directory.unwrap() {
-                let test = file.unwrap().path().clone();
+            for file in directory? {
+                let test = file?.path().clone();
                 let bla = test.clone();
                 if glob.is_match(test) {
-                    dings.push(PluginParser::parse_file(bla));
+                    let xml_content = PluginParser::parse_file(bla);
+                    let retrieved_plugin = Self::get_exact_plugin(&xml_content.information.name);
+                    Self::insert_plugin(&Plugin::new(
+                        retrieved_plugin[0].plugin_id,
+                        &retrieved_plugin[0].title,
+                        &xml_content.information.version,
+                        &retrieved_plugin[0].latest_version,
+                    ));
                 }
             }
         }
-        println!("{:?}", dings);
         Ok(())
     }
 
@@ -187,5 +194,23 @@ impl Synchronizer {
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins
+    }
+
+    #[tokio::main]
+    pub async fn get_remote_exact_plugin(name: &str) -> Plugin {
+        let response = reqwest::get(format!(
+            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
+            name
+        ))
+        .await
+        .unwrap()
+        .json::<HashMap<String, Plugin>>()
+        .await
+        .unwrap();
+        let mut plugins: Vec<Plugin> = Vec::new();
+        for (_, element) in response {
+            plugins.push(element);
+        }
+        plugins[0].clone()
     }
 }
