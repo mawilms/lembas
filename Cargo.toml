@@ -29,9 +29,6 @@ image = "^0"
 webbrowser = "^0"
 fs_extra = "^1"
 
-[dev-dependencies]
-mockall = "^0"
-
 [profile.release]
 opt-level = "s"
 lto = true
