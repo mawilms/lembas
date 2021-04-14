@@ -1806,10 +1806,10 @@ dependencies = [
  "reqwest",
  "rusqlite",
  "serde",
+ "serde-xml-rs",
  "serde_json",
  "tokio",
  "webbrowser",
- "xml-rs",
  "zip",
 ]
 
@@ -2857,6 +2857,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "558dc50e1a5a5fa7112ca2ce4effcb321b0300c0d4ccf0776a9f60cd89031171"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-xml-rs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0bf1ba0696ccf0872866277143ff1fd14d22eec235d2b23702f95e6660f7dfa"
+dependencies = [
+ "log",
+ "serde",
+ "thiserror",
+ "xml-rs",
 ]
 
 [[package]]

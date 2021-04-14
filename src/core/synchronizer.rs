@@ -1,5 +1,7 @@
 use crate::core::config::CONFIGURATION;
-use crate::core::Plugin;
+use crate::core::plugin_parser::Plugin as XMLPlugin;
+use crate::core::{Plugin, PluginParser};
+use globset::Glob;
 use rusqlite::{params, Connection};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
@@ -10,11 +12,28 @@ use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 pub struct Synchronizer {}
 
 impl Synchronizer {
-    pub fn search_local() {
+    pub fn search_local() -> Result<(), Box<dyn Error>> {
+        let mut dings: Vec<XMLPlugin> = Vec::new();
+        let glob = Glob::new("*.plugin")?.compile_matcher();
         let entries = read_dir(Path::new(&CONFIGURATION.plugins_dir)).unwrap();
         for entry in entries {
-            
+            let directory = read_dir(
+                Path::new(&CONFIGURATION.plugins_dir)
+                    .join(entry.unwrap().path())
+                    .to_str()
+                    .unwrap(),
+            );
+
+            for file in directory.unwrap() {
+                let test = file.unwrap().path().clone();
+                let bla = test.clone();
+                if glob.is_match(test) {
+                    dings.push(PluginParser::parse_file(bla));
+                }
+            }
         }
+        println!("{:?}", dings);
+        Ok(())
     }
 
     // Used to synchronize the local database with the remote plugin server
