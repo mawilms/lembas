@@ -16,6 +16,7 @@ use std::{
 pub struct Synchronizer {}
 
 impl Synchronizer {
+    #[tokio::main]
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().await?;
         let local_db_plugins = Self::get_installed_plugins();
@@ -125,7 +126,6 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        println!("hallo");
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         conn.execute(
                 "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
@@ -243,11 +243,12 @@ impl Synchronizer {
         ))
         .await
         .unwrap()
-        .json::<HashMap<String, Plugin>>()
+        .json::<HashSet<Plugin>>()
         .await
         .unwrap();
+        
         let mut plugins: Vec<Plugin> = Vec::new();
-        for (_, element) in response {
+        for element in response {
             plugins.push(element);
         }
         plugins[0].clone()
