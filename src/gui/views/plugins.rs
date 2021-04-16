@@ -19,6 +19,7 @@ impl Default for Plugins {
             plugins.push(PluginRow::new(
                 plugin.plugin_id,
                 &plugin.title,
+                &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
             ));
@@ -76,6 +77,7 @@ impl Plugins {
                             plugins.push(PluginRow::new(
                                 plugin.plugin_id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
                             ))
@@ -101,6 +103,7 @@ impl Plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
                             &plugin.title,
+                            &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
                         ));
@@ -200,6 +203,8 @@ pub struct PluginRow {
     pub id: i32,
     pub title: String,
     #[serde(default)]
+    pub description: String,
+    #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
@@ -231,11 +236,18 @@ pub enum Event {
 }
 
 impl PluginRow {
-    pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
+    pub fn new(
+        id: i32,
+        title: &str,
+        description: &str,
+        current_version: &str,
+        latest_version: &str,
+    ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
@@ -249,6 +261,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
@@ -271,6 +284,7 @@ impl PluginRow {
                 let install_plugin = Plugin::new(
                     plugin.id,
                     &plugin.title,
+                    &plugin.description,
                     &plugin.current_version,
                     &plugin.latest_version,
                 );

@@ -60,6 +60,7 @@ impl Synchronizer {
                     local_plugins.insert(Plugin::new(
                         retrieved_plugin.plugin_id,
                         &retrieved_plugin.title.to_string(),
+                        &xml_content.information.description.to_string(),
                         &xml_content.information.version.to_string(),
                         &retrieved_plugin.latest_version.to_string(),
                     ));
@@ -88,12 +89,12 @@ impl Synchronizer {
                 let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
                 if installed_plugin.is_empty() {
                     conn.execute(
-                        "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                        params![plugin.plugin_id, plugin.title, "", plugin.latest_version]).unwrap();
+                        "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                        params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version]).unwrap();
                 } else {
                     conn.execute(
-                        "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                        params![plugin.plugin_id, plugin.title, installed_plugin[0].current_version, plugin.latest_version]).unwrap();
+                        "INSERT INTO plugins (plugin_id, title, description,current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                        params![plugin.plugin_id, plugin.title, plugin.description, installed_plugin[0].current_version, plugin.latest_version]).unwrap();
                 }
             }
             Ok(())
@@ -113,6 +114,7 @@ impl Synchronizer {
                     id INTEGER PRIMARY KEY,
                     plugin_id INTEGER UNIQUE,
                     title TEXT,
+                    description TEXT,
                     current_version TEXT,
                     latest_version TEXT
                 );
@@ -123,10 +125,11 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        println!("hallo");
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         conn.execute(
-                "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version])?;
+                "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                params![plugin.plugin_id, plugin.title, plugin.description, plugin.latest_version, plugin.latest_version])?;
 
         Ok(())
     }
@@ -141,15 +144,16 @@ impl Synchronizer {
         let mut all_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -165,7 +169,7 @@ impl Synchronizer {
         let mut installed_plugins = HashSet::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
 
         let plugin_iter = stmt
@@ -173,8 +177,9 @@ impl Synchronizer {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -189,15 +194,16 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -211,15 +217,16 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![name.to_lowercase()], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();

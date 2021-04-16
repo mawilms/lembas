@@ -18,6 +18,7 @@ impl Default for Catalog {
             plugins.push(PluginRow::new(
                 plugin.plugin_id,
                 &plugin.title,
+                &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
             ));
@@ -57,6 +58,7 @@ impl Catalog {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
                             &plugin.title,
+                            &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
                         ))
@@ -142,6 +144,7 @@ impl Catalog {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    pub description: String,
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
@@ -157,11 +160,18 @@ pub enum RowMessage {
 }
 
 impl PluginRow {
-    pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
+    pub fn new(
+        id: i32,
+        title: &str,
+        description: &str,
+        current_version: &str,
+        latest_version: &str,
+    ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Installed".to_string(),
@@ -172,6 +182,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Install".to_string(),
@@ -182,6 +193,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
@@ -197,6 +209,7 @@ impl PluginRow {
                 let plugin = Plugin::new(
                     plugin.id,
                     &plugin.title,
+                    &plugin.description,
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
