@@ -351,7 +351,7 @@ impl PluginRow {
         let bli = self.clone();
 
         let description_label = Text::new("Description");
-        let description = Text::new("Hallo Welt");
+        let description = Text::new(&self.description.to_string());
         let description_section = Column::new()
             .push(description_label)
             .push(description)
