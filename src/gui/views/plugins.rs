@@ -55,15 +55,15 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    fn refresh_db() -> Result<(), ApplicationError> {
-        match Synchronizer::update_local_plugins() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                println!("{:?}", &error);
-                Err(ApplicationError::Synchronize)
-            }
-        }
-    }
+    // fn refresh_db() -> Result<(), ApplicationError> {
+    //     // match Synchronizer::update_local_plugins() {
+    //     //     Ok(_) => Ok(()),
+    //     //     Err(error) => {
+    //     //         println!("{:?}", &error);
+    //     //         Err(ApplicationError::Synchronize)
+    //     //     }
+    //     // }
+    // }
 
     pub fn update(&mut self, message: PluginMessage) {
         match self {
@@ -86,7 +86,7 @@ impl Plugins {
 
                 PluginMessage::RefreshPressed => {
                     println!("Refreshed");
-                    Self::refresh_db();
+                    // Self::refresh_db();
                 }
                 PluginMessage::UpdateAllPressed => {
                     println!("Update all");

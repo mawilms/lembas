@@ -2,7 +2,12 @@ use crate::core::config::CONFIGURATION;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection};
-use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fs::read_dir,
+    path::Path,
+};
 
 // Ordner Name des Plugins speichern für Deinstallation
 // Bei Programmstart lokale Plugins abgleichen mit Datenbank
@@ -11,8 +16,30 @@ use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 pub struct Synchronizer {}
 
 impl Synchronizer {
-    // TODO: Es fehlt noch die Überprüfung ob ggf. ein Addon aus dem Ordner entfernt wurde
-    pub fn search_local() -> Result<(), Box<dyn Error>> {
+    pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
+        let local_plugins = Self::search_local().await?;
+        let local_db_plugins = Self::get_installed_plugins();
+        //Compare to local db plugins
+        Self::compare_local_state(&local_plugins, &local_db_plugins);
+
+        Ok(())
+    }
+    pub fn compare_local_state(local_plugins: &HashSet<Plugin>, db_plugins: &HashSet<Plugin>) {
+        for element in local_plugins {
+            if !db_plugins.contains(&element) {
+                Self::insert_plugin(&element);
+            }
+        }
+
+        for element in db_plugins {
+            if !local_plugins.contains(&element) {
+                Self::delete_plugin(&element.title);
+            }
+        }
+    }
+
+    pub async fn search_local() -> Result<HashSet<Plugin>, Box<dyn Error>> {
+        let mut local_plugins = HashSet::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&CONFIGURATION.plugins_dir))? {
@@ -28,46 +55,53 @@ impl Synchronizer {
                 let bla = test.clone();
                 if glob.is_match(test) {
                     let xml_content = PluginParser::parse_file(bla);
-                    let retrieved_plugin = Self::get_exact_plugin(&xml_content.information.name);
-                    Self::insert_plugin(&Plugin::new(
-                        retrieved_plugin[0].plugin_id,
-                        &retrieved_plugin[0].title,
-                        &xml_content.information.version,
-                        &retrieved_plugin[0].latest_version,
+                    let retrieved_plugin =
+                        Self::get_remote_exact_plugin(&xml_content.information.name).await;
+                    local_plugins.insert(Plugin::new(
+                        retrieved_plugin.plugin_id,
+                        &retrieved_plugin.title.to_string(),
+                        &xml_content.information.version.to_string(),
+                        &retrieved_plugin.latest_version.to_string(),
                     ));
                 }
             }
         }
-        Ok(())
+        Ok(local_plugins)
+    }
+
+    pub async fn fetch_plugins() -> Result<HashSet<Plugin>, Box<dyn Error>> {
+        let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
+            .await?
+            .json::<HashSet<Plugin>>()
+            .await?;
+
+        Ok(response)
     }
 
     // Used to synchronize the local database with the remote plugin server
     #[tokio::main]
-    pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
-        let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
-            .await?
-            .json::<HashMap<String, Plugin>>()
-            .await?;
-        let mut remote_plugins: Vec<Plugin> = Vec::new();
-        for (_, element) in response {
-            remote_plugins.push(element);
-        }
-        let conn = Connection::open(&CONFIGURATION.db_file)?;
+    pub async fn update_local_plugins() -> Result<(), ()> {
+        if let Ok(fetched_plugins) = Self::fetch_plugins().await {
+            let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
 
-        for plugin in remote_plugins {
-            let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
-            if installed_plugin.len() == 1 {
-                conn.execute(
-                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                    params![plugin.plugin_id, plugin.title, installed_plugin[0].current_version, plugin.latest_version])?;
-            } else {
-                conn.execute(
-                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                    params![plugin.plugin_id, plugin.title, "", plugin.latest_version])?;
+            for plugin in fetched_plugins {
+                let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
+                if installed_plugin.is_empty() {
+                    conn.execute(
+                        "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+                        params![plugin.plugin_id, plugin.title, "", plugin.latest_version]).unwrap();
+                } else {
+                    conn.execute(
+                        "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
+                        params![plugin.plugin_id, plugin.title, installed_plugin[0].current_version, plugin.latest_version]).unwrap();
+                }
             }
-        }
+            Ok(())
+        } else {
+            println!("Kein Verbindung zum Server");
 
-        Ok(())
+            Err(())
+        }
     }
 
     // Creates the local database if it doesn't exist.
@@ -127,12 +161,13 @@ impl Synchronizer {
     }
 
     // TODO: Hier nach lokalen Plugins suchen
-    pub fn get_installed_plugins() -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
+    pub fn get_installed_plugins() -> HashSet<Plugin> {
+        let mut installed_plugins = HashSet::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
+
         let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
@@ -145,7 +180,7 @@ impl Synchronizer {
             .unwrap();
 
         for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
+            installed_plugins.insert(plugin.unwrap());
         }
         installed_plugins
     }
@@ -194,7 +229,6 @@ impl Synchronizer {
         installed_plugins
     }
 
-    #[tokio::main]
     pub async fn get_remote_exact_plugin(name: &str) -> Plugin {
         let response = reqwest::get(format!(
             "https://young-hamlet-23901.herokuapp.com/plugins/{}",

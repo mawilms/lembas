@@ -98,7 +98,6 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(_state) = message {
-                    println!("Hallo");
                     *self = Lembas::Loaded(State { ..State::default() })
                 }
             }
@@ -169,7 +168,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        //plugins_view.update(PluginMessage::LoadPlugins); TODO: Currently disabled because of a bug where the state of the actual row that was opened is overwritten
+                        //plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
@@ -225,8 +224,8 @@ impl Lembas {
 
     pub async fn init_application() -> State {
         Synchronizer::create_plugins_db();
-        Synchronizer::search_local();
         Synchronizer::update_local_plugins();
+        Synchronizer::synchronize_application().await;
 
         State::default()
     }
