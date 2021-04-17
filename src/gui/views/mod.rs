@@ -8,12 +8,9 @@ use crate::gui::views::About as AboutView;
 pub use about::About;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 use iced::{
-    button,
-    window::{Icon, Settings as Window},
-    Align, Application, Button, Clipboard, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
+    button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
+    Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
-use image::ImageFormat;
 pub use plugins::Plugins as PluginsView;
 
 use super::views::plugins::PluginMessage;
@@ -171,7 +168,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        plugins_view.update(PluginMessage::LoadPlugins);
+                        //plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
@@ -222,13 +219,13 @@ impl Lembas {
             default_text_size: 17,
             ..iced::Settings::default()
         };
-        //settings.default_font = Some(RING_BEARER);
         Lembas::run(settings).unwrap_err();
     }
 
     pub async fn init_application() -> State {
         Synchronizer::create_plugins_db();
         Synchronizer::update_local_plugins();
+        Synchronizer::synchronize_application();
 
         State::default()
     }

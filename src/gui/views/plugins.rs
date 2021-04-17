@@ -4,6 +4,7 @@ use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
     Length, Row, Scrollable, Space, Text, TextInput,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -14,10 +15,11 @@ impl Default for Plugins {
     fn default() -> Self {
         let installed_plugins = Synchronizer::get_installed_plugins();
         let mut plugins: Vec<PluginRow> = Vec::new();
-        for plugin in installed_plugins {
+        for (_, plugin) in installed_plugins {
             plugins.push(PluginRow::new(
                 plugin.plugin_id,
                 &plugin.title,
+                &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
             ));
@@ -54,15 +56,15 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    fn refresh_db() -> Result<(), ApplicationError> {
-        match Synchronizer::update_local_plugins() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                println!("{:?}", &error);
-                Err(ApplicationError::Synchronize)
-            }
-        }
-    }
+    // fn refresh_db() -> Result<(), ApplicationError> {
+    //     // match Synchronizer::update_local_plugins() {
+    //     //     Ok(_) => Ok(()),
+    //     //     Err(error) => {
+    //     //         println!("{:?}", &error);
+    //     //         Err(ApplicationError::Synchronize)
+    //     //     }
+    //     // }
+    // }
 
     pub fn update(&mut self, message: PluginMessage) {
         match self {
@@ -75,6 +77,7 @@ impl Plugins {
                             plugins.push(PluginRow::new(
                                 plugin.plugin_id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
                             ))
@@ -85,7 +88,7 @@ impl Plugins {
 
                 PluginMessage::RefreshPressed => {
                     println!("Refreshed");
-                    Self::refresh_db();
+                    // Self::refresh_db();
                 }
                 PluginMessage::UpdateAllPressed => {
                     println!("Update all");
@@ -96,10 +99,11 @@ impl Plugins {
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins = Synchronizer::get_installed_plugins();
-                    for plugin in installed_plugins {
+                    for (_, plugin) in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
                             &plugin.title,
+                            &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
                         ));
@@ -194,18 +198,26 @@ impl Plugins {
 }
 
 // Single row that has a toggle effect to show additional data
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
 
+    #[serde(skip)]
     update_btn_state: button::State,
+    #[serde(skip)]
     delete_btn_state: button::State,
+    #[serde(skip)]
     website_btn_state: button::State,
+    #[serde(skip)]
     opened: bool,
+    #[serde(skip)]
     toggle_view_btn: button::State,
 }
 
@@ -224,11 +236,18 @@ pub enum Event {
 }
 
 impl PluginRow {
-    pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
+    pub fn new(
+        id: i32,
+        title: &str,
+        description: &str,
+        current_version: &str,
+        latest_version: &str,
+    ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
@@ -242,6 +261,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
@@ -264,6 +284,7 @@ impl PluginRow {
                 let install_plugin = Plugin::new(
                     plugin.id,
                     &plugin.title,
+                    &plugin.description,
                     &plugin.current_version,
                     &plugin.latest_version,
                 );
@@ -330,7 +351,7 @@ impl PluginRow {
         let bli = self.clone();
 
         let description_label = Text::new("Description");
-        let description = Text::new("Hallo Welt");
+        let description = Text::new(&self.description.to_string());
         let description_section = Column::new()
             .push(description_label)
             .push(description)
