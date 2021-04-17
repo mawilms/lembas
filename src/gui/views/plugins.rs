@@ -15,7 +15,7 @@ impl Default for Plugins {
     fn default() -> Self {
         let installed_plugins = Synchronizer::get_installed_plugins();
         let mut plugins: Vec<PluginRow> = Vec::new();
-        for plugin in installed_plugins {
+        for (_, plugin) in installed_plugins {
             plugins.push(PluginRow::new(
                 plugin.plugin_id,
                 &plugin.title,
@@ -99,7 +99,7 @@ impl Plugins {
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins = Synchronizer::get_installed_plugins();
-                    for plugin in installed_plugins {
+                    for (_, plugin) in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
                             &plugin.title,

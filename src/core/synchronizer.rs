@@ -9,9 +9,12 @@ use std::{
     path::Path,
 };
 
+use super::plugin_parser::Information;
+
 // Ordner Name des Plugins speichern für Deinstallation
 // Bei Programmstart lokale Plugins abgleichen mit Datenbank
 // Remote Datenbank synchronisieren
+// TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
 pub struct Synchronizer {}
 
@@ -25,22 +28,37 @@ impl Synchronizer {
 
         Ok(())
     }
-    pub fn compare_local_state(local_plugins: &HashSet<Plugin>, db_plugins: &HashSet<Plugin>) {
-        for element in local_plugins {
-            if !db_plugins.contains(&element) {
-                Self::insert_plugin(&element);
+    pub fn compare_local_state(
+        local_plugins: &HashMap<String, Information>,
+        db_plugins: &HashMap<String, Plugin>,
+    ) {
+        println!("{:?}", local_plugins);
+        println!("\n");
+        println!("{:?}", db_plugins);
+        for (key, element) in local_plugins {
+            if !db_plugins.contains_key(key) {
+                let retrieved_plugin = Self::get_exact_plugin(&element.name);
+                if !retrieved_plugin.is_empty() {
+                    Self::insert_plugin(&Plugin::new(
+                        retrieved_plugin[0].plugin_id,
+                        &retrieved_plugin[0].title,
+                        &element.description,
+                        &element.version,
+                        &retrieved_plugin[0].latest_version,
+                    ));
+                }
             }
         }
 
-        for element in db_plugins {
-            if !local_plugins.contains(&element) {
+        for (key, element) in db_plugins {
+            if !local_plugins.contains_key(key) {
                 Self::delete_plugin(&element.title);
             }
         }
     }
 
-    pub async fn search_local() -> Result<HashSet<Plugin>, Box<dyn Error>> {
-        let mut local_plugins = HashSet::new();
+    pub async fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
+        let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&CONFIGURATION.plugins_dir))? {
@@ -56,15 +74,7 @@ impl Synchronizer {
                 let bla = test.clone();
                 if glob.is_match(test) {
                     let xml_content = PluginParser::parse_file(bla);
-                    if let Ok(retrieved_plugin) = Self::get_remote_exact_plugin(&xml_content.information.name).await {
-                        local_plugins.insert(Plugin::new(
-                            retrieved_plugin.plugin_id,
-                            &retrieved_plugin.title.to_string(),
-                            &xml_content.information.description.to_string(),
-                            &xml_content.information.version.to_string(),
-                            &retrieved_plugin.latest_version.to_string(),
-                        ));
-                    }
+                    local_plugins.insert(xml_content.name.clone(), xml_content);
                 }
             }
         }
@@ -163,8 +173,8 @@ impl Synchronizer {
     }
 
     // TODO: Hier nach lokalen Plugins suchen
-    pub fn get_installed_plugins() -> HashSet<Plugin> {
-        let mut installed_plugins = HashSet::new();
+    pub fn get_installed_plugins() -> HashMap<String, Plugin> {
+        let mut installed_plugins = HashMap::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '';")
@@ -183,7 +193,8 @@ impl Synchronizer {
             .unwrap();
 
         for plugin in plugin_iter {
-            installed_plugins.insert(plugin.unwrap());
+            let data = plugin.unwrap();
+            installed_plugins.insert(data.title.clone(), data);
         }
         installed_plugins
     }
