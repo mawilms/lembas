@@ -20,7 +20,7 @@ Lembas is a plugin management tool completely written in Rust for the game "Lord
 
 ## Screenshots
 
-![my_plugins_gui](./screenshots/my_plugins_ui.png "Title")
+![plugins_ui](./screenshots/plugins.png "Plugins UI")
 
 
 ## FAQ
