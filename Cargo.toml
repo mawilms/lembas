@@ -31,6 +31,12 @@ webbrowser = "^0"
 fs_extra = "^1"
 globset = "^0"
 
+[build-dependencies]
+embed-resource = "^1"
+
+[target.'cfg(windows)'.dependencies]
+winapi = "^0"
+
 [profile.release]
 opt-level = "s"
 lto = true
