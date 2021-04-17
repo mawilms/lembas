@@ -1,44 +1,117 @@
 use crate::core::config::CONFIGURATION;
-use crate::core::Plugin;
+use crate::core::{Plugin, PluginParser};
+use globset::Glob;
 use rusqlite::{params, Connection};
-use std::{collections::HashMap, error::Error};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fs::read_dir,
+    path::Path,
+};
+
+use super::plugin_parser::Information;
 
 // Ordner Name des Plugins speichern für Deinstallation
 // Bei Programmstart lokale Plugins abgleichen mit Datenbank
 // Remote Datenbank synchronisieren
+// TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
 pub struct Synchronizer {}
 
 impl Synchronizer {
-    pub fn search_local() {}
-
-    // Used to synchronize the local database with the remote plugin server
     #[tokio::main]
-    pub async fn update_local_plugins() -> Result<(), Box<dyn Error>> {
-        let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
-            .await?
-            .json::<HashMap<String, Plugin>>()
-            .await?;
-        let mut remote_plugins: Vec<Plugin> = Vec::new();
-        for (_, element) in response {
-            remote_plugins.push(element);
-        }
-        let conn = Connection::open(&CONFIGURATION.db_file)?;
+    pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
+        let local_plugins = Self::search_local().await?;
+        let local_db_plugins = Self::get_installed_plugins();
+        //Compare to local db plugins
+        Self::compare_local_state(&local_plugins, &local_db_plugins);
 
-        for plugin in remote_plugins {
-            let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
-            if installed_plugin.len() == 1 {
-                conn.execute(
-                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                    params![plugin.plugin_id, plugin.title, installed_plugin[0].current_version, plugin.latest_version])?;
-            } else {
-                conn.execute(
-                    "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                    params![plugin.plugin_id, plugin.title, "", plugin.latest_version])?;
+        Ok(())
+    }
+    pub fn compare_local_state(
+        local_plugins: &HashMap<String, Information>,
+        db_plugins: &HashMap<String, Plugin>,
+    ) {
+        println!("{:?}", local_plugins);
+        println!("\n");
+        println!("{:?}", db_plugins);
+        for (key, element) in local_plugins {
+            if !db_plugins.contains_key(key) {
+                let retrieved_plugin = Self::get_exact_plugin(&element.name);
+                if !retrieved_plugin.is_empty() {
+                    Self::insert_plugin(&Plugin::new(
+                        retrieved_plugin[0].plugin_id,
+                        &retrieved_plugin[0].title,
+                        &element.description,
+                        &element.version,
+                        &retrieved_plugin[0].latest_version,
+                    ));
+                }
             }
         }
 
-        Ok(())
+        for (key, element) in db_plugins {
+            if !local_plugins.contains_key(key) {
+                Self::delete_plugin(&element.title);
+            }
+        }
+    }
+
+    pub async fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
+        let mut local_plugins = HashMap::new();
+        let glob = Glob::new("*.plugin")?.compile_matcher();
+
+        for entry in read_dir(Path::new(&CONFIGURATION.plugins_dir))? {
+            let directory = read_dir(
+                Path::new(&CONFIGURATION.plugins_dir)
+                    .join(entry.unwrap().path())
+                    .to_str()
+                    .unwrap(),
+            );
+
+            for file in directory? {
+                let test = file?.path().clone();
+                let bla = test.clone();
+                if glob.is_match(test) {
+                    let xml_content = PluginParser::parse_file(bla);
+                    local_plugins.insert(xml_content.name.clone(), xml_content);
+                }
+            }
+        }
+        Ok(local_plugins)
+    }
+
+    pub async fn fetch_plugins() -> Result<HashSet<Plugin>, Box<dyn Error>> {
+        let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
+            .await?
+            .json::<HashSet<Plugin>>()
+            .await?;
+
+        Ok(response)
+    }
+
+    // Used to synchronize the local database with the remote plugin server
+    #[tokio::main]
+    pub async fn update_local_plugins() -> Result<(), ()> {
+        if let Ok(fetched_plugins) = Self::fetch_plugins().await {
+            let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+
+            for plugin in fetched_plugins {
+                let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
+                if installed_plugin.is_empty() {
+                    conn.execute(
+                        "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                        params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version]).unwrap();
+                } else {
+                    conn.execute(
+                        "INSERT INTO plugins (plugin_id, title, description,current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                        params![plugin.plugin_id, plugin.title, plugin.description, installed_plugin[0].current_version, plugin.latest_version]).unwrap();
+                }
+            }
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     // Creates the local database if it doesn't exist.
@@ -50,6 +123,7 @@ impl Synchronizer {
                     id INTEGER PRIMARY KEY,
                     plugin_id INTEGER UNIQUE,
                     title TEXT,
+                    description TEXT,
                     current_version TEXT,
                     latest_version TEXT
                 );
@@ -62,8 +136,8 @@ impl Synchronizer {
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         conn.execute(
-                "INSERT INTO plugins (plugin_id, title, current_version, latest_version) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4;",
-                params![plugin.plugin_id, plugin.title, plugin.latest_version, plugin.latest_version])?;
+                "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
+                params![plugin.plugin_id, plugin.title, plugin.description, plugin.latest_version, plugin.latest_version])?;
 
         Ok(())
     }
@@ -78,15 +152,16 @@ impl Synchronizer {
         let mut all_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -98,25 +173,28 @@ impl Synchronizer {
     }
 
     // TODO: Hier nach lokalen Plugins suchen
-    pub fn get_installed_plugins() -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
+    pub fn get_installed_plugins() -> HashMap<String, Plugin> {
+        let mut installed_plugins = HashMap::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE current_version != '';")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '';")
             .unwrap();
+
         let plugin_iter = stmt
             .query_map(params![], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
 
         for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
+            let data = plugin.unwrap();
+            installed_plugins.insert(data.title.clone(), data);
         }
         installed_plugins
     }
@@ -125,15 +203,16 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -147,15 +226,16 @@ impl Synchronizer {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![name.to_lowercase()], |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
+                    description: row.get(2).unwrap(),
+                    current_version: row.get(3).unwrap(),
+                    latest_version: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -163,5 +243,21 @@ impl Synchronizer {
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins
+    }
+
+    pub async fn get_remote_exact_plugin(name: &str) -> Result<Plugin, Box<dyn Error>> {
+        let response = reqwest::get(format!(
+            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
+            name
+        ))
+        .await?
+        .json::<HashSet<Plugin>>()
+        .await?;
+
+        let mut plugins: Vec<Plugin> = Vec::new();
+        for element in response {
+            plugins.push(element);
+        }
+        Ok(plugins[0].clone())
     }
 }
