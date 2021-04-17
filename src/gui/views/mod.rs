@@ -224,9 +224,8 @@ impl Lembas {
 
     pub async fn init_application() -> State {
         Synchronizer::create_plugins_db();
-        if Synchronizer::update_local_plugins().is_ok() {
-            Synchronizer::synchronize_application();
-        }
+        Synchronizer::update_local_plugins();
+        Synchronizer::synchronize_application();
 
         State::default()
     }

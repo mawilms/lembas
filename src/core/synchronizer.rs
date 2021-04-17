@@ -56,15 +56,15 @@ impl Synchronizer {
                 let bla = test.clone();
                 if glob.is_match(test) {
                     let xml_content = PluginParser::parse_file(bla);
-                    let retrieved_plugin =
-                        Self::get_remote_exact_plugin(&xml_content.information.name).await;
-                    local_plugins.insert(Plugin::new(
-                        retrieved_plugin.plugin_id,
-                        &retrieved_plugin.title.to_string(),
-                        &xml_content.information.description.to_string(),
-                        &xml_content.information.version.to_string(),
-                        &retrieved_plugin.latest_version.to_string(),
-                    ));
+                    if let Ok(retrieved_plugin) = Self::get_remote_exact_plugin(&xml_content.information.name).await {
+                        local_plugins.insert(Plugin::new(
+                            retrieved_plugin.plugin_id,
+                            &retrieved_plugin.title.to_string(),
+                            &xml_content.information.description.to_string(),
+                            &xml_content.information.version.to_string(),
+                            &retrieved_plugin.latest_version.to_string(),
+                        ));
+                    }
                 }
             }
         }
@@ -100,8 +100,6 @@ impl Synchronizer {
             }
             Ok(())
         } else {
-            println!("Kein Verbindung zum Server");
-
             Err(())
         }
     }
@@ -236,21 +234,19 @@ impl Synchronizer {
         installed_plugins
     }
 
-    pub async fn get_remote_exact_plugin(name: &str) -> Plugin {
+    pub async fn get_remote_exact_plugin(name: &str) -> Result<Plugin, Box<dyn Error>> {
         let response = reqwest::get(format!(
             "https://young-hamlet-23901.herokuapp.com/plugins/{}",
             name
         ))
-        .await
-        .unwrap()
+        .await?
         .json::<HashSet<Plugin>>()
-        .await
-        .unwrap();
-        
+        .await?;
+
         let mut plugins: Vec<Plugin> = Vec::new();
         for element in response {
             plugins.push(element);
         }
-        plugins[0].clone()
+        Ok(plugins[0].clone())
     }
 }
