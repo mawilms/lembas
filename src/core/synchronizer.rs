@@ -32,9 +32,6 @@ impl Synchronizer {
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, Plugin>,
     ) {
-        println!("{:?}", local_plugins);
-        println!("\n");
-        println!("{:?}", db_plugins);
         for (key, element) in local_plugins {
             if !db_plugins.contains_key(key) {
                 let retrieved_plugin = Self::get_exact_plugin(&element.name);
@@ -243,21 +240,5 @@ impl Synchronizer {
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins
-    }
-
-    pub async fn get_remote_exact_plugin(name: &str) -> Result<Plugin, Box<dyn Error>> {
-        let response = reqwest::get(format!(
-            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
-            name
-        ))
-        .await?
-        .json::<HashSet<Plugin>>()
-        .await?;
-
-        let mut plugins: Vec<Plugin> = Vec::new();
-        for element in response {
-            plugins.push(element);
-        }
-        Ok(plugins[0].clone())
     }
 }
