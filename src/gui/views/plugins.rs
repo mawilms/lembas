@@ -13,9 +13,13 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        let installed_plugins = Synchronizer::get_installed_plugins();
+        let mut installed_plugins: Vec<Plugin> = Synchronizer::get_installed_plugins()
+            .values()
+            .cloned()
+            .collect();
+        installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
-        for (_, plugin) in installed_plugins {
+        for plugin in installed_plugins {
             plugins.push(PluginRow::new(
                 plugin.plugin_id,
                 &plugin.title,
@@ -56,15 +60,15 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    // fn refresh_db() -> Result<(), ApplicationError> {
-    //     // match Synchronizer::update_local_plugins() {
-    //     //     Ok(_) => Ok(()),
-    //     //     Err(error) => {
-    //     //         println!("{:?}", &error);
-    //     //         Err(ApplicationError::Synchronize)
-    //     //     }
-    //     // }
-    // }
+    fn refresh_db() -> Result<(), ApplicationError> {
+        match Synchronizer::update_local_plugins() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                println!("{:?}", &error);
+                Err(ApplicationError::Synchronize)
+            }
+        }
+    }
 
     pub fn update(&mut self, message: PluginMessage) {
         match self {
@@ -72,7 +76,12 @@ impl Plugins {
                 PluginMessage::Plugin(index, msg) => {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let all_plugins = Synchronizer::get_plugins();
+                        let mut all_plugins: Vec<Plugin> = Synchronizer::get_installed_plugins()
+                            .values()
+                            .cloned()
+                            .collect();
+                        all_plugins
+                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
                                 plugin.plugin_id,
@@ -87,14 +96,16 @@ impl Plugins {
                 }
 
                 PluginMessage::RefreshPressed => {
-                    println!("Refreshed");
-                    // Self::refresh_db();
+                    Self::refresh_db();
                 }
                 PluginMessage::UpdateAllPressed => {
-                    println!("Update all");
-                    // for i in 1..state.plugins.len() {
-                    //     state.plugins[i].update(RowMessage::UpdatePressed(bla));
-                    // }
+                    for i in 1..state.plugins.len() {
+                        if state.plugins[i].current_version != state.plugins[i].latest_version {
+                            println!("{:?}", state.plugins[i]);
+                            let test = state.plugins[i].clone();
+                            state.plugins[i].update(RowMessage::UpdatePressed(test));
+                        }
+                    }
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
@@ -295,7 +306,6 @@ impl PluginRow {
                             plugin.status = "Unpacked".to_string();
                             if Installer::delete_cache_folder(&install_plugin).is_ok() {
                                 if let Ok(_) = Synchronizer::insert_plugin(&install_plugin) {
-                                    // TODO: Currently missing that we load the new list
                                     plugin.status = "Installed".to_string();
                                     Event::Synchronize
                                 } else {

@@ -4,9 +4,9 @@
 
 # Lembas
 
-![example workflow](https://github.com/mawilms/lembas/actions/workflows/testing.yml/badge.svg)
+![Github testing](https://github.com/mawilms/lembas/actions/workflows/testing.yml/badge.svg)
 ![GitHub issues](https://img.shields.io/github/issues/mawilms/lembas)
-[![GitHub license](https://img.shields.io/github/license/mawilms/lembas)](https://github.com/mawilms/lembas/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/mawilms/lembas)](https://github.com/mawilms/lembas/blob/main/LICENSE)
 
 </div>
 

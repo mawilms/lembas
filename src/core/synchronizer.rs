@@ -32,9 +32,6 @@ impl Synchronizer {
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, Plugin>,
     ) {
-        println!("{:?}", local_plugins);
-        println!("\n");
-        println!("{:?}", db_plugins);
         for (key, element) in local_plugins {
             if !db_plugins.contains_key(key) {
                 let retrieved_plugin = Self::get_exact_plugin(&element.name);
@@ -152,7 +149,7 @@ impl Synchronizer {
         let mut all_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins ORDER BY title ASC;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![], |row| {
@@ -172,12 +169,11 @@ impl Synchronizer {
         all_plugins
     }
 
-    // TODO: Hier nach lokalen Plugins suchen
     pub fn get_installed_plugins() -> HashMap<String, Plugin> {
         let mut installed_plugins = HashMap::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '';")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '' ORDER BY title;")
             .unwrap();
 
         let plugin_iter = stmt
@@ -243,21 +239,5 @@ impl Synchronizer {
             installed_plugins.push(plugin.unwrap());
         }
         installed_plugins
-    }
-
-    pub async fn get_remote_exact_plugin(name: &str) -> Result<Plugin, Box<dyn Error>> {
-        let response = reqwest::get(format!(
-            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
-            name
-        ))
-        .await?
-        .json::<HashSet<Plugin>>()
-        .await?;
-
-        let mut plugins: Vec<Plugin> = Vec::new();
-        for element in response {
-            plugins.push(element);
-        }
-        Ok(plugins[0].clone())
     }
 }
