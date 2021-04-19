@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/gui/assets/bread_light.svg" width="30%">
+<img src="resources/assets/bread_light.svg" width="30%">
 
 # Lembas
 
