@@ -149,7 +149,7 @@ impl Synchronizer {
         let mut all_plugins: Vec<Plugin> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins ORDER BY title ASC;")
             .unwrap();
         let plugin_iter = stmt
             .query_map(params![], |row| {
@@ -169,12 +169,11 @@ impl Synchronizer {
         all_plugins
     }
 
-    // TODO: Hier nach lokalen Plugins suchen
     pub fn get_installed_plugins() -> HashMap<String, Plugin> {
         let mut installed_plugins = HashMap::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '';")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '' ORDER BY title;")
             .unwrap();
 
         let plugin_iter = stmt
