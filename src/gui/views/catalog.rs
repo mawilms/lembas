@@ -12,7 +12,8 @@ pub enum Catalog {
 
 impl Default for Catalog {
     fn default() -> Self {
-        let all_plugins = Synchronizer::get_plugins();
+        let mut all_plugins = Synchronizer::get_plugins();
+        all_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in all_plugins {
             plugins.push(PluginRow::new(
