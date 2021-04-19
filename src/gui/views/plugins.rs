@@ -80,7 +80,8 @@ impl Plugins {
                             .values()
                             .cloned()
                             .collect();
-                        all_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                        all_plugins
+                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
                                 plugin.plugin_id,
@@ -98,10 +99,12 @@ impl Plugins {
                     Self::refresh_db();
                 }
                 PluginMessage::UpdateAllPressed => {
-                    println!("Update all");
                     for i in 1..state.plugins.len() {
-                        let test = state.plugins[i].clone();
-                        state.plugins[i].update(RowMessage::UpdatePressed(test));
+                        if state.plugins[i].current_version != state.plugins[i].latest_version {
+                            println!("{:?}", state.plugins[i]);
+                            let test = state.plugins[i].clone();
+                            state.plugins[i].update(RowMessage::UpdatePressed(test));
+                        }
                     }
                 }
                 PluginMessage::LoadPlugins => {
