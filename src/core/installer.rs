@@ -36,8 +36,8 @@ impl Installer {
     }
 
     pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
-        // let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
-        // fs::remove_file(path)?;
+        let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
+        fs::remove_file(path)?;
 
         Ok(())
     }

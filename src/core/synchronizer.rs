@@ -11,9 +11,6 @@ use std::{
 
 use super::plugin_parser::Information;
 
-// Ordner Name des Plugins speichern für Deinstallation
-// Bei Programmstart lokale Plugins abgleichen mit Datenbank
-// Remote Datenbank synchronisieren
 // TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
 pub struct Synchronizer {}
@@ -69,6 +66,7 @@ impl Synchronizer {
             for file in directory? {
                 let test = file?.path().clone();
                 let bla = test.clone();
+
                 if glob.is_match(test) {
                     let xml_content = PluginParser::parse_file(bla);
                     local_plugins.insert(xml_content.name.clone(), xml_content);
