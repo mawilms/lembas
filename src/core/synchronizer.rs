@@ -1,3 +1,4 @@
+use super::plugin_parser::Information;
 use crate::core::config::CONFIGURATION;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
@@ -9,11 +10,6 @@ use std::{
     path::Path,
 };
 
-use super::plugin_parser::Information;
-
-// Ordner Name des Plugins speichern für Deinstallation
-// Bei Programmstart lokale Plugins abgleichen mit Datenbank
-// Remote Datenbank synchronisieren
 // TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
 pub struct Synchronizer {}
@@ -21,14 +17,15 @@ pub struct Synchronizer {}
 impl Synchronizer {
     #[tokio::main]
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
-        let local_plugins = Self::search_local().await?;
+        let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_installed_plugins();
         //Compare to local db plugins
         Self::compare_local_state(&local_plugins, &local_db_plugins);
 
         Ok(())
     }
-    pub fn compare_local_state(
+
+    fn compare_local_state(
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, Plugin>,
     ) {
@@ -42,19 +39,20 @@ impl Synchronizer {
                         &element.description,
                         &element.version,
                         &retrieved_plugin[0].latest_version,
-                    ));
+                    ))
+                    .unwrap();
                 }
             }
         }
 
         for (key, element) in db_plugins {
             if !local_plugins.contains_key(key) {
-                Self::delete_plugin(&element.title);
+                Self::delete_plugin(&element.title).unwrap();
             }
         }
     }
 
-    pub async fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
+    pub fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
 
@@ -171,6 +169,7 @@ impl Synchronizer {
 
     pub fn get_installed_plugins() -> HashMap<String, Plugin> {
         let mut installed_plugins = HashMap::new();
+
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '' ORDER BY title;")
@@ -197,6 +196,7 @@ impl Synchronizer {
 
     pub fn search_plugin(name: &str) -> Vec<Plugin> {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
+
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
@@ -220,6 +220,7 @@ impl Synchronizer {
 
     pub fn get_exact_plugin(name: &str) -> Vec<Plugin> {
         let mut installed_plugins: Vec<Plugin> = Vec::new();
+
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
