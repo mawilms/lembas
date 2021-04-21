@@ -18,26 +18,26 @@ impl Installer {
         .await?;
 
         let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+            .join(&format!("{}_{}", &plugin.plugin_id, &plugin.title));
 
         fs::create_dir(&tmp_file_path)?;
 
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title))
+            .join(&format!("{}_{}", &plugin.plugin_id, &plugin.title))
             .join("plugin.zip");
-        let mut file = match File::create(cache_path) {
+        match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
-            Ok(file) => file,
+            Ok(mut file) => {
+                let content = response.bytes().await?;
+                file.write_all(&content)?;
+            }
         };
-        let content = response.bytes().await?;
-        file.write_all(&content)?;
-
         Ok(())
     }
 
     pub fn delete(name: &str) -> Result<(), Box<dyn Error>> {
-        // let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
-        // fs::remove_file(path)?;
+        let path = Path::new(&CONFIGURATION.plugins_dir).join(name);
+        fs::remove_file(&path)?;
 
         Ok(())
     }
@@ -65,7 +65,7 @@ impl Installer {
         for file in folders {
             let file_str = file.unwrap().file_name().into_string().unwrap();
             if !file_str.contains("plugin.zip") {
-                let _ = remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&file_str));
+                remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&file_str)).unwrap();
 
                 let options = CopyOptions::new();
                 move_dir(
@@ -78,7 +78,6 @@ impl Installer {
         }
     }
 
-    // TODO: Rekursives löschen noch nicht eingebaut
     pub fn delete_cache_folder(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
             .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
