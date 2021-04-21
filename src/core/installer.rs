@@ -1,10 +1,9 @@
+use super::Plugin;
 use crate::core::config::CONFIGURATION;
 use fs_extra::dir::{move_dir, CopyOptions};
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 use std::{fs::remove_dir_all, path::Path};
-
-use super::Plugin;
 
 pub struct Installer {}
 

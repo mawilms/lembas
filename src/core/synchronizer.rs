@@ -2,7 +2,7 @@ use super::plugin_parser::Information;
 use crate::core::config::CONFIGURATION;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Statement};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -65,10 +65,9 @@ impl Synchronizer {
             );
 
             for file in directory? {
-                let test = file?.path().clone();
-                let bla = test.clone();
-                if glob.is_match(test) {
-                    let xml_content = PluginParser::parse_file(bla);
+                let path = file?.path();
+                if glob.is_match(&path) {
+                    let xml_content = PluginParser::parse_file(&path);
                     local_plugins.insert(xml_content.name.clone(), xml_content);
                 }
             }
@@ -143,14 +142,19 @@ impl Synchronizer {
         Ok(())
     }
 
-    pub fn get_plugins() -> Vec<Plugin> {
+    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Plugin> {
         let mut all_plugins: Vec<Plugin> = Vec::new();
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins ORDER BY title ASC;")
-            .unwrap();
+
+        let empty_params = params![];
+        let has_params = params![params];
+        let mut query_params = empty_params;
+        
+        if !params.is_empty() {
+            query_params = has_params;
+        }
+
         let plugin_iter = stmt
-            .query_map(params![], |row| {
+            .query_map(query_params, |row| {
                 Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
@@ -160,85 +164,50 @@ impl Synchronizer {
                 })
             })
             .unwrap();
-
         for plugin in plugin_iter {
             all_plugins.push(plugin.unwrap());
         }
         all_plugins
     }
 
+    pub fn get_plugins() -> Vec<Plugin> {
+        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let mut stmt = conn
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins ORDER BY title ASC;")
+            .unwrap();
+
+        Self::execute_stmt(&mut stmt, "")
+    }
+
     pub fn get_installed_plugins() -> HashMap<String, Plugin> {
-        let mut installed_plugins = HashMap::new();
+        let mut plugins = HashMap::new();
 
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '' ORDER BY title;")
             .unwrap();
 
-        let plugin_iter = stmt
-            .query_map(params![], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    description: row.get(2).unwrap(),
-                    current_version: row.get(3).unwrap(),
-                    latest_version: row.get(4).unwrap(),
-                })
-            })
-            .unwrap();
-
-        for plugin in plugin_iter {
-            let data = plugin.unwrap();
-            installed_plugins.insert(data.title.clone(), data);
+        for element in Self::execute_stmt(&mut stmt, "") {
+            plugins.insert(element.title.clone(), element);
         }
-        installed_plugins
+        plugins
     }
 
     pub fn search_plugin(name: &str) -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
-
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
             .unwrap();
-        let plugin_iter = stmt
-            .query_map(params![format!("%{}%", name.to_lowercase())], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    description: row.get(2).unwrap(),
-                    current_version: row.get(3).unwrap(),
-                    latest_version: row.get(4).unwrap(),
-                })
-            })
-            .unwrap();
-        for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
-        }
-        installed_plugins
+
+        Self::execute_stmt(&mut stmt, &format!("%{}%", name.to_lowercase()))
     }
 
     pub fn get_exact_plugin(name: &str) -> Vec<Plugin> {
-        let mut installed_plugins: Vec<Plugin> = Vec::new();
-
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
             .unwrap();
-        let plugin_iter = stmt
-            .query_map(params![name.to_lowercase()], |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    description: row.get(2).unwrap(),
-                    current_version: row.get(3).unwrap(),
-                    latest_version: row.get(4).unwrap(),
-                })
-            })
-            .unwrap();
-        for plugin in plugin_iter {
-            installed_plugins.push(plugin.unwrap());
-        }
-        installed_plugins
+
+        Self::execute_stmt(&mut stmt, &name.to_lowercase())
     }
 }
