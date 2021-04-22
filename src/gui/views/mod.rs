@@ -1,7 +1,7 @@
 pub mod about;
 pub mod catalog;
 pub mod plugins;
-
+use super::views::plugins::PluginMessage;
 use crate::core::Synchronizer;
 use crate::gui::style;
 use crate::gui::views::About as AboutView;
@@ -12,8 +12,6 @@ use iced::{
     Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
-
-use super::views::plugins::PluginMessage;
 
 #[derive(Debug, Clone)]
 pub enum View {
