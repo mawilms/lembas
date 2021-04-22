@@ -121,7 +121,7 @@ impl Plugins {
                     }
                     state.plugins = plugins;
                 }
-                _ => {}
+                PluginMessage::PluginInputChanged(_) => {}
             },
         }
     }
@@ -238,7 +238,7 @@ pub enum RowMessage {
 
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
-    WebsitePressed(PluginRow),
+    WebsitePressed(i32, String),
 }
 
 pub enum Event {
@@ -305,7 +305,7 @@ impl PluginRow {
                         if Installer::extract(&install_plugin).is_ok() {
                             plugin.status = "Unpacked".to_string();
                             if Installer::delete_cache_folder(&install_plugin).is_ok() {
-                                if let Ok(_) = Synchronizer::insert_plugin(&install_plugin) {
+                                if Synchronizer::insert_plugin(&install_plugin).is_ok() {
                                     plugin.status = "Installed".to_string();
                                     Event::Synchronize
                                 } else {
@@ -344,10 +344,10 @@ impl PluginRow {
                     Event::Nothing
                 }
             }
-            RowMessage::WebsitePressed(row) => {
+            RowMessage::WebsitePressed(id, title) => {
                 webbrowser::open(&format!(
                     "https://www.lotrointerface.com/downloads/info{}-{}.html",
-                    row.id, row.title,
+                    id, title,
                 ))
                 .unwrap();
                 Event::Nothing
@@ -358,7 +358,6 @@ impl PluginRow {
     pub fn view(&mut self) -> Element<'_, RowMessage> {
         let plugin = self.clone();
         let bla = self.clone();
-        let bli = self.clone();
 
         let description_label = Text::new("Description");
         let description = Text::new(&self.description.to_string());
@@ -370,12 +369,12 @@ impl PluginRow {
 
         let website_btn = Button::new(&mut self.website_btn_state, Text::new("Website"))
             .padding(5)
-            .on_press(RowMessage::WebsitePressed(bla))
+            .on_press(RowMessage::WebsitePressed(self.id, self.title.clone()))
             .style(style::PrimaryButton::Enabled);
 
         let delete_btn = Button::new(&mut self.delete_btn_state, Text::new("Delete"))
             .padding(5)
-            .on_press(RowMessage::DeletePressed(bli))
+            .on_press(RowMessage::DeletePressed(bla))
             .style(style::PrimaryButton::Enabled);
 
         let button_row = Row::new()
@@ -461,7 +460,5 @@ impl PluginRow {
 
 #[derive(Debug, Clone)]
 enum ApplicationError {
-    Load,
-    Install,
     Synchronize,
 }
