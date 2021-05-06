@@ -1,9 +1,6 @@
 use super::Plugin;
 use crate::core::config::CONFIGURATION;
-use fs_extra::{
-    dir::{move_dir, CopyOptions},
-    move_items,
-};
+use fs_extra::dir::{move_dir, CopyOptions};
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 use std::{fs::remove_dir_all, path::Path};
@@ -74,6 +71,7 @@ impl Installer {
 
                 if Path::new(&tmp_path).join(&file_str).exists() {
                     options.content_only = true;
+                    options.copy_inside = true;
                 }
                 move_dir(
                     Path::new(&tmp_path).join(&file_str),

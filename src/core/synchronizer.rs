@@ -75,10 +75,10 @@ impl Synchronizer {
         Ok(local_plugins)
     }
 
-    pub async fn fetch_plugins() -> Result<HashSet<Plugin>, Box<dyn Error>> {
+    pub async fn fetch_plugins() -> Result<HashSet<String, Plugin>, Box<dyn Error>> {
         let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
             .await?
-            .json::<HashSet<Plugin>>()
+            .json::<HashSet<String, Plugin>>()
             .await?;
 
         Ok(response)
@@ -90,7 +90,7 @@ impl Synchronizer {
         if let Ok(fetched_plugins) = Self::fetch_plugins().await {
             let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
 
-            for plugin in fetched_plugins {
+            for (_, plugin) in fetched_plugins {
                 let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
                 if installed_plugin.is_empty() {
                     conn.execute(
@@ -113,13 +113,28 @@ impl Synchronizer {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         conn.execute(
             "
-                CREATE TABLE IF NOT EXISTS plugins (
+                CREATE TABLE IF NOT EXISTS plugin (
                     id INTEGER PRIMARY KEY,
                     plugin_id INTEGER UNIQUE,
                     title TEXT,
                     description TEXT,
                     current_version TEXT,
-                    latest_version TEXT
+                    latest_version TEXT,
+                    folder_name TEXT
+                );
+        ",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "
+                CREATE TABLE IF NOT EXISTS file (
+                    id INTEGER PRIMARY KEY,
+                    name INTEGER UNIQUE,
+                    CONSTRAINT fk_plugin_file
+                      FOREIGN KEY (fk_plugin_id)
+                        REFERENCES plugin (plugin_id)
                 );
         ",
             [],
