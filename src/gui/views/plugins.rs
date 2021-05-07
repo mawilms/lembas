@@ -347,7 +347,6 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(mut row) => {
-                println!("Delete pressed");
                 if let Ok(()) = Installer::delete(&row.folder_name, &row.files) {
                     if Synchronizer::delete_plugin(&row.title).is_ok() {
                         row.status = "Deleted".to_string();

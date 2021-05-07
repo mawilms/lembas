@@ -52,7 +52,7 @@ impl Installer {
             .next()
             .is_none()
         {
-            fs::remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(name));
+            fs::remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(name))?;
         }
 
         Ok(())
