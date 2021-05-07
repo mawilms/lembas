@@ -26,6 +26,8 @@ impl Default for Plugins {
                 &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
+                &plugin.folder_name,
+                &plugin.files,
             ));
         }
 
@@ -89,6 +91,8 @@ impl Plugins {
                                 &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
+                                &plugin.folder_name,
+                                &plugin.files,
                             ))
                         }
                         state.plugins = plugins;
@@ -117,6 +121,8 @@ impl Plugins {
                             &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
+                            &plugin.folder_name,
+                            &plugin.files,
                         ));
                     }
                     state.plugins = plugins;
@@ -255,6 +261,8 @@ impl PluginRow {
         description: &str,
         current_version: &str,
         latest_version: &str,
+        folder_name: &str,
+        files: &[String],
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -264,8 +272,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
-                folder_name: "".to_string(),
-                files: Vec::new(),
+                folder_name: folder_name.to_string(),
+                files: files.to_vec(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -280,8 +288,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
-                folder_name: "".to_string(),
-                files: Vec::new(),
+                folder_name: folder_name.to_string(),
+                files: files.to_vec(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -309,7 +317,8 @@ impl PluginRow {
                 );
                 if Installer::download(&install_plugin).is_ok() {
                     plugin.status = "Downloaded".to_string();
-                    if Installer::delete(&install_plugin.title).is_ok() {
+                    if Installer::delete(&install_plugin.folder_name, &install_plugin.files).is_ok()
+                    {
                         if Installer::extract(&install_plugin).is_ok() {
                             plugin.status = "Unpacked".to_string();
                             if Installer::delete_cache_folder(&install_plugin).is_ok() {
@@ -339,7 +348,7 @@ impl PluginRow {
             }
             RowMessage::DeletePressed(mut row) => {
                 println!("Delete pressed");
-                if let Ok(()) = Installer::delete(&row.title) {
+                if let Ok(()) = Installer::delete(&row.folder_name, &row.files) {
                     if Synchronizer::delete_plugin(&row.title).is_ok() {
                         row.status = "Deleted".to_string();
                         Event::Nothing

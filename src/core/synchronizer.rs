@@ -129,7 +129,7 @@ impl Synchronizer {
             "
                 CREATE TABLE IF NOT EXISTS file (
                     id INTEGER PRIMARY KEY,
-                    name TEXT,
+                    name TEXT UNIQUE,
                     fk_plugin_id INTEGER,
                     FOREIGN KEY (fk_plugin_id) REFERENCES plugin (plugin_id) ON DELETE CASCADE ON UPDATE CASCADE
                 );
@@ -152,7 +152,7 @@ impl Synchronizer {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
         for file in files {
             conn.execute(
-                "INSERT INTO file (name, fk_plugin_id) VALUES (?1, ?2);",
+                "INSERT INTO file (name, fk_plugin_id) VALUES (?1, ?2) ON CONFLICT (name) DO UPDATE SET name=?1;",
                 params![file.to_string(), fk_plugin],
             )?;
         }
@@ -167,7 +167,6 @@ impl Synchronizer {
     }
 
     fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Plugin> {
-        // TODO: Hier join der files um Plugins zusammenzuführen mit Files
         let mut all_plugins: Vec<Plugin> = Vec::new();
 
         let empty_params = params![];
@@ -193,7 +192,7 @@ impl Synchronizer {
             .unwrap();
         for plugin in plugin_iter {
             let mut plugin = plugin.unwrap();
-            plugin.files = Self::get_files(&plugin.plugin_id);
+            plugin.files = Self::get_files(plugin.plugin_id);
             all_plugins.push(plugin);
         }
         all_plugins
@@ -208,7 +207,7 @@ impl Synchronizer {
         Self::execute_stmt(&mut stmt, "")
     }
 
-    fn get_files(fk_plugin: &i32) -> Vec<String> {
+    fn get_files(fk_plugin: i32) -> Vec<String> {
         let mut files: Vec<String> = Vec::new();
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
