@@ -9,7 +9,7 @@ pub struct Plugin {
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
-    pub foldername: String,
+    pub folder_name: String,
     pub files: Vec<String>,
 }
 
@@ -21,7 +21,7 @@ impl Default for Plugin {
             description: String::default(),
             current_version: String::default(),
             latest_version: String::default(),
-            foldername: String::default(),
+            folder_name: String::default(),
             files: Vec::new(),
         }
     }
@@ -34,8 +34,8 @@ impl Plugin {
         description: &str,
         current_version: &str,
         latest_version: &str,
-        foldername: &str,
-        files: &[T],
+        folder_name: &str,
+        files: &[String],
     ) -> Self {
         Self {
             plugin_id,
@@ -43,7 +43,7 @@ impl Plugin {
             description: description.to_string(),
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),
-            foldername: foldername.to_string(),
+            folder_name: folder_name.to_string(),
             files: files.to_vec(),
         }
     }

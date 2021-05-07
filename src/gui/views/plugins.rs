@@ -219,6 +219,8 @@ pub struct PluginRow {
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
+    pub folder_name: String,
+    pub files: Vec<String>,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -262,6 +264,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
+                folder_name: "".to_string(),
+                files: Vec::new(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -276,6 +280,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
+                folder_name: "".to_string(),
+                files: Vec::new(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -298,6 +304,8 @@ impl PluginRow {
                     &plugin.description,
                     &plugin.current_version,
                     &plugin.latest_version,
+                    &plugin.folder_name,
+                    &plugin.files,
                 );
                 if Installer::download(&install_plugin).is_ok() {
                     plugin.status = "Downloaded".to_string();
