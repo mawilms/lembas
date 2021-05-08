@@ -1,10 +1,9 @@
 use super::Plugin;
 use crate::core::config::CONFIGURATION;
-use fs_extra::dir::{move_dir, CopyOptions};
-use futures::TryFutureExt;
+use fs_extra;
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
-use std::{fs::metadata, fs::remove_dir_all, path::Path};
+use std::{fs::metadata, path::Path};
 
 pub struct Installer {}
 
@@ -70,29 +69,47 @@ impl Installer {
 
         zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
-        Self::move_files(&tmp_file_path.to_str().unwrap());
+        Self::move_files(
+            &tmp_file_path.to_str().unwrap(),
+            &plugin.folder_name,
+            &plugin.files,
+        );
 
         Ok(())
     }
 
-    fn move_files(tmp_path: &str) {
-        let folders = fs::read_dir(&Path::new(tmp_path)).unwrap();
+    fn move_files(tmp_path: &str, folder_name: &str, files: &[String]) {
+        let tmp_folder = fs::read_dir(&Path::new(tmp_path).join(&folder_name)).unwrap();
+        fs::remove_file(&Path::new(tmp_path).join("plugin.zip")).unwrap();
 
-        for file in folders {
+        if !Path::new(&CONFIGURATION.plugins_dir)
+            .join(&folder_name)
+            .exists()
+        {
+            // TODO: Check if the options are really doing what I want
+            fs::create_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&folder_name)).unwrap();
+        }
+
+        for file in tmp_folder {
             let file_str = file.unwrap().file_name().into_string().unwrap();
-            if !file_str.contains("plugin.zip") {
-                remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&file_str)).unwrap();
 
-                let mut options = CopyOptions::new();
+            let md = metadata(Path::new(tmp_path).join(&folder_name).join(&file_str)).unwrap();
+            if md.is_dir() {
+                let mut options = fs_extra::dir::CopyOptions::new();
                 options.overwrite = true;
-
-                if Path::new(&tmp_path).join(&file_str).exists() {
-                    options.content_only = true;
-                    options.copy_inside = true;
-                }
-                move_dir(
-                    Path::new(&tmp_path).join(&file_str),
-                    &CONFIGURATION.plugins_dir,
+                options.copy_inside = true;
+                fs_extra::dir::move_dir(
+                    Path::new(tmp_path).join(&folder_name).join(&file_str),
+                    Path::new(&CONFIGURATION.plugins_dir).join(folder_name),
+                    &options,
+                )
+                .unwrap();
+            } else {
+                let mut options = fs_extra::file::CopyOptions::new();
+                options.overwrite = true;
+                fs_extra::file::move_file(
+                    Path::new(tmp_path).join(&folder_name).join(&file_str),
+                    Path::new(&CONFIGURATION.plugins_dir).join(&folder_name).join(&file_str),
                     &options,
                 )
                 .unwrap();
@@ -104,7 +121,7 @@ impl Installer {
         let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
             .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
 
-        fs::remove_dir_all(tmp_file_path)?;
+        //fs::remove_dir_all(tmp_file_path).unwrap();
 
         Ok(())
     }

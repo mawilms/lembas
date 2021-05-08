@@ -69,6 +69,7 @@ impl Synchronizer {
                 }
             }
         }
+        println!("Lokale Plugins: {:?}", local_plugins);
         Ok(local_plugins)
     }
 
@@ -236,6 +237,7 @@ impl Synchronizer {
         for element in Self::execute_stmt(&mut stmt, "") {
             plugins.insert(element.title.clone(), element);
         }
+        println!("Installierte Plugins: {:?}", plugins);
         plugins
     }
 
