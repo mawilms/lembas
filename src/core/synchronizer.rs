@@ -3,12 +3,7 @@ use crate::core::config::CONFIGURATION;
 use crate::core::{Plugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs::read_dir,
-    path::Path,
-};
+use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 // TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
@@ -39,6 +34,8 @@ impl Synchronizer {
                         &element.description,
                         &element.version,
                         &retrieved_plugin[0].latest_version,
+                        &retrieved_plugin[0].folder_name,
+                        &retrieved_plugin[0].files,
                     ))
                     .unwrap();
                 }
@@ -75,10 +72,10 @@ impl Synchronizer {
         Ok(local_plugins)
     }
 
-    pub async fn fetch_plugins() -> Result<HashSet<Plugin>, Box<dyn Error>> {
+    pub async fn fetch_plugins() -> Result<HashMap<String, Plugin>, Box<dyn Error>> {
         let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
             .await?
-            .json::<HashSet<Plugin>>()
+            .json::<HashMap<String, Plugin>>()
             .await?;
 
         Ok(response)
@@ -90,17 +87,18 @@ impl Synchronizer {
         if let Ok(fetched_plugins) = Self::fetch_plugins().await {
             let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
 
-            for plugin in fetched_plugins {
+            for (_, plugin) in fetched_plugins {
                 let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
                 if installed_plugin.is_empty() {
                     conn.execute(
-                        "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
-                        params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version]).unwrap();
+                        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
+                        params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version, plugin.folder_name]).unwrap();
                 } else {
                     conn.execute(
-                        "INSERT INTO plugins (plugin_id, title, description,current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
-                        params![plugin.plugin_id, plugin.title, plugin.description, installed_plugin[0].current_version, plugin.latest_version]).unwrap();
+                        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
+                        params![plugin.plugin_id, plugin.title, installed_plugin[0].description, installed_plugin[0].current_version, plugin.latest_version, plugin.folder_name]).unwrap();
                 }
+                Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
             }
             Ok(())
         } else {
@@ -113,13 +111,27 @@ impl Synchronizer {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         conn.execute(
             "
-                CREATE TABLE IF NOT EXISTS plugins (
+                CREATE TABLE IF NOT EXISTS plugin (
                     id INTEGER PRIMARY KEY,
                     plugin_id INTEGER UNIQUE,
                     title TEXT,
                     description TEXT,
                     current_version TEXT,
-                    latest_version TEXT
+                    latest_version TEXT,
+                    folder_name TEXT
+                );
+        ",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "
+                CREATE TABLE IF NOT EXISTS file (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT UNIQUE,
+                    fk_plugin_id INTEGER,
+                    FOREIGN KEY (fk_plugin_id) REFERENCES plugin (plugin_id) ON DELETE CASCADE ON UPDATE CASCADE
                 );
         ",
             [],
@@ -128,17 +140,38 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let glob = Glob::new("*.plugin")?.compile_matcher();
+        let directory = read_dir(Path::new(&CONFIGURATION.plugins_dir).join(&plugin.folder_name));
+
+        for file in directory? {
+            let path = file?.path();
+            if glob.is_match(&path) {
+                let xml_content = PluginParser::parse_file(&path);
+                let conn = Connection::open(&CONFIGURATION.db_file)?;
+                conn.execute(
+                "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
+                params![plugin.plugin_id, plugin.title, &xml_content.description, plugin.latest_version, plugin.latest_version, plugin.folder_name])?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn insert_files(files: &[String], fk_plugin: i32) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
-        conn.execute(
-                "INSERT INTO plugins (plugin_id, title, description, current_version, latest_version) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5;",
-                params![plugin.plugin_id, plugin.title, plugin.description, plugin.latest_version, plugin.latest_version])?;
+        for file in files {
+            conn.execute(
+                "INSERT INTO file (name, fk_plugin_id) VALUES (?1, ?2) ON CONFLICT (name) DO UPDATE SET name=?1;",
+                params![file.to_string(), fk_plugin],
+            )?;
+        }
 
         Ok(())
     }
 
     pub fn delete_plugin(title: &str) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(&CONFIGURATION.db_file)?;
-        conn.execute("DELETE FROM plugins WHERE title=?1;", params![title])?;
+        conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
         Ok(())
     }
 
@@ -148,7 +181,7 @@ impl Synchronizer {
         let empty_params = params![];
         let has_params = params![params];
         let mut query_params = empty_params;
-        
+
         if !params.is_empty() {
             query_params = has_params;
         }
@@ -161,11 +194,15 @@ impl Synchronizer {
                     description: row.get(2).unwrap(),
                     current_version: row.get(3).unwrap(),
                     latest_version: row.get(4).unwrap(),
+                    folder_name: row.get(5).unwrap(),
+                    files: Vec::new(),
                 })
             })
             .unwrap();
         for plugin in plugin_iter {
-            all_plugins.push(plugin.unwrap());
+            let mut plugin = plugin.unwrap();
+            plugin.files = Self::get_files(plugin.plugin_id);
+            all_plugins.push(plugin);
         }
         all_plugins
     }
@@ -173,10 +210,28 @@ impl Synchronizer {
     pub fn get_plugins() -> Vec<Plugin> {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins ORDER BY title ASC;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version, folder_name FROM plugin ORDER BY title ASC;")
             .unwrap();
 
         Self::execute_stmt(&mut stmt, "")
+    }
+
+    fn get_files(fk_plugin: i32) -> Vec<String> {
+        let mut files: Vec<String> = Vec::new();
+        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let mut stmt = conn
+            .prepare("SELECT name, fk_plugin_id FROM file WHERE fk_plugin_id LIKE ?1;")
+            .unwrap();
+
+        let file_iter = stmt
+            .query_map(params![&format!("%{}%", fk_plugin)], |row| {
+                Ok(row.get(0).unwrap())
+            })
+            .unwrap();
+        for file in file_iter {
+            files.push(file.unwrap());
+        }
+        files
     }
 
     pub fn get_installed_plugins() -> HashMap<String, Plugin> {
@@ -184,7 +239,7 @@ impl Synchronizer {
 
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE current_version != '' ORDER BY title;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version, folder_name FROM plugin WHERE current_version != '' ORDER BY title;")
             .unwrap();
 
         for element in Self::execute_stmt(&mut stmt, "") {
@@ -196,7 +251,7 @@ impl Synchronizer {
     pub fn search_plugin(name: &str) -> Vec<Plugin> {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) LIKE ?1;")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) LIKE ?1;")
             .unwrap();
 
         Self::execute_stmt(&mut stmt, &format!("%{}%", name.to_lowercase()))
@@ -205,7 +260,7 @@ impl Synchronizer {
     pub fn get_exact_plugin(name: &str) -> Vec<Plugin> {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, current_version, latest_version FROM plugins WHERE LOWER(title) = ?1")
+            .prepare("SELECT plugin_id, title, description, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) = ?1")
             .unwrap();
 
         Self::execute_stmt(&mut stmt, &name.to_lowercase())

@@ -1,4 +1,4 @@
-#cargo-features = ["strip"]
+cargo-features = ["strip"]
 
 [package]
 name = "lembas"
@@ -42,4 +42,4 @@ winapi = "^0"
 [profile.release]
 opt-level = "s"
 lto = true
-#strip = "symbols"# Currently only useable for nightly --> 
+strip = "symbols"# Currently only useable for nightly --> 

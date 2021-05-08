@@ -22,6 +22,8 @@ impl Default for Catalog {
                 &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
+                &plugin.folder_name,
+                &plugin.files,
             ));
         }
 
@@ -62,6 +64,8 @@ impl Catalog {
                             &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
+                            &plugin.folder_name,
+                            &plugin.files,
                         ))
                     }
                     state.plugins = plugins;
@@ -149,6 +153,8 @@ pub struct PluginRow {
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
+    pub folder_name: String,
+    pub files: Vec<String>,
 
     install_btn_state: button::State,
     website_btn_state: button::State,
@@ -167,6 +173,8 @@ impl PluginRow {
         description: &str,
         current_version: &str,
         latest_version: &str,
+        folder_name: &str,
+        files: &[String],
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -176,6 +184,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Installed".to_string(),
+                folder_name: folder_name.to_string(),
+                files: files.to_vec(),
                 install_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
             }
@@ -187,6 +197,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Install".to_string(),
+                folder_name: folder_name.to_string(),
+                files: files.to_vec(),
                 install_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
             }
@@ -198,6 +210,8 @@ impl PluginRow {
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
+                folder_name: folder_name.to_string(),
+                files: files.to_vec(),
                 install_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
             }
@@ -213,6 +227,8 @@ impl PluginRow {
                     &plugin.description,
                     &plugin.current_version,
                     &plugin.latest_version,
+                    &plugin.folder_name,
+                    &plugin.files,
                 );
                 if Installer::download(&plugin).is_ok() {
                     self.status = "Downloaded".to_string();
