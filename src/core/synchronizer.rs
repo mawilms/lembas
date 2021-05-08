@@ -69,7 +69,6 @@ impl Synchronizer {
                 }
             }
         }
-        println!("Lokale Plugins: {:?}", local_plugins);
         Ok(local_plugins)
     }
 
@@ -97,7 +96,7 @@ impl Synchronizer {
                 } else {
                     conn.execute(
                         "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
-                        params![plugin.plugin_id, plugin.title, plugin.description, installed_plugin[0].current_version, plugin.latest_version, plugin.folder_name]).unwrap();
+                        params![plugin.plugin_id, plugin.title, installed_plugin[0].description, installed_plugin[0].current_version, plugin.latest_version, plugin.folder_name]).unwrap();
                 }
                 Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
             }
@@ -141,10 +140,19 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&CONFIGURATION.db_file)?;
-        conn.execute(
+        let glob = Glob::new("*.plugin")?.compile_matcher();
+        let directory = read_dir(Path::new(&CONFIGURATION.plugins_dir).join(&plugin.folder_name));
+
+        for file in directory? {
+            let path = file?.path();
+            if glob.is_match(&path) {
+                let xml_content = PluginParser::parse_file(&path);
+                let conn = Connection::open(&CONFIGURATION.db_file)?;
+                conn.execute(
                 "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
-                params![plugin.plugin_id, plugin.title, plugin.description, plugin.latest_version, plugin.latest_version, plugin.folder_name])?;
+                params![plugin.plugin_id, plugin.title, &xml_content.description, plugin.latest_version, plugin.latest_version, plugin.folder_name])?;
+            }
+        }
 
         Ok(())
     }
@@ -237,7 +245,6 @@ impl Synchronizer {
         for element in Self::execute_stmt(&mut stmt, "") {
             plugins.insert(element.title.clone(), element);
         }
-        println!("Installierte Plugins: {:?}", plugins);
         plugins
     }
 

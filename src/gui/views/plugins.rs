@@ -66,7 +66,6 @@ impl Plugins {
         match Synchronizer::update_local_plugins() {
             Ok(_) => Ok(()),
             Err(error) => {
-                println!("{:?}", &error);
                 Err(ApplicationError::Synchronize)
             }
         }
@@ -77,6 +76,7 @@ impl Plugins {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
+                        println!("Fired");
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<Plugin> = Synchronizer::get_installed_plugins()
                             .values()
@@ -105,7 +105,6 @@ impl Plugins {
                 PluginMessage::UpdateAllPressed => {
                     for i in 1..state.plugins.len() {
                         if state.plugins[i].current_version != state.plugins[i].latest_version {
-                            println!("{:?}", state.plugins[i]);
                             let test = state.plugins[i].clone();
                             state.plugins[i].update(RowMessage::UpdatePressed(test));
                         }
