@@ -101,6 +101,7 @@ impl Application for Lembas {
             }
             Lembas::Loaded(state) => match message {
                 Message::PluginsPressed => {
+                    state.plugins_view.update(PluginMessage::LoadPlugins);
                     state.view = View::Plugins;
                 }
                 Message::CatalogPressed => {

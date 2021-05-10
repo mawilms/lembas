@@ -65,9 +65,7 @@ impl Plugins {
     fn refresh_db() -> Result<(), ApplicationError> {
         match Synchronizer::update_local_plugins() {
             Ok(_) => Ok(()),
-            Err(error) => {
-                Err(ApplicationError::Synchronize)
-            }
+            Err(error) => Err(ApplicationError::Synchronize),
         }
     }
 
