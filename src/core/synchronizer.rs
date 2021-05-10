@@ -93,12 +93,12 @@ impl Synchronizer {
                     conn.execute(
                         "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
                         params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version, plugin.folder_name]).unwrap();
-                } else {
-                    conn.execute(
-                        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
-                        params![plugin.plugin_id, plugin.title, installed_plugin[0].description, installed_plugin[0].current_version, plugin.latest_version, plugin.folder_name]).unwrap();
+                    //Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
+                } else if installed_plugin[0].latest_version != plugin.latest_version {
+                    println!("Bla");
+                    conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
+                    //Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
                 }
-                Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
             }
             Ok(())
         } else {
