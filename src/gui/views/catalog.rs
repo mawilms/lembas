@@ -56,7 +56,9 @@ impl Catalog {
                 Message::CatalogInputChanged(letter) => {
                     state.input_value = letter;
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let queried_plugins = Synchronizer::search_plugin(&state.input_value);
+                    let mut queried_plugins = Synchronizer::search_plugin(&state.input_value);
+                    queried_plugins
+                        .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     for plugin in queried_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
