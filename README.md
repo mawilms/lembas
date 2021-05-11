@@ -84,4 +84,4 @@ I want to especially thank [@13r0ck](https://github.com/13r0ck) and [@hecrj](htt
 
 ## License
 
-Lembas is release under the [MIT License](https://github.com/mawilms/lembas/blob/main/LICENSE)
+Lembas is release under the [GNU GPLv3](https://github.com/mawilms/lembas/blob/main/LICENSE)
