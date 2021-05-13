@@ -80,7 +80,7 @@ You can open a Feature request or Bug issue [here](https://github.com/mawilms/le
 
 ## Special thanks
 
-I want to especially thank [@13r0ck](https://github.com/13r0ck) and [@hecrj](https://github.com/hecrj) from the [Iced zulip server](https://iced.zulipchat.com). Both were very helpful and their tips were essential for this app. I also want to thank [Thornbach](https://fungalmancy.netlify.app/) for the great icon and [Casperstorm](https://github.com/casperstorm) for his inspirational WoW plugin manager [Ajour](https://github.com/ajour/ajour)
+I want to especially thank [@13r0ck](https://github.com/13r0ck) and [@hecrj](https://github.com/hecrj) from the [Iced zulip server](https://iced.zulipchat.com). Both were very helpful and their tips were essential for this app. I also want to thank [Thornbach](https://fungalmancy.netlify.app/) for the great icon and [Casperstorm](https://github.com/casperstorm) for his great inspirational WoW plugin manager [Ajour](https://github.com/ajour/ajour).
 
 ## License
 
