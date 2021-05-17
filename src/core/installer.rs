@@ -109,7 +109,9 @@ impl Installer {
                 options.overwrite = true;
                 fs_extra::file::move_file(
                     Path::new(tmp_path).join(&folder_name).join(&file_str),
-                    Path::new(&CONFIGURATION.plugins_dir).join(&folder_name).join(&file_str),
+                    Path::new(&CONFIGURATION.plugins_dir)
+                        .join(&folder_name)
+                        .join(&file_str),
                     &options,
                 )
                 .unwrap();
