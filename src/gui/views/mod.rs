@@ -105,13 +105,20 @@ impl Application for Lembas {
                     state.view = View::Plugins;
                 }
                 Message::CatalogPressed => {
+                    state
+                        .catalog_view
+                        .update(CatalogMessage::LoadPlugins)
+                        .map(Message::CatalogAction);
                     state.view = View::Catalog;
                 }
                 Message::AboutPressed => {
                     state.view = View::About;
                 }
                 Message::PluginAction(msg) => state.plugins_view.update(msg),
-                Message::CatalogAction(msg) => state.catalog_view.update(msg),
+                Message::CatalogAction(msg) => {
+                    println!("{:?}", msg);
+                    state.catalog_view.update(msg);
+                }
                 _ => {}
             },
         }

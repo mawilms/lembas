@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Base {
+    pub plugin_id: i32,
+    pub title: String,
+    pub category: String,
+    pub latest_version: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct Plugin {
     pub plugin_id: i32,
     pub title: String,
@@ -11,20 +19,6 @@ pub struct Plugin {
     pub latest_version: String,
     pub folder_name: String,
     pub files: Vec<String>,
-}
-
-impl Default for Plugin {
-    fn default() -> Self {
-        Self {
-            plugin_id: i32::default(),
-            title: String::default(),
-            description: String::default(),
-            current_version: String::default(),
-            latest_version: String::default(),
-            folder_name: String::default(),
-            files: Vec::new(),
-        }
-    }
 }
 
 impl Plugin {

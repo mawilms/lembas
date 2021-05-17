@@ -6,6 +6,6 @@ pub mod synchronizer;
 
 pub use config::Config;
 pub use installer::Installer;
-pub use plugin::Plugin;
+pub use plugin::{Base, Plugin};
 pub use plugin_parser::PluginParser;
 pub use synchronizer::Synchronizer;

@@ -1,8 +1,10 @@
-use crate::core::{Installer, Plugin, Synchronizer};
+use std::{collections::HashMap, error::Error};
+
+use crate::core::{Base as BasePlugin, Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
 };
 
 #[derive(Debug, Clone)]
@@ -12,25 +14,7 @@ pub enum Catalog {
 
 impl Default for Catalog {
     fn default() -> Self {
-        let mut all_plugins = Synchronizer::get_plugins();
-        all_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-        let mut plugins: Vec<PluginRow> = Vec::new();
-        for plugin in all_plugins {
-            plugins.push(PluginRow::new(
-                plugin.plugin_id,
-                &plugin.title,
-                &plugin.description,
-                &plugin.current_version,
-                &plugin.latest_version,
-                &plugin.folder_name,
-                &plugin.files,
-            ));
-        }
-
-        Self::Loaded(State {
-            plugins,
-            ..State::default()
-        })
+        Self::Loaded(State { ..State::default() })
     }
 }
 
@@ -47,33 +31,68 @@ pub struct State {
 pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
+    LoadPlugins,
+    LoadedPlugins(HashMap<String, BasePlugin>),
 }
 
 impl Catalog {
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Command<Message> {
         match self {
             Catalog::Loaded(state) => match message {
                 Message::CatalogInputChanged(letter) => {
-                    state.input_value = letter;
-                    let mut plugins: Vec<PluginRow> = Vec::new();
-                    let mut queried_plugins = Synchronizer::search_plugin(&state.input_value);
-                    queried_plugins
-                        .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                    for plugin in queried_plugins {
-                        plugins.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.description,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                            &plugin.folder_name,
-                            &plugin.files,
-                        ))
-                    }
-                    state.plugins = plugins;
+                    // state.input_value = letter;
+                    // let mut plugins: Vec<PluginRow> = Vec::new();
+                    // let mut queried_plugins = Synchronizer::search_plugin(&state.input_value);
+                    // queried_plugins
+                    //     .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                    // for plugin in queried_plugins {
+                    //     plugins.push(PluginRow::new(
+                    //         plugin.plugin_id,
+                    //         &plugin.title,
+                    //         &plugin.category,
+                    //         &plugin.current_version,
+                    //         &plugin.latest_version,
+                    //     ))
+                    // }
+                    // state.plugins = plugins;
+                    Command::none()
                 }
                 Message::Catalog(index, msg) => {
                     state.plugins[index].update(msg);
+                    Command::none()
+                }
+                Message::LoadPlugins => {
+                    Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
+                }
+                Message::LoadedPlugins(fetched_plugins) => {
+                    println!("Hallo");
+                    let mut plugins = Vec::new();
+                    let installed_plugins = Synchronizer::get_installed_plugins();
+                    for (_, plugin) in fetched_plugins {
+                        let mut plugin_row = PluginRow::new(
+                            plugin.plugin_id,
+                            &plugin.title,
+                            &plugin.category,
+                            "",
+                            &plugin.latest_version,
+                        );
+                        match installed_plugins.get(&plugin.title) {
+                            Some(value) => {
+                                plugin_row.current_version = value.current_version.clone();
+                                if value.current_version == plugin.latest_version {
+                                    plugin_row.status = String::from("Installed");
+                                } else {
+                                    plugin_row.status = String::from("Update");
+                                }
+                            }
+                            None => {
+                                plugin_row.status = String::from("Install");
+                            }
+                        }
+                        plugins.push(plugin_row);
+                    }
+                    state.plugins = plugins;
+                    Command::none()
                 }
             },
         }
@@ -151,12 +170,10 @@ impl Catalog {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
-    pub description: String,
+    pub category: String,
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
-    pub folder_name: String,
-    pub files: Vec<String>,
 
     install_btn_state: button::State,
     website_btn_state: button::State,
@@ -172,85 +189,50 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
-        description: &str,
+        category: &str,
         current_version: &str,
         latest_version: &str,
-        folder_name: &str,
-        files: &[String],
     ) -> Self {
-        if current_version == latest_version {
-            Self {
-                id,
-                title: title.to_string(),
-                description: description.to_string(),
-                current_version: current_version.to_string(),
-                latest_version: latest_version.to_string(),
-                status: "Installed".to_string(),
-                folder_name: folder_name.to_string(),
-                files: files.to_vec(),
-                install_btn_state: button::State::default(),
-                website_btn_state: button::State::default(),
-            }
-        } else if current_version.is_empty() {
-            Self {
-                id,
-                title: title.to_string(),
-                description: description.to_string(),
-                current_version: current_version.to_string(),
-                latest_version: latest_version.to_string(),
-                status: "Install".to_string(),
-                folder_name: folder_name.to_string(),
-                files: files.to_vec(),
-                install_btn_state: button::State::default(),
-                website_btn_state: button::State::default(),
-            }
-        } else {
-            Self {
-                id,
-                title: title.to_string(),
-                description: description.to_string(),
-                current_version: current_version.to_string(),
-                latest_version: latest_version.to_string(),
-                status: "Update".to_string(),
-                folder_name: folder_name.to_string(),
-                files: files.to_vec(),
-                install_btn_state: button::State::default(),
-                website_btn_state: button::State::default(),
-            }
+        Self {
+            id,
+            title: title.to_string(),
+            category: category.to_string(),
+            current_version: current_version.to_string(),
+            latest_version: latest_version.to_string(),
+            status: "Installed".to_string(),
+            install_btn_state: button::State::default(),
+            website_btn_state: button::State::default(),
         }
     }
 
     pub fn update(&mut self, message: RowMessage) {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                let plugin = Plugin::new(
-                    plugin.id,
-                    &plugin.title,
-                    &plugin.description,
-                    &plugin.current_version,
-                    &plugin.latest_version,
-                    &plugin.folder_name,
-                    &plugin.files,
-                );
-                if Installer::download(&plugin).is_ok() {
-                    self.status = "Downloaded".to_string();
-                    if Installer::extract(&plugin).is_ok() {
-                        self.status = "Unpacked".to_string();
-                        if Installer::delete_cache_folder(&plugin).is_ok() {
-                            if Synchronizer::insert_plugin(&plugin).is_ok() {
-                                self.status = "Installed".to_string();
-                            } else {
-                                self.status = "Installation failed".to_string();
-                            }
-                        } else {
-                            self.status = "Installation failed".to_string();
-                        }
-                    } else {
-                        self.status = "Unpacking failed".to_string();
-                    }
-                } else {
-                    self.status = "Download failed".to_string();
-                }
+                // let plugin = Plugin::new(
+                //     plugin.id,
+                //     &plugin.title,
+                //     &plugin.category & plugin.current_version,
+                //     &plugin.latest_version,
+                // );
+                // if Installer::download(&plugin).is_ok() {
+                //     self.status = "Downloaded".to_string();
+                //     if Installer::extract(&plugin).is_ok() {
+                //         self.status = "Unpacked".to_string();
+                //         if Installer::delete_cache_folder(&plugin).is_ok() {
+                //             if Synchronizer::insert_plugin(&plugin).is_ok() {
+                //                 self.status = "Installed".to_string();
+                //             } else {
+                //                 self.status = "Installation failed".to_string();
+                //             }
+                //         } else {
+                //             self.status = "Installation failed".to_string();
+                //         }
+                //     } else {
+                //         self.status = "Unpacking failed".to_string();
+                //     }
+                // } else {
+                //     self.status = "Download failed".to_string();
+                // }
             }
 
             RowMessage::WebsitePressed(row) => {

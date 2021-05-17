@@ -1,11 +1,10 @@
 use super::plugin_parser::Information;
 use crate::core::config::CONFIGURATION;
-use crate::core::{Plugin, PluginParser};
+use crate::core::{Base as BasePlugin, Plugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
-
-// TODO: Aktuell womöglich noch ein Bug wegen des Plugin Namens. Es könnte eine Diskrepanz zwischen dem .plugin name und dem db name bestehen
 
 pub struct Synchronizer {}
 
@@ -14,7 +13,7 @@ impl Synchronizer {
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_installed_plugins();
-        //Compare to local db plugins
+
         Self::compare_local_state(&local_plugins, &local_db_plugins);
 
         Ok(())
@@ -72,38 +71,45 @@ impl Synchronizer {
         Ok(local_plugins)
     }
 
-    pub async fn fetch_plugins() -> Result<HashMap<String, Plugin>, Box<dyn Error>> {
+    pub async fn fetch_plugins() -> HashMap<String, BasePlugin> {
         let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
-            .await?
-            .json::<HashMap<String, Plugin>>()
-            .await?;
-
-        Ok(response)
+            .await
+            .expect("Failed to connect with API")
+            .json::<HashMap<String, BasePlugin>>()
+            .await
+            .expect("Failed to parse response");
+        response
     }
 
     // Used to synchronize the local database with the remote plugin server
     #[tokio::main]
     pub async fn update_local_plugins() -> Result<(), ()> {
-        if let Ok(fetched_plugins) = Self::fetch_plugins().await {
-            let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let fetched_plugins = Self::fetch_plugins().await;
+        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
 
-            for (_, plugin) in fetched_plugins {
-                let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
-                if installed_plugin.is_empty() {
-                    conn.execute(
-                        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
-                        params![plugin.plugin_id, plugin.title, "", "", plugin.latest_version, plugin.folder_name]).unwrap();
-                    //Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
-                } else if installed_plugin[0].latest_version != plugin.latest_version {
-                    println!("Bla");
-                    conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
-                    //Self::insert_files(&plugin.files, plugin.plugin_id).unwrap();
-                }
+        for (_, plugin) in fetched_plugins {
+            let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
+            if !installed_plugin.is_empty()
+                && installed_plugin[0].latest_version != plugin.latest_version
+            {
+                conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
+                let files = Self::retrieve_files(plugin.plugin_id).await.unwrap();
+                Self::insert_files(&files.files, plugin.plugin_id).unwrap();
             }
-            Ok(())
-        } else {
-            Err(())
         }
+        Ok(())
+    }
+
+    async fn retrieve_files(plugin_id: i32) -> Result<Files, Box<dyn Error>> {
+        let response = reqwest::get(format!(
+            "https://young-hamlet-23901.herokuapp.com/files/{}",
+            plugin_id
+        ))
+        .await?
+        .json::<Files>()
+        .await?;
+
+        Ok(response)
     }
 
     // Creates the local database if it doesn't exist.
@@ -265,4 +271,10 @@ impl Synchronizer {
 
         Self::execute_stmt(&mut stmt, &name.to_lowercase())
     }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+struct Files {
+    plugin_id: i32,
+    files: Vec<String>,
 }
