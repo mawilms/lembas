@@ -40,21 +40,22 @@ impl Catalog {
         match self {
             Catalog::Loaded(state) => match message {
                 Message::CatalogInputChanged(letter) => {
-                    // state.input_value = letter;
-                    // let mut plugins: Vec<PluginRow> = Vec::new();
-                    // let mut queried_plugins = Synchronizer::search_plugin(&state.input_value);
-                    // queried_plugins
-                    //     .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                    // for plugin in queried_plugins {
-                    //     plugins.push(PluginRow::new(
-                    //         plugin.plugin_id,
-                    //         &plugin.title,
-                    //         &plugin.category,
-                    //         &plugin.current_version,
-                    //         &plugin.latest_version,
-                    //     ))
-                    // }
-                    // state.plugins = plugins;
+                    let mut filerted_plugins = Vec::new();
+                    state.input_value = letter;
+                    
+                    for element in &state.plugins {
+                        println!("{}", state.input_value);
+                        if element
+                            .title
+                            .to_lowercase()
+                            .contains(&state.input_value.to_lowercase())
+                        {
+                            filerted_plugins.push(element.clone());
+                        }
+                    }
+                    filerted_plugins
+                        .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                    state.plugins = filerted_plugins;
                     Command::none()
                 }
                 Message::Catalog(index, msg) => {
@@ -62,11 +63,9 @@ impl Catalog {
                     Command::none()
                 }
                 Message::LoadPlugins => {
-                    println!("Test");
                     Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
                 }
                 Message::LoadedPlugins(fetched_plugins) => {
-                    println!("Hallo");
                     let mut plugins = Vec::new();
                     let installed_plugins = Synchronizer::get_installed_plugins();
                     for (_, plugin) in fetched_plugins {
@@ -92,6 +91,7 @@ impl Catalog {
                         }
                         plugins.push(plugin_row);
                     }
+                    plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     state.plugins = plugins;
                     Command::none()
                 }
@@ -209,31 +209,26 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage) {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                // let plugin = Plugin::new(
-                //     plugin.id,
-                //     &plugin.title,
-                //     &plugin.category & plugin.current_version,
-                //     &plugin.latest_version,
-                // );
-                // if Installer::download(&plugin).is_ok() {
-                //     self.status = "Downloaded".to_string();
-                //     if Installer::extract(&plugin).is_ok() {
-                //         self.status = "Unpacked".to_string();
-                //         if Installer::delete_cache_folder(&plugin).is_ok() {
-                //             if Synchronizer::insert_plugin(&plugin).is_ok() {
-                //                 self.status = "Installed".to_string();
-                //             } else {
-                //                 self.status = "Installation failed".to_string();
-                //             }
-                //         } else {
-                //             self.status = "Installation failed".to_string();
-                //         }
-                //     } else {
-                //         self.status = "Unpacking failed".to_string();
-                //     }
-                // } else {
-                //     self.status = "Download failed".to_string();
-                // }
+                let fetched_plugin = Synchronizer::fetch_plugin_details(&plugin.title);
+                if Installer::download(&fetched_plugin).is_ok() {
+                    self.status = "Downloaded".to_string();
+                    if Installer::extract(&fetched_plugin).is_ok() {
+                        self.status = "Unpacked".to_string();
+                        if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
+                            if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
+                                self.status = "Installed".to_string();
+                            } else {
+                                self.status = "Installation failed".to_string();
+                            }
+                        } else {
+                            self.status = "Installation failed".to_string();
+                        }
+                    } else {
+                        self.status = "Unpacking failed".to_string();
+                    }
+                } else {
+                    self.status = "Download failed".to_string();
+                }
             }
 
             RowMessage::WebsitePressed(row) => {

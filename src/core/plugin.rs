@@ -68,7 +68,7 @@ impl Plugin {
         category: &str,
         current_version: &str,
         latest_version: &str,
-        folders: &str,
+        folder: &str,
         files: &[String],
     ) -> Self {
         Self {
@@ -79,7 +79,7 @@ impl Plugin {
                 category,
                 current_version,
                 latest_version,
-                folders,
+                folder,
             ),
             files: files.to_vec(),
         }

@@ -122,7 +122,6 @@ impl Application for Lembas {
                     Command::none()
                 }
                 Message::CatalogAction(msg) => {
-                    println!("{:?}", msg);
                     state.catalog_view.update(msg);
                     Command::none()
                 }

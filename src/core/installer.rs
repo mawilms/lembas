@@ -8,13 +8,11 @@ use std::{fs::metadata, path::Path};
 pub struct Installer {}
 
 impl Installer {
-    #[tokio::main]
-    pub async fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let response = reqwest::get(&format!(
+    pub fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        let response = reqwest::blocking::get(&format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-        ))
-        .await?;
+        ))?;
 
         let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(&format!(
             "{}_{}",
@@ -32,7 +30,7 @@ impl Installer {
         match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
-                let content = response.bytes().await?;
+                let content = response.bytes()?;
                 file.write_all(&content)?;
             }
         };

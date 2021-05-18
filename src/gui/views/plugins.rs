@@ -62,11 +62,8 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    fn refresh_db() -> Result<(), ApplicationError> {
-        match Synchronizer::update_local_plugins() {
-            Ok(_) => Ok(()),
-            Err(error) => Err(ApplicationError::Synchronize),
-        }
+    fn refresh_db() {
+        Synchronizer::update_local_plugins();
     }
 
     pub fn update(&mut self, message: PluginMessage) {
@@ -74,7 +71,6 @@ impl Plugins {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
-                        println!("Fired");
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
                             Synchronizer::get_installed_plugins()

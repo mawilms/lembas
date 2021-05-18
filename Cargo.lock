@@ -1553,6 +1553,7 @@ checksum = "a89fdde2cb9c5807d23f40230297122e480428c660ad7d0373e625cd0725afa1"
 dependencies = [
  "futures",
  "log",
+ "tokio",
  "wasm-bindgen-futures",
 ]
 

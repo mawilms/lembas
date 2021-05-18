@@ -5,12 +5,12 @@ use crate::core::{
 };
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 pub struct Synchronizer {}
 
 impl Synchronizer {
-    #[tokio::main]
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_installed_plugins();
@@ -88,13 +88,22 @@ impl Synchronizer {
             title.to_lowercase()
         ))
         .expect("Failed to connect with API")
-        .json::<DetailsPlugin>()
+        .json::<JSONResponse>()
         .expect("Failed to parse response");
-        response
+
+        DetailsPlugin::new(
+            response.plugin_id,
+            &response.title,
+            "",
+            &response.category,
+            &response.current_version,
+            &response.latest_version,
+            &response.folders,
+            &response.files,
+        )
     }
 
     // Used to synchronize the local database with the remote plugin server
-    #[tokio::main]
     pub async fn update_local_plugins() -> Result<(), ()> {
         let fetched_plugins = Self::fetch_plugins().await;
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
@@ -142,8 +151,8 @@ impl Synchronizer {
                 let xml_content = PluginParser::parse_file(&path);
                 let conn = Connection::open(&CONFIGURATION.db_file)?;
                 conn.execute(
-                "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, folder_name=?6;",
-                params![plugin.as_ref().plugin_id, plugin.as_ref().title, &xml_content.description, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
+                params![plugin.as_ref().plugin_id, plugin.as_ref().title, &xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
             }
         }
 
@@ -218,4 +227,18 @@ impl Synchronizer {
 
         Self::execute_stmt(&mut stmt, &name.to_lowercase())
     }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+struct JSONResponse {
+    pub plugin_id: i32,
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
+    pub category: String,
+    #[serde(default)]
+    pub current_version: String,
+    pub latest_version: String,
+    pub folders: String,
+    pub files: Vec<String>,
 }
