@@ -12,17 +12,22 @@ impl Installer {
     pub async fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
         let response = reqwest::get(&format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.plugin_id, &plugin.title
+            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ))
         .await?;
 
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(&format!("{}_{}", &plugin.plugin_id, &plugin.title));
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(&format!(
+            "{}_{}",
+            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
+        ));
 
         fs::create_dir(&tmp_file_path)?;
 
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(&format!("{}_{}", &plugin.plugin_id, &plugin.title))
+            .join(&format!(
+                "{}_{}",
+                &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
+            ))
             .join("plugin.zip");
         match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
@@ -58,11 +63,16 @@ impl Installer {
     }
 
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(format!(
+            "{}_{}",
+            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
+        ));
 
         let cache_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title))
+            .join(format!(
+                "{}_{}",
+                &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
+            ))
             .join("plugin.zip");
         let file = File::open(&cache_path)?;
         let mut zip_archive = zip::ZipArchive::new(file)?;
@@ -71,7 +81,7 @@ impl Installer {
 
         Self::move_files(
             &tmp_file_path.to_str().unwrap(),
-            &plugin.folder_name,
+            &plugin.base_plugin.folder,
             &plugin.files,
         );
 
@@ -120,8 +130,10 @@ impl Installer {
     }
 
     pub fn delete_cache_folder(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir)
-            .join(format!("{}_{}", &plugin.plugin_id, &plugin.title));
+        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(format!(
+            "{}_{}",
+            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
+        ));
 
         //fs::remove_dir_all(tmp_file_path).unwrap();
 

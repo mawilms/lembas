@@ -1,4 +1,4 @@
-use crate::core::{Installer, Plugin, Synchronizer};
+use crate::core::{Installed as InstalledPlugin, Installer, Plugin, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
@@ -13,7 +13,7 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        let mut installed_plugins: Vec<Plugin> = Synchronizer::get_installed_plugins()
+        let mut installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_installed_plugins()
             .values()
             .cloned()
             .collect();
@@ -24,10 +24,10 @@ impl Default for Plugins {
                 plugin.plugin_id,
                 &plugin.title,
                 &plugin.description,
+                &plugin.category,
                 &plugin.current_version,
                 &plugin.latest_version,
-                &plugin.folder_name,
-                &plugin.files,
+                &plugin.folder,
             ));
         }
 
@@ -76,10 +76,11 @@ impl Plugins {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
                         println!("Fired");
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Plugin> = Synchronizer::get_installed_plugins()
-                            .values()
-                            .cloned()
-                            .collect();
+                        let mut all_plugins: Vec<InstalledPlugin> =
+                            Synchronizer::get_installed_plugins()
+                                .values()
+                                .cloned()
+                                .collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -87,10 +88,10 @@ impl Plugins {
                                 plugin.plugin_id,
                                 &plugin.title,
                                 &plugin.description,
+                                &plugin.category,
                                 &plugin.current_version,
                                 &plugin.latest_version,
-                                &plugin.folder_name,
-                                &plugin.files,
+                                &plugin.folder,
                             ))
                         }
                         state.plugins = plugins;
@@ -116,10 +117,10 @@ impl Plugins {
                             plugin.plugin_id,
                             &plugin.title,
                             &plugin.description,
+                            &plugin.category,
                             &plugin.current_version,
                             &plugin.latest_version,
-                            &plugin.folder_name,
-                            &plugin.files,
+                            &plugin.folder,
                         ));
                     }
                     state.plugins = plugins;
@@ -219,11 +220,12 @@ pub struct PluginRow {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
+    pub category: String,
+    #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
     pub folder_name: String,
-    pub files: Vec<String>,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -256,21 +258,21 @@ impl PluginRow {
         id: i32,
         title: &str,
         description: &str,
+        category: &str,
         current_version: &str,
         latest_version: &str,
         folder_name: &str,
-        files: &[String],
     ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
                 description: description.to_string(),
+                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
                 folder_name: folder_name.to_string(),
-                files: files.to_vec(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -282,11 +284,11 @@ impl PluginRow {
                 id,
                 title: title.to_string(),
                 description: description.to_string(),
+                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
                 folder_name: folder_name.to_string(),
-                files: files.to_vec(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
@@ -303,23 +305,16 @@ impl PluginRow {
                 Event::Nothing
             }
             RowMessage::UpdatePressed(mut plugin) => {
-                let install_plugin = Plugin::new(
-                    plugin.id,
-                    &plugin.title,
-                    &plugin.description,
-                    &plugin.current_version,
-                    &plugin.latest_version,
-                    &plugin.folder_name,
-                    &plugin.files,
-                );
-                if Installer::download(&install_plugin).is_ok() {
+                let fetched_plugin = Synchronizer::fetch_plugin_details(&plugin.title);
+                if Installer::download(&fetched_plugin).is_ok() {
                     plugin.status = "Downloaded".to_string();
-                    if Installer::delete(&install_plugin.folder_name, &install_plugin.files).is_ok()
+                    if Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                        .is_ok()
                     {
-                        if Installer::extract(&install_plugin).is_ok() {
+                        if Installer::extract(&fetched_plugin).is_ok() {
                             plugin.status = "Unpacked".to_string();
-                            if Installer::delete_cache_folder(&install_plugin).is_ok() {
-                                if Synchronizer::insert_plugin(&install_plugin).is_ok() {
+                            if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
+                                if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                     plugin.status = "Installed".to_string();
                                     Event::Synchronize
                                 } else {
@@ -344,8 +339,11 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(mut row) => {
-                if let Ok(()) = Installer::delete(&row.folder_name, &row.files) {
-                    if Synchronizer::delete_plugin(&row.title).is_ok() {
+                let fetched_plugin = Synchronizer::fetch_plugin_details(&row.title);
+                if let Ok(()) =
+                    Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                {
+                    if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
                         row.status = "Deleted".to_string();
                         Event::Synchronize
                     } else {

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
-use crate::core::{Base as BasePlugin, Installer, Plugin, Synchronizer};
+use crate::core::{Base as BasePlugin, Installer, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
