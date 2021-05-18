@@ -132,7 +132,6 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: impl AsRef<InstalledPlugin>) -> Result<(), Box<dyn Error>> {
-        // TODO: Needs to be changed to the new InstalledPlugin struct. I have to check how to parse the local plugins without the folder name stored in the db
         let glob = Glob::new("*.plugin")?.compile_matcher();
         let directory =
             read_dir(Path::new(&CONFIGURATION.plugins_dir).join(&plugin.as_ref().folder));
@@ -183,8 +182,7 @@ impl Synchronizer {
             .unwrap();
 
         for plugin in plugin_iter {
-            let mut plugin = plugin.unwrap();
-            all_plugins.push(plugin);
+            all_plugins.push(plugin.unwrap());
         }
         all_plugins
     }

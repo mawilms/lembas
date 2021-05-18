@@ -62,6 +62,7 @@ impl Catalog {
                     Command::none()
                 }
                 Message::LoadPlugins => {
+                    println!("Test");
                     Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
                 }
                 Message::LoadedPlugins(fetched_plugins) => {

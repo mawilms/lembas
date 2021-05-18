@@ -98,31 +98,37 @@ impl Application for Lembas {
                 if let Message::Loaded(_state) = message {
                     *self = Lembas::Loaded(State { ..State::default() })
                 }
+                Command::none()
             }
             Lembas::Loaded(state) => match message {
                 Message::PluginsPressed => {
                     state.plugins_view.update(PluginMessage::LoadPlugins);
                     state.view = View::Plugins;
+                    Command::none()
                 }
                 Message::CatalogPressed => {
+                    state.view = View::Catalog;
                     state
                         .catalog_view
                         .update(CatalogMessage::LoadPlugins)
-                        .map(Message::CatalogAction);
-                    state.view = View::Catalog;
+                        .map(Message::CatalogAction)
                 }
                 Message::AboutPressed => {
                     state.view = View::About;
+                    Command::none()
                 }
-                Message::PluginAction(msg) => state.plugins_view.update(msg),
+                Message::PluginAction(msg) => {
+                    state.plugins_view.update(msg);
+                    Command::none()
+                }
                 Message::CatalogAction(msg) => {
                     println!("{:?}", msg);
                     state.catalog_view.update(msg);
+                    Command::none()
                 }
-                _ => {}
+                _ => Command::none(),
             },
         }
-        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
