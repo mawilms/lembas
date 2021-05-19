@@ -14,14 +14,14 @@ impl Installer {
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ))?;
 
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(&format!(
+        let tmp_file_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir).join(&format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));
 
         fs::create_dir(&tmp_file_path)?;
 
-        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+        let cache_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir)
             .join(&format!(
                 "{}_{}",
                 &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
@@ -39,7 +39,9 @@ impl Installer {
 
     pub fn delete(name: &str, files: &[String]) -> Result<(), Box<dyn Error>> {
         for file in files {
-            let path = Path::new(&CONFIGURATION.plugins_dir).join(name).join(file);
+            let path = Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
+                .join(name)
+                .join(file);
             let md = metadata(&path).unwrap();
             if md.is_dir() {
                 fs::remove_dir_all(&path)?;
@@ -48,25 +50,25 @@ impl Installer {
             }
         }
 
-        if Path::new(&CONFIGURATION.plugins_dir)
+        if Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
             .join(name)
             .read_dir()?
             .next()
             .is_none()
         {
-            fs::remove_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(name))?;
+            fs::remove_dir_all(Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(name))?;
         }
 
         Ok(())
     }
 
     pub fn extract(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(format!(
+        let tmp_file_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir).join(format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));
 
-        let cache_path = Path::new(&CONFIGURATION.cache_dir)
+        let cache_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir)
             .join(format!(
                 "{}_{}",
                 &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
@@ -90,12 +92,15 @@ impl Installer {
         let tmp_folder = fs::read_dir(&Path::new(tmp_path).join(&folder_name)).unwrap();
         fs::remove_file(&Path::new(tmp_path).join("plugin.zip")).unwrap();
 
-        if !Path::new(&CONFIGURATION.plugins_dir)
+        if !Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
             .join(&folder_name)
             .exists()
         {
             // TODO: Check if the options are really doing what I want
-            fs::create_dir_all(Path::new(&CONFIGURATION.plugins_dir).join(&folder_name)).unwrap();
+            fs::create_dir_all(
+                Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(&folder_name),
+            )
+            .unwrap();
         }
 
         for file in tmp_folder {
@@ -108,7 +113,7 @@ impl Installer {
                 options.copy_inside = true;
                 fs_extra::dir::move_dir(
                     Path::new(tmp_path).join(&folder_name).join(&file_str),
-                    Path::new(&CONFIGURATION.plugins_dir).join(folder_name),
+                    Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(folder_name),
                     &options,
                 )
                 .unwrap();
@@ -117,7 +122,7 @@ impl Installer {
                 options.overwrite = true;
                 fs_extra::file::move_file(
                     Path::new(tmp_path).join(&folder_name).join(&file_str),
-                    Path::new(&CONFIGURATION.plugins_dir)
+                    Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
                         .join(&folder_name)
                         .join(&file_str),
                     &options,
@@ -128,7 +133,7 @@ impl Installer {
     }
 
     pub fn delete_cache_folder(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        let tmp_file_path = Path::new(&CONFIGURATION.cache_dir).join(format!(
+        let tmp_file_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir).join(format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));

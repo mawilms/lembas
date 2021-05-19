@@ -1,6 +1,6 @@
 use crate::core::config::CONFIGURATION;
 use crate::gui::style;
-use iced::{Align, Checkbox, Column, Container, Element, Length, Row, Text};
+use iced::{Checkbox, Column, Container, Element, Length, Text};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
@@ -12,7 +12,11 @@ impl Default for Configuration {
     fn default() -> Self {
         Self {
             description: "Enable Backup".to_string(),
-            backup: CONFIGURATION.application_settings.backup_enabled,
+            backup: CONFIGURATION
+                .lock()
+                .unwrap()
+                .application_settings
+                .backup_enabled,
         }
     }
 }
@@ -27,7 +31,19 @@ impl Configuration {
         match msg {
             Message::BackupTriggered(toggled) => {
                 self.backup = toggled;
-                //CONFIGURATION.application_settings.backup_enabled = self.backup;
+                CONFIGURATION
+                    .lock()
+                    .unwrap()
+                    .application_settings
+                    .backup_enabled = self.backup;
+                println!(
+                    "{:?}",
+                    CONFIGURATION
+                        .lock()
+                        .unwrap()
+                        .application_settings
+                        .backup_enabled
+                );
             }
         }
     }

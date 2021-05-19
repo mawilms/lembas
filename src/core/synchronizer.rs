@@ -53,9 +53,9 @@ impl Synchronizer {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
 
-        for entry in read_dir(Path::new(&CONFIGURATION.plugins_dir))? {
+        for entry in read_dir(Path::new(&CONFIGURATION.lock().unwrap().plugins_dir))? {
             let directory = read_dir(
-                Path::new(&CONFIGURATION.plugins_dir)
+                Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
                     .join(entry.unwrap().path())
                     .to_str()
                     .unwrap(),
@@ -106,7 +106,7 @@ impl Synchronizer {
     // Used to synchronize the local database with the remote plugin server
     pub async fn update_local_plugins() -> Result<(), ()> {
         let fetched_plugins = Self::fetch_plugins().await;
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
 
         for (_, plugin) in fetched_plugins {
             let installed_plugin = Synchronizer::get_plugin(&plugin.title);
@@ -121,7 +121,7 @@ impl Synchronizer {
 
     // Creates the local database if it doesn't exist.
     pub fn create_plugins_db() {
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
         conn.execute(
             "
                 CREATE TABLE IF NOT EXISTS plugin (
@@ -142,14 +142,15 @@ impl Synchronizer {
 
     pub fn insert_plugin(plugin: impl AsRef<InstalledPlugin>) -> Result<(), Box<dyn Error>> {
         let glob = Glob::new("*.plugin")?.compile_matcher();
-        let directory =
-            read_dir(Path::new(&CONFIGURATION.plugins_dir).join(&plugin.as_ref().folder));
+        let directory = read_dir(
+            Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(&plugin.as_ref().folder),
+        );
 
         for file in directory? {
             let path = file?.path();
             if glob.is_match(&path) {
                 let xml_content = PluginParser::parse_file(&path);
-                let conn = Connection::open(&CONFIGURATION.db_file)?;
+                let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
                 conn.execute(
                 "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
                 params![plugin.as_ref().plugin_id, plugin.as_ref().title, &xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
@@ -160,7 +161,7 @@ impl Synchronizer {
     }
 
     pub fn delete_plugin(title: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&CONFIGURATION.db_file)?;
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
         conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
         Ok(())
     }
@@ -199,7 +200,7 @@ impl Synchronizer {
     pub fn get_plugins() -> HashMap<String, InstalledPlugin> {
         let mut plugins = HashMap::new();
 
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin ORDER BY title;")
             .unwrap();
@@ -211,7 +212,7 @@ impl Synchronizer {
     }
 
     pub fn get_plugin(name: &str) -> Vec<InstalledPlugin> {
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) = ?1")
             .unwrap();
