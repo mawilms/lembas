@@ -1839,6 +1839,7 @@ dependencies = [
  "iced",
  "image",
  "lazy_static",
+ "once_cell",
  "reqwest",
  "rusqlite",
  "serde",

@@ -1,3 +1,4 @@
+use crate::core::config::CONFIGURATION;
 use crate::gui::style;
 use iced::{Align, Checkbox, Column, Container, Element, Length, Row, Text};
 
@@ -11,7 +12,7 @@ impl Default for Configuration {
     fn default() -> Self {
         Self {
             description: "Enable Backup".to_string(),
-            backup: true,
+            backup: CONFIGURATION.application_settings.backup_enabled,
         }
     }
 }
@@ -26,7 +27,7 @@ impl Configuration {
         match msg {
             Message::BackupTriggered(toggled) => {
                 self.backup = toggled;
-                println!("{:?}", self.backup);
+                //CONFIGURATION.application_settings.backup_enabled = self.backup;
             }
         }
     }
