@@ -1,12 +1,14 @@
 pub mod about;
 pub mod catalog;
+pub mod configuration;
 pub mod plugins;
+
 use super::views::plugins::PluginMessage;
 use crate::core::Synchronizer;
 use crate::gui::style;
-use crate::gui::views::About as AboutView;
-pub use about::About;
+pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
+pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
 use iced::{
     button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
     Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
@@ -18,6 +20,7 @@ pub enum View {
     Plugins,
     Catalog,
     About,
+    Configuration,
 }
 
 impl Default for View {
@@ -38,6 +41,7 @@ pub struct State {
     plugins_view: PluginsView,
     catalog_view: CatalogView,
     about_view: AboutView,
+    config_view: ConfigView,
 
     input_value: String,
     plugins_btn: button::State,
@@ -58,6 +62,7 @@ pub enum Message {
 
     CatalogAction(CatalogMessage),
     PluginAction(PluginMessage),
+    ConfigAction(ConfigMessage),
 }
 
 impl Default for State {
@@ -67,6 +72,7 @@ impl Default for State {
             plugins_view: PluginsView::default(),
             catalog_view: CatalogView::default(),
             about_view: AboutView::default(),
+            config_view: ConfigView::default(),
             input_value: "".to_string(),
             plugins_btn: button::State::default(),
             catalog_btn: button::State::default(),
@@ -98,24 +104,43 @@ impl Application for Lembas {
                 if let Message::Loaded(_state) = message {
                     *self = Lembas::Loaded(State { ..State::default() })
                 }
+                Command::none()
             }
             Lembas::Loaded(state) => match message {
                 Message::PluginsPressed => {
                     state.plugins_view.update(PluginMessage::LoadPlugins);
                     state.view = View::Plugins;
+                    Command::none()
                 }
                 Message::CatalogPressed => {
                     state.view = View::Catalog;
+                    state
+                        .catalog_view
+                        .update(CatalogMessage::LoadPlugins)
+                        .map(Message::CatalogAction)
                 }
                 Message::AboutPressed => {
                     state.view = View::About;
+                    Command::none()
                 }
-                Message::PluginAction(msg) => state.plugins_view.update(msg),
-                Message::CatalogAction(msg) => state.catalog_view.update(msg),
-                _ => {}
+                Message::SettingsPressed => {
+                    state.view = View::Configuration;
+                    Command::none()
+                }
+                Message::PluginAction(msg) => {
+                    state.plugins_view.update(msg);
+                    Command::none()
+                }
+                Message::CatalogAction(msg) => {
+                    state.catalog_view.update(msg).map(Message::CatalogAction)
+                }
+                Message::Loaded(_) => Command::none(),
+                Message::ConfigAction(msg) => {
+                    state.config_view.update(msg);
+                    Command::none()
+                }
             },
         }
-        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
@@ -126,6 +151,7 @@ impl Application for Lembas {
                 plugins_view,
                 catalog_view,
                 about_view,
+                config_view,
                 input_value: _,
                 plugins_btn,
                 catalog_btn,
@@ -185,6 +211,14 @@ impl Application for Lembas {
                     }
                     View::About => {
                         let main_container = about_view.view();
+                        Column::new()
+                            .width(Length::Fill)
+                            .push(navigation_container)
+                            .push(main_container)
+                            .into()
+                    }
+                    View::Configuration => {
+                        let main_container = config_view.view().map(Message::ConfigAction);
                         Column::new()
                             .width(Length::Fill)
                             .push(navigation_container)

@@ -1553,6 +1553,7 @@ checksum = "a89fdde2cb9c5807d23f40230297122e480428c660ad7d0373e625cd0725afa1"
 dependencies = [
  "futures",
  "log",
+ "tokio",
  "wasm-bindgen-futures",
 ]
 
@@ -1827,7 +1828,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "lembas"
-version = "0.0.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "dirs 3.0.1",

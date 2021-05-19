@@ -1,29 +1,62 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct Plugin {
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Base {
     pub plugin_id: i32,
     pub title: String,
-    #[serde(default)]
+    pub category: String,
+    pub latest_version: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Installed {
+    pub plugin_id: i32,
+    pub title: String,
     pub description: String,
+    pub category: String,
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
-    pub folder_name: String,
+    pub folder: String,
+}
+
+impl AsRef<Installed> for Installed {
+    fn as_ref(&self) -> &Installed {
+        self
+    }
+}
+
+impl Installed {
+    pub fn new(
+        plugin_id: i32,
+        title: &str,
+        description: &str,
+        category: &str,
+        current_version: &str,
+        latest_version: &str,
+        folder: &str,
+    ) -> Self {
+        Self {
+            plugin_id,
+            title: title.to_string(),
+            description: description.to_string(),
+            category: category.to_string(),
+            current_version: current_version.to_string(),
+            latest_version: latest_version.to_string(),
+            folder: folder.to_string(),
+        }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct Plugin {
+    pub base_plugin: Installed,
     pub files: Vec<String>,
 }
 
-impl Default for Plugin {
-    fn default() -> Self {
-        Self {
-            plugin_id: i32::default(),
-            title: String::default(),
-            description: String::default(),
-            current_version: String::default(),
-            latest_version: String::default(),
-            folder_name: String::default(),
-            files: Vec::new(),
-        }
+impl AsRef<Installed> for Plugin {
+    fn as_ref(&self) -> &Installed {
+        &self.base_plugin
     }
 }
 
@@ -32,18 +65,22 @@ impl Plugin {
         plugin_id: i32,
         title: &str,
         description: &str,
+        category: &str,
         current_version: &str,
         latest_version: &str,
-        folder_name: &str,
+        folder: &str,
         files: &[String],
     ) -> Self {
         Self {
-            plugin_id,
-            title: title.to_string(),
-            description: description.to_string(),
-            current_version: current_version.to_string(),
-            latest_version: latest_version.to_string(),
-            folder_name: folder_name.to_string(),
+            base_plugin: Installed::new(
+                plugin_id,
+                title,
+                description,
+                category,
+                current_version,
+                latest_version,
+                folder,
+            ),
             files: files.to_vec(),
         }
     }
