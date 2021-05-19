@@ -7,10 +7,7 @@ use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
-use std::{
-    error::Error,
-    fs::{create_dir_all, File},
-};
+use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
@@ -97,16 +94,12 @@ impl Installer {
 
         zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
-        Self::move_files(
-            &tmp_file_path.to_str().unwrap(),
-            &plugin.base_plugin.folder,
-            &plugin.files,
-        );
+        Self::move_files(&tmp_file_path.to_str().unwrap(), &plugin.base_plugin.folder);
 
         Ok(())
     }
 
-    fn move_files(tmp_path: &str, folder_name: &str, files: &[String]) {
+    fn move_files(tmp_path: &str, folder_name: &str) {
         let tmp_folder = fs::read_dir(&Path::new(tmp_path).join(&folder_name)).unwrap();
         fs::remove_file(&Path::new(tmp_path).join("plugin.zip")).unwrap();
 
@@ -156,7 +149,7 @@ impl Installer {
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));
 
-        //fs::remove_dir_all(tmp_file_path).unwrap();
+        fs::remove_dir_all(tmp_file_path).unwrap();
 
         Ok(())
     }

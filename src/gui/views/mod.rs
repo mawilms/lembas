@@ -132,8 +132,7 @@ impl Application for Lembas {
                     Command::none()
                 }
                 Message::CatalogAction(msg) => {
-                    state.catalog_view.update(msg);
-                    Command::none()
+                    state.catalog_view.update(msg).map(Message::CatalogAction)
                 }
                 Message::Loaded(_) => Command::none(),
                 Message::ConfigAction(msg) => {
@@ -219,9 +218,7 @@ impl Application for Lembas {
                             .into()
                     }
                     View::Configuration => {
-                        let main_container = config_view
-                            .view()
-                            .map(move |msg| Message::ConfigAction(msg));
+                        let main_container = config_view.view().map(Message::ConfigAction);
                         Column::new()
                             .width(Length::Fill)
                             .push(navigation_container)

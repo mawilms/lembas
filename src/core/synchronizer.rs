@@ -72,14 +72,15 @@ impl Synchronizer {
         Ok(local_plugins)
     }
 
-    pub async fn fetch_plugins() -> HashMap<String, BasePlugin> {
-        let response = reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins")
-            .await
-            .expect("Failed to connect with API")
-            .json::<HashMap<String, BasePlugin>>()
-            .await
-            .expect("Failed to parse response");
-        response
+    pub async fn fetch_plugins(
+    ) -> Result<HashMap<String, BasePlugin>, crate::core::synchronizer::APIError> {
+        match reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins").await {
+            Ok(response) => match response.json::<HashMap<String, BasePlugin>>().await {
+                Ok(plugins) => Ok(plugins),
+                Err(_) => Err(APIError::FetchError),
+            },
+            Err(_) => Err(APIError::FetchError),
+        }
     }
 
     pub fn fetch_plugin_details(title: &str) -> DetailsPlugin {
@@ -108,12 +109,14 @@ impl Synchronizer {
         let fetched_plugins = Self::fetch_plugins().await;
         let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
 
-        for (_, plugin) in fetched_plugins {
-            let installed_plugin = Synchronizer::get_plugin(&plugin.title);
-            if !installed_plugin.is_empty()
-                && installed_plugin[0].latest_version != plugin.latest_version
-            {
-                conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
+        if fetched_plugins.is_ok() {
+            for (_, plugin) in fetched_plugins.unwrap() {
+                let installed_plugin = Synchronizer::get_plugin(&plugin.title);
+                if !installed_plugin.is_empty()
+                    && installed_plugin[0].latest_version != plugin.latest_version
+                {
+                    conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
+                }
             }
         }
         Ok(())
@@ -233,4 +236,9 @@ struct JSONResponse {
     pub latest_version: String,
     pub folders: String,
     pub files: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub enum APIError {
+    FetchError,
 }

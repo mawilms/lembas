@@ -1,15 +1,15 @@
-use std::collections::HashMap;
-
-use crate::core::{Base as BasePlugin, Installer, Synchronizer};
+use crate::core::{synchronizer::APIError, Base as BasePlugin, Installer, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput,
+    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
 };
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Catalog {
     Loaded(State),
+    NoInternet(State),
 }
 
 impl Default for Catalog {
@@ -22,6 +22,7 @@ impl Default for Catalog {
 pub struct State {
     input: text_input::State,
     plugin_scrollable_state: scrollable::State,
+    retry_btn_state: button::State,
     pub input_value: String,
 
     pub base_plugins: Vec<PluginRow>,
@@ -33,7 +34,8 @@ pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
     LoadPlugins,
-    LoadedPlugins(HashMap<String, BasePlugin>),
+    LoadedPlugins(Result<HashMap<String, BasePlugin>, crate::gui::views::catalog::APIError>),
+    RetryPressed,
 }
 
 impl Catalog {
@@ -66,36 +68,92 @@ impl Catalog {
                     Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
                 }
                 Message::LoadedPlugins(fetched_plugins) => {
-                    let mut plugins = Vec::new();
-                    let installed_plugins = Synchronizer::get_plugins();
-                    for (_, plugin) in fetched_plugins {
-                        let mut plugin_row = PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.category,
-                            "",
-                            &plugin.latest_version,
-                        );
-                        match installed_plugins.get(&plugin.title) {
-                            Some(value) => {
-                                plugin_row.current_version = value.current_version.clone();
-                                if value.current_version == plugin.latest_version {
-                                    plugin_row.status = String::from("Installed");
-                                } else {
-                                    plugin_row.status = String::from("Update");
+                    if fetched_plugins.is_ok() {
+                        let mut plugins = Vec::new();
+                        let installed_plugins = Synchronizer::get_plugins();
+                        for (_, plugin) in fetched_plugins.unwrap() {
+                            let mut plugin_row = PluginRow::new(
+                                plugin.plugin_id,
+                                &plugin.title,
+                                &plugin.category,
+                                "",
+                                &plugin.latest_version,
+                            );
+                            match installed_plugins.get(&plugin.title) {
+                                Some(value) => {
+                                    plugin_row.current_version = value.current_version.clone();
+                                    if value.current_version == plugin.latest_version {
+                                        plugin_row.status = String::from("Installed");
+                                    } else {
+                                        plugin_row.status = String::from("Update");
+                                    }
+                                }
+                                None => {
+                                    plugin_row.status = String::from("Install");
                                 }
                             }
-                            None => {
-                                plugin_row.status = String::from("Install");
-                            }
+                            plugins.push(plugin_row);
                         }
-                        plugins.push(plugin_row);
+                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                        *self = Catalog::Loaded(State {
+                            plugins: plugins.clone(),
+                            base_plugins: plugins,
+                            ..state.clone()
+                        });
+
+                        Command::none()
+                    } else {
+                        *self = Catalog::NoInternet(State::default());
+                        Command::none()
                     }
-                    plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                    state.plugins = plugins.clone();
-                    state.base_plugins = plugins;
-                    Command::none()
                 }
+                Message::RetryPressed => Command::none(),
+            },
+            Catalog::NoInternet(state) => match message {
+                Message::RetryPressed => {
+                    Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
+                }
+                Message::LoadedPlugins(fetched_plugins) => {
+                    if fetched_plugins.is_ok() {
+                        let mut plugins = Vec::new();
+                        let installed_plugins = Synchronizer::get_plugins();
+                        for (_, plugin) in fetched_plugins.unwrap() {
+                            let mut plugin_row = PluginRow::new(
+                                plugin.plugin_id,
+                                &plugin.title,
+                                &plugin.category,
+                                "",
+                                &plugin.latest_version,
+                            );
+                            match installed_plugins.get(&plugin.title) {
+                                Some(value) => {
+                                    plugin_row.current_version = value.current_version.clone();
+                                    if value.current_version == plugin.latest_version {
+                                        plugin_row.status = String::from("Installed");
+                                    } else {
+                                        plugin_row.status = String::from("Update");
+                                    }
+                                }
+                                None => {
+                                    plugin_row.status = String::from("Install");
+                                }
+                            }
+                            plugins.push(plugin_row);
+                        }
+                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                        *self = Catalog::Loaded(State {
+                            plugins: plugins.clone(),
+                            base_plugins: plugins,
+                            ..state.clone()
+                        });
+
+                        Command::none()
+                    } else {
+                        *self = Catalog::NoInternet(State::default());
+                        Command::none()
+                    }
+                }
+                _ => Command::none(),
             },
         }
     }
@@ -108,6 +166,7 @@ impl Catalog {
                 plugins,
                 input_value,
                 base_plugins: _,
+                retry_btn_state: _,
             }) => {
                 let search_plugins = TextInput::new(
                     input,
@@ -163,6 +222,34 @@ impl Catalog {
                 Container::new(content)
                     .height(Length::Fill)
                     .padding(10)
+                    .style(style::Content)
+                    .into()
+            }
+            Catalog::NoInternet(State {
+                retry_btn_state,
+                input: _,
+                plugin_scrollable_state: _,
+                plugins: _,
+                input_value: _,
+                base_plugins: _,
+            }) => {
+                let retry_button = Button::new(retry_btn_state, Text::new("Retry"))
+                    .on_press(Message::RetryPressed);
+
+                let content = Column::new()
+                    .push(
+                        Text::new("No internet connection")
+                            .horizontal_alignment(HorizontalAlignment::Center)
+                            .vertical_alignment(VerticalAlignment::Center)
+                            .size(20),
+                    )
+                    .push(retry_button);
+
+                Container::new(content)
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .center_y()
+                    .center_x()
                     .style(style::Content)
                     .into()
             }
