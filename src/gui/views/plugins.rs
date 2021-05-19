@@ -1,4 +1,4 @@
-use crate::core::{Installed as InstalledPlugin, Installer, Plugin, Synchronizer};
+use crate::core::{Installed as InstalledPlugin, Installer, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,

@@ -1,6 +1,7 @@
 use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
-use std::fs;
+use serde::{Deserialize, Serialize};
+use std::fs::{self, write, File};
 use std::path::Path;
 
 lazy_static! {
@@ -27,9 +28,23 @@ impl Default for Config {
 
         fs::create_dir_all(&plugins_path).expect("Couldn't create the plugins folder");
         fs::create_dir_all(&settings_path).expect("Couldn't create the lembas settings folder");
-        fs::create_dir_all(&cache_path).expect("Couldn't create the lembas settings folder");
+        fs::create_dir_all(&cache_path).expect("Couldn't create the lembas cache folder");
 
         let path = Path::new(&settings_path).join("plugins.sqlite3");
+
+        let settings_file_path = Path::new(&settings_path).join("settings.json");
+        if !settings_file_path.exists() {
+            File::create(&settings_file_path).unwrap();
+
+            let initial_settings = SettingsFile {
+                backup_enabled: true,
+            };
+            write(
+                &settings_file_path,
+                serde_json::to_string(&initial_settings).unwrap(),
+            )
+            .unwrap();
+        }
 
         Self {
             settings: settings_path.into_os_string().into_string().unwrap(),
@@ -38,4 +53,9 @@ impl Default for Config {
             cache_dir: cache_path.into_os_string().into_string().unwrap(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SettingsFile {
+    backup_enabled: bool,
 }
