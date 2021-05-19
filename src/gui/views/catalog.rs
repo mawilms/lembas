@@ -234,7 +234,9 @@ impl Catalog {
                 base_plugins: _,
             }) => {
                 let retry_button = Button::new(retry_btn_state, Text::new("Retry"))
-                    .on_press(Message::RetryPressed);
+                    .on_press(Message::RetryPressed)
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
 
                 let content = Column::new()
                     .push(
@@ -243,6 +245,8 @@ impl Catalog {
                             .vertical_alignment(VerticalAlignment::Center)
                             .size(20),
                     )
+                    .align_items(Align::Center)
+                    .spacing(10)
                     .push(retry_button);
 
                 Container::new(content)
