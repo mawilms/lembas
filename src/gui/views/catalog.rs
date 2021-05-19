@@ -24,6 +24,7 @@ pub struct State {
     plugin_scrollable_state: scrollable::State,
     pub input_value: String,
 
+    pub base_plugins: Vec<PluginRow>,
     pub plugins: Vec<PluginRow>,
 }
 
@@ -42,9 +43,8 @@ impl Catalog {
                 Message::CatalogInputChanged(letter) => {
                     let mut filerted_plugins = Vec::new();
                     state.input_value = letter;
-                    
-                    for element in &state.plugins {
-                        println!("{}", state.input_value);
+
+                    for element in &state.base_plugins {
                         if element
                             .title
                             .to_lowercase()
@@ -92,7 +92,8 @@ impl Catalog {
                         plugins.push(plugin_row);
                     }
                     plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                    state.plugins = plugins;
+                    state.plugins = plugins.clone();
+                    state.base_plugins = plugins;
                     Command::none()
                 }
             },
@@ -106,6 +107,7 @@ impl Catalog {
                 plugin_scrollable_state,
                 plugins,
                 input_value,
+                base_plugins: _,
             }) => {
                 let search_plugins = TextInput::new(
                     input,
