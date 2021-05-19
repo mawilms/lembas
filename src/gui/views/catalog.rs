@@ -67,7 +67,7 @@ impl Catalog {
                 }
                 Message::LoadedPlugins(fetched_plugins) => {
                     let mut plugins = Vec::new();
-                    let installed_plugins = Synchronizer::get_installed_plugins();
+                    let installed_plugins = Synchronizer::get_plugins();
                     for (_, plugin) in fetched_plugins {
                         let mut plugin_row = PluginRow::new(
                             plugin.plugin_id,

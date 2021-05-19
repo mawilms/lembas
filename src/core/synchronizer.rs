@@ -13,7 +13,7 @@ pub struct Synchronizer {}
 impl Synchronizer {
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().unwrap();
-        let local_db_plugins = Self::get_installed_plugins();
+        let local_db_plugins = Self::get_plugins();
 
         Self::compare_local_state(&local_plugins, &local_db_plugins);
 
@@ -26,7 +26,7 @@ impl Synchronizer {
     ) {
         for (key, element) in local_plugins {
             if !db_plugins.contains_key(key) {
-                let retrieved_plugin = Self::get_exact_plugin(&element.name);
+                let retrieved_plugin = Self::get_plugin(&element.name);
                 if !retrieved_plugin.is_empty() {
                     Self::insert_plugin(&InstalledPlugin::new(
                         retrieved_plugin[0].plugin_id,
@@ -109,7 +109,7 @@ impl Synchronizer {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
 
         for (_, plugin) in fetched_plugins {
-            let installed_plugin = Synchronizer::get_exact_plugin(&plugin.title);
+            let installed_plugin = Synchronizer::get_plugin(&plugin.title);
             if !installed_plugin.is_empty()
                 && installed_plugin[0].latest_version != plugin.latest_version
             {
@@ -196,12 +196,12 @@ impl Synchronizer {
         all_plugins
     }
 
-    pub fn get_installed_plugins() -> HashMap<String, InstalledPlugin> {
+    pub fn get_plugins() -> HashMap<String, InstalledPlugin> {
         let mut plugins = HashMap::new();
 
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE current_version != '' ORDER BY title;")
+            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin ORDER BY title;")
             .unwrap();
 
         for element in Self::execute_stmt(&mut stmt, "") {
@@ -210,16 +210,7 @@ impl Synchronizer {
         plugins
     }
 
-    pub fn search_plugin(name: &str) -> Vec<InstalledPlugin> {
-        let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) LIKE ?1;")
-            .unwrap();
-
-        Self::execute_stmt(&mut stmt, &format!("%{}%", name.to_lowercase()))
-    }
-
-    pub fn get_exact_plugin(name: &str) -> Vec<InstalledPlugin> {
+    pub fn get_plugin(name: &str) -> Vec<InstalledPlugin> {
         let conn = Connection::open(&CONFIGURATION.db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) = ?1")

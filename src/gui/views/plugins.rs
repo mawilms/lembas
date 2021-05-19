@@ -13,7 +13,7 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        let mut installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_installed_plugins()
+        let mut installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_plugins()
             .values()
             .cloned()
             .collect();
@@ -73,7 +73,7 @@ impl Plugins {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_installed_plugins()
+                            Synchronizer::get_plugins()
                                 .values()
                                 .cloned()
                                 .collect();
@@ -107,7 +107,7 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins = Synchronizer::get_installed_plugins();
+                    let installed_plugins = Synchronizer::get_plugins();
                     for (_, plugin) in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
