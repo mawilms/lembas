@@ -107,8 +107,8 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins = Synchronizer::get_plugins();
-                    for (_, plugin) in installed_plugins {
+                    let installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_plugins().values().cloned().collect();
+                    for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
                             &plugin.title,

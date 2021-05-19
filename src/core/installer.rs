@@ -1,14 +1,32 @@
 use super::Plugin;
 use crate::core::config::CONFIGURATION;
-use fs_extra;
-use std::{error::Error, fs::File};
+use chrono::offset::Utc;
+use chrono::DateTime;
+use dirs::home_dir;
+use fs_extra::{
+    self,
+    dir::{copy, CopyOptions},
+};
+use std::{
+    error::Error,
+    fs::{create_dir_all, File},
+};
 use std::{fs, io::prelude::*};
+use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
 pub struct Installer {}
 
 impl Installer {
     pub fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+        if CONFIGURATION
+            .lock()
+            .unwrap()
+            .application_settings
+            .backup_enabled
+        {
+            Self::back_plugin_folder();
+        }
         let response = reqwest::blocking::get(&format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
@@ -141,5 +159,33 @@ impl Installer {
         //fs::remove_dir_all(tmp_file_path).unwrap();
 
         Ok(())
+    }
+
+    fn back_plugin_folder() {
+        let backup_path = home_dir()
+            .expect("Couldn't find your home directory")
+            .join("Documents")
+            .join("The Lord of the Rings Online")
+            .join("plugins_backup");
+
+        if !backup_path.exists() {
+            create_dir(&backup_path).unwrap();
+        }
+
+        let options = CopyOptions::new();
+
+        let system_time = SystemTime::now();
+        let datetime: DateTime<Utc> = system_time.into();
+        let datetime = datetime.format("%Y_%m_%d_%H%M%S").to_string();
+
+        let tmp_backup_path = Path::new(&backup_path).join(format!("{}_backup", datetime));
+        create_dir(&tmp_backup_path).unwrap();
+
+        copy(
+            &CONFIGURATION.lock().unwrap().plugins_dir,
+            &tmp_backup_path,
+            &options,
+        )
+        .unwrap();
     }
 }

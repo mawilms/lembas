@@ -32,8 +32,6 @@ image = "^0"
 webbrowser = "^0"
 fs_extra = "^1"
 globset = "^0"
-
-[dev-dependencies]
 chrono = "^0"
 
 [build-dependencies]

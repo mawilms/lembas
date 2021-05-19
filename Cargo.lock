@@ -1846,7 +1846,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "webbrowser",
- "winapi 0.2.8",
+ "winapi 0.3.9",
  "zip",
 ]
 
