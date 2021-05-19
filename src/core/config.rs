@@ -1,19 +1,16 @@
 use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use std::sync::Mutex;
+use std::{fs::OpenOptions, path::Path};
 use std::{
     fs::{self, write, File},
     io::Read,
 };
 
-pub static CONFIGURATION: Lazy<Mutex<Config>> = Lazy::new(|| Mutex::new(Config::default()));
-
-// lazy_static! {
-//     pub static ref CONFIGURATION: Config = Config::default();
-// }
+lazy_static! {
+    pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::default());
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -66,6 +63,18 @@ impl Default for Config {
             cache_dir: cache_path.into_os_string().into_string().unwrap(),
             application_settings: initial_settings,
         }
+    }
+}
+
+impl Config {
+    pub fn save_changes(&self) {
+        let settings_file_path = Path::new(&self.settings).join("settings.json");
+
+        write(
+            &settings_file_path,
+            serde_json::to_string(&self.application_settings).unwrap(),
+        )
+        .unwrap();
     }
 }
 

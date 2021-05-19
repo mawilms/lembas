@@ -36,14 +36,7 @@ impl Configuration {
                     .unwrap()
                     .application_settings
                     .backup_enabled = self.backup;
-                println!(
-                    "{:?}",
-                    CONFIGURATION
-                        .lock()
-                        .unwrap()
-                        .application_settings
-                        .backup_enabled
-                );
+                CONFIGURATION.lock().unwrap().save_changes();
             }
         }
     }
