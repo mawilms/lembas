@@ -240,7 +240,7 @@ impl Catalog {
 
                 let content = Column::new()
                     .push(
-                        Text::new("No internet connection")
+                        Text::new("No Lembas server connection")
                             .horizontal_alignment(HorizontalAlignment::Center)
                             .vertical_alignment(VerticalAlignment::Center)
                             .size(20),
