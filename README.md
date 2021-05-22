@@ -29,13 +29,6 @@ Lembas is a plugin management tool completely written in Rust for the game "Lord
 - (Bulk) update functionality
 - Delete plugins + their dependencies
 
-We also have plans for the futures. Some futures that are in the pipeline are:
-
-- [ ] Backup functionality
-- [ ] Ignore list to set a fixed plugin version
-- [ ] Install addons from the [lotrointerface.com](https://www.lotrointerface.com) URL
-- [ ] Include additional plugin providers
-
 ## Screenshots
 
 ![plugins_ui](./screenshots/plugins.png 'Plugins UI')
@@ -74,7 +67,7 @@ macOS:
 
 ## Contribute
 
-Lembas is meant to be a community project. So anyone who wants to be part of Lembas is welcome. It doesn't matter if you have a feature request or if you are a developer who wants to develop a feature. You're an experienced Rust developer and want to critize my code? Also no problem. Any feedback is welcome!
+Lembas is meant to be a community project. So anyone who wants to be part of Lembas is welcome. It doesn't matter if you have a feature request or if you want to develop one. You're an experienced Rust developer and want to critize my code? Also no problem. Any feedback is welcome!
 
 You can open a Feature request or Bug issue [here](https://github.com/mawilms/lembas/issues/new/choose)
 
