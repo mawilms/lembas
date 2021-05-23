@@ -30,6 +30,7 @@ impl Default for Plugins {
         }
 
         Self::Loaded(State {
+            base_plugins: plugins.clone(),
             plugins,
             ..State::default()
         })
@@ -41,6 +42,7 @@ pub struct State {
     plugin_scrollable_state: scrollable::State,
     input_value: String,
     pub plugins: Vec<PluginRow>,
+    base_plugins: Vec<PluginRow>,
     input: text_input::State,
     refresh_button: button::State,
     update_all_button: button::State,
@@ -126,7 +128,24 @@ impl Plugins {
                     state.plugins = plugins;
                     Command::none()
                 }
-                PluginMessage::PluginInputChanged(_) => Command::none(),
+                PluginMessage::PluginInputChanged(letter) => {
+                    let mut filerted_plugins = Vec::new();
+                    state.input_value = letter;
+
+                    for element in &state.base_plugins {
+                        if element
+                            .title
+                            .to_lowercase()
+                            .contains(&state.input_value.to_lowercase())
+                        {
+                            filerted_plugins.push(element.clone());
+                        }
+                    }
+                    filerted_plugins
+                        .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                    state.plugins = filerted_plugins;
+                    Command::none()
+                }
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
@@ -160,6 +179,7 @@ impl Plugins {
                 plugin_scrollable_state,
                 input_value,
                 plugins,
+                base_plugins: _,
                 input,
                 refresh_button,
                 update_all_button,
@@ -494,6 +514,6 @@ impl PluginRow {
 }
 
 #[derive(Debug, Clone)]
-enum ApplicationError {
+pub enum ApplicationError {
     Synchronize,
 }
