@@ -20,25 +20,31 @@ impl Synchronizer {
         Ok(())
     }
 
-    fn compare_local_state(
+    pub fn compare_local_state(
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            if !db_plugins.contains_key(key) {
-                let retrieved_plugin = Self::get_plugin(&element.name);
-                if !retrieved_plugin.is_empty() {
-                    Self::insert_plugin(&InstalledPlugin::new(
-                        retrieved_plugin[0].plugin_id,
-                        &retrieved_plugin[0].title,
-                        &element.description,
-                        &retrieved_plugin[0].category,
-                        &element.version,
-                        &retrieved_plugin[0].latest_version,
-                        &retrieved_plugin[0].folder,
-                    ))
-                    .unwrap();
+            let retrieved_plugin = Self::fetch_plugin_details(&element.name);
+            if db_plugins.contains_key(key) {
+                let local_plugin = db_plugins.get(key).unwrap();
+                if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
+                    Self::update_plugin(
+                        &local_plugin.title,
+                        &retrieved_plugin.base_plugin.latest_version,
+                    );
                 }
+            } else {
+                Self::insert_plugin(&InstalledPlugin::new(
+                    retrieved_plugin.base_plugin.plugin_id,
+                    &retrieved_plugin.base_plugin.title,
+                    &element.description,
+                    &retrieved_plugin.base_plugin.category,
+                    &element.version,
+                    &retrieved_plugin.base_plugin.latest_version,
+                    &retrieved_plugin.base_plugin.folder,
+                ))
+                .unwrap();
             }
         }
 
@@ -160,6 +166,15 @@ impl Synchronizer {
             }
         }
 
+        Ok(())
+    }
+
+    fn update_plugin(title: &str, version: &str) -> Result<(), Box<dyn Error>> {
+        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
+        conn.execute(
+            "UPDATE plugin SET latest_version=?2 WHERE title=?1;",
+            params![title, version],
+        )?;
         Ok(())
     }
 

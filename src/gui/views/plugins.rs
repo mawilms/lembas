@@ -1,8 +1,8 @@
 use crate::core::{Installed as InstalledPlugin, Installer, Synchronizer};
 use crate::gui::style;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Space, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Space, Text, TextInput,
 };
 use serde::{Deserialize, Serialize};
 
@@ -13,10 +13,8 @@ pub enum Plugins {
 
 impl Default for Plugins {
     fn default() -> Self {
-        let mut installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_plugins()
-            .values()
-            .cloned()
-            .collect();
+        let mut installed_plugins: Vec<InstalledPlugin> =
+            Synchronizer::get_plugins().values().cloned().collect();
         installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
@@ -32,6 +30,7 @@ impl Default for Plugins {
         }
 
         Self::Loaded(State {
+            base_plugins: plugins.clone(),
             plugins,
             ..State::default()
         })
@@ -43,6 +42,7 @@ pub struct State {
     plugin_scrollable_state: scrollable::State,
     input_value: String,
     pub plugins: Vec<PluginRow>,
+    base_plugins: Vec<PluginRow>,
     input: text_input::State,
     refresh_button: button::State,
     update_all_button: button::State,
@@ -56,27 +56,30 @@ pub enum PluginMessage {
     PluginInputChanged(String),
     RefreshPressed,
     UpdateAllPressed,
+    DbRefreshed(Result<(), ApplicationError>),
 
     // Plugin View
     Plugin(usize, RowMessage),
 }
 
 impl Plugins {
-    fn refresh_db() {
-        Synchronizer::update_local_plugins();
+    async fn refresh_db() -> Result<(), ApplicationError> {
+        let local_plugins = Synchronizer::search_local().map_err(|_| ApplicationError::Synchronize);
+        let local_db_plugins = Synchronizer::get_plugins();
+
+        Synchronizer::compare_local_state(&local_plugins.unwrap(), &local_db_plugins);
+
+        Ok(())
     }
 
-    pub fn update(&mut self, message: PluginMessage) {
+    pub fn update(&mut self, message: PluginMessage) -> Command<PluginMessage> {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
                     if let Event::Synchronize = state.plugins[index].update(msg) {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins()
-                                .values()
-                                .cloned()
-                                .collect();
+                            Synchronizer::get_plugins().values().cloned().collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -92,10 +95,11 @@ impl Plugins {
                         }
                         state.plugins = plugins;
                     }
+                    Command::none()
                 }
 
                 PluginMessage::RefreshPressed => {
-                    Self::refresh_db();
+                    Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
                 }
                 PluginMessage::UpdateAllPressed => {
                     for i in 1..state.plugins.len() {
@@ -104,10 +108,12 @@ impl Plugins {
                             state.plugins[i].update(RowMessage::UpdatePressed(test));
                         }
                     }
+                    Command::none()
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<InstalledPlugin> = Synchronizer::get_plugins().values().cloned().collect();
+                    let installed_plugins: Vec<InstalledPlugin> =
+                        Synchronizer::get_plugins().values().cloned().collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
@@ -120,8 +126,49 @@ impl Plugins {
                         ));
                     }
                     state.plugins = plugins;
+                    Command::none()
                 }
-                PluginMessage::PluginInputChanged(_) => {}
+                PluginMessage::PluginInputChanged(letter) => {
+                    let mut filerted_plugins = Vec::new();
+                    state.input_value = letter;
+
+                    for element in &state.base_plugins {
+                        if element
+                            .title
+                            .to_lowercase()
+                            .contains(&state.input_value.to_lowercase())
+                        {
+                            filerted_plugins.push(element.clone());
+                        }
+                    }
+                    filerted_plugins
+                        .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                    state.plugins = filerted_plugins;
+                    Command::none()
+                }
+                PluginMessage::DbRefreshed(result) => {
+                    if result.is_ok() {
+                        let mut plugins: Vec<PluginRow> = Vec::new();
+                        let mut all_plugins: Vec<InstalledPlugin> =
+                            Synchronizer::get_plugins().values().cloned().collect();
+                        all_plugins
+                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                        for plugin in all_plugins {
+                            plugins.push(PluginRow::new(
+                                plugin.plugin_id,
+                                &plugin.title,
+                                &plugin.description,
+                                &plugin.category,
+                                &plugin.current_version,
+                                &plugin.latest_version,
+                                &plugin.folder,
+                            ))
+                        }
+                        state.plugins = plugins;
+                    }
+
+                    Command::none()
+                }
             },
         }
     }
@@ -132,6 +179,7 @@ impl Plugins {
                 plugin_scrollable_state,
                 input_value,
                 plugins,
+                base_plugins: _,
                 input,
                 refresh_button,
                 update_all_button,
@@ -466,6 +514,6 @@ impl PluginRow {
 }
 
 #[derive(Debug, Clone)]
-enum ApplicationError {
+pub enum ApplicationError {
     Synchronize,
 }
