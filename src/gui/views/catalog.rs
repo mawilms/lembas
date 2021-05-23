@@ -277,6 +277,7 @@ pub struct PluginRow {
 pub enum RowMessage {
     InstallPressed(PluginRow),
     WebsitePressed(PluginRow),
+    NoEvent,
 }
 
 impl PluginRow {
@@ -331,6 +332,7 @@ impl PluginRow {
                 ))
                 .unwrap();
             }
+            RowMessage::NoEvent => {}
         }
     }
 
@@ -347,7 +349,17 @@ impl PluginRow {
                         .push(Text::new(&self.title).width(Length::FillPortion(6)))
                         .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                         .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                        .push(
+                        .push(if &plugin.status == "Installed" {
+                            Button::new(
+                                &mut self.install_btn_state,
+                                Text::new(&plugin.status)
+                                    .width(Length::Fill)
+                                    .horizontal_alignment(HorizontalAlignment::Center),
+                            )
+                            .on_press(RowMessage::NoEvent)
+                            .style(style::InstallButton::Enabled)
+                            .width(Length::FillPortion(2))
+                        } else {
                             Button::new(
                                 &mut self.install_btn_state,
                                 Text::new(&plugin.status)
@@ -356,8 +368,8 @@ impl PluginRow {
                             )
                             .on_press(RowMessage::InstallPressed(plugin))
                             .style(style::InstallButton::Enabled)
-                            .width(Length::FillPortion(2)),
-                        ),
+                            .width(Length::FillPortion(2))
+                        }),
                 )
                 .on_press(RowMessage::WebsitePressed(website_plugin))
                 .style(style::PluginRow::Enabled),
