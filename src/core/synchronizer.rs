@@ -110,24 +110,6 @@ impl Synchronizer {
         )
     }
 
-    // Used to synchronize the local database with the remote plugin server
-    pub async fn update_local_plugins() -> Result<(), ()> {
-        let fetched_plugins = Self::fetch_plugins().await;
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-
-        if fetched_plugins.is_ok() {
-            for (_, plugin) in fetched_plugins.unwrap() {
-                let installed_plugin = Synchronizer::get_plugin(&plugin.title);
-                if !installed_plugin.is_empty()
-                    && installed_plugin[0].latest_version != plugin.latest_version
-                {
-                    conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
-                }
-            }
-        }
-        Ok(())
-    }
-
     // Creates the local database if it doesn't exist.
     pub fn create_plugins_db() {
         let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
@@ -227,15 +209,6 @@ impl Synchronizer {
             plugins.insert(element.title.clone(), element);
         }
         plugins
-    }
-
-    pub fn get_plugin(name: &str) -> Vec<InstalledPlugin> {
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) = ?1")
-            .unwrap();
-
-        Self::execute_stmt(&mut stmt, &name.to_lowercase())
     }
 }
 

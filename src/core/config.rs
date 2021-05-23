@@ -1,8 +1,8 @@
 use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use std::sync::Mutex;
-use std::{fs::OpenOptions, path::Path};
 use std::{
     fs::{self, write, File},
     io::Read,
