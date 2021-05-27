@@ -32,7 +32,7 @@ impl Synchronizer {
                     Self::update_plugin(
                         &local_plugin.title,
                         &retrieved_plugin.base_plugin.latest_version,
-                    );
+                    ).unwrap();
                 }
             } else {
                 Self::insert_plugin(&InstalledPlugin::new(
