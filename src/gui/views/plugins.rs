@@ -1,4 +1,5 @@
-use crate::core::{Installed as InstalledPlugin, Installer, Synchronizer};
+use crate::core::api_connector::APIOperations;
+use crate::core::{APIConnector, Installed as InstalledPlugin, Installer, Synchronizer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -349,7 +350,7 @@ impl PluginRow {
                 Event::Nothing
             }
             RowMessage::UpdatePressed(mut plugin) => {
-                let fetched_plugin = Synchronizer::fetch_plugin_details(&plugin.title);
+                let fetched_plugin = APIConnector::fetch_details(&plugin.title);
                 if Installer::download(&fetched_plugin).is_ok() {
                     plugin.status = "Downloaded".to_string();
                     if Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
@@ -383,7 +384,7 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(mut row) => {
-                let fetched_plugin = Synchronizer::fetch_plugin_details(&row.title);
+                let fetched_plugin = APIConnector::fetch_details(&row.title);
                 if let Ok(()) =
                     Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
                 {

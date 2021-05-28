@@ -107,7 +107,6 @@ impl Installer {
             .join(&folder_name)
             .exists()
         {
-            // TODO: Check if the options are really doing what I want
             fs::create_dir_all(
                 Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(&folder_name),
             )

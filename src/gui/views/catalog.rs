@@ -1,4 +1,7 @@
-use crate::core::{synchronizer::APIError, Base as BasePlugin, Installer, Synchronizer};
+use crate::core::api_connector::APIOperations;
+use crate::core::{
+    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Synchronizer,
+};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -65,7 +68,7 @@ impl Catalog {
                     Command::none()
                 }
                 Message::LoadPlugins => {
-                    Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
+                    Command::perform(APIConnector::fetch_plugins(), Message::LoadedPlugins)
                 }
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
@@ -111,7 +114,7 @@ impl Catalog {
             },
             Catalog::NoInternet(state) => match message {
                 Message::RetryPressed => {
-                    Command::perform(Synchronizer::fetch_plugins(), Message::LoadedPlugins)
+                    Command::perform(APIConnector::fetch_plugins(), Message::LoadedPlugins)
                 }
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
@@ -303,7 +306,7 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage) {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                let fetched_plugin = Synchronizer::fetch_plugin_details(&plugin.title);
+                let fetched_plugin = APIConnector::fetch_details(&plugin.title);
                 if Installer::download(&fetched_plugin).is_ok() {
                     self.status = "Downloaded".to_string();
                     if Installer::extract(&fetched_plugin).is_ok() {

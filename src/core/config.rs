@@ -1,15 +1,19 @@
 use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use std::sync::Mutex;
-use std::{fs::OpenOptions, path::Path};
 use std::{
     fs::{self, write, File},
     io::Read,
 };
 
+trait FileConfigurations {
+    fn new() -> Self;
+}
+
 lazy_static! {
-    pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::default());
+    pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::new());
 }
 
 #[derive(Debug, Clone)]
@@ -21,8 +25,8 @@ pub struct Config {
     pub application_settings: SettingsFile,
 }
 
-impl Default for Config {
-    fn default() -> Self {
+impl FileConfigurations for Config {
+    fn new() -> Self {
         let plugins_path = home_dir()
             .expect("Couldn't find your home directory")
             .join("Documents")

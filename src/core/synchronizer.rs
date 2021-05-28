@@ -1,11 +1,9 @@
+use super::api_connector::APIOperations;
 use super::plugin_parser::Information;
 use crate::core::config::CONFIGURATION;
-use crate::core::{
-    Base as BasePlugin, Installed as InstalledPlugin, Plugin as DetailsPlugin, PluginParser,
-};
+use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 pub struct Synchronizer {}
@@ -25,14 +23,15 @@ impl Synchronizer {
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            let retrieved_plugin = Self::fetch_plugin_details(&element.name);
+            let retrieved_plugin = APIConnector::fetch_details(&element.name);
             if db_plugins.contains_key(key) {
                 let local_plugin = db_plugins.get(key).unwrap();
                 if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
                     Self::update_plugin(
                         &local_plugin.title,
                         &retrieved_plugin.base_plugin.latest_version,
-                    );
+                    )
+                    .unwrap();
                 }
             } else {
                 Self::insert_plugin(&InstalledPlugin::new(
@@ -76,56 +75,6 @@ impl Synchronizer {
             }
         }
         Ok(local_plugins)
-    }
-
-    pub async fn fetch_plugins(
-    ) -> Result<HashMap<String, BasePlugin>, crate::core::synchronizer::APIError> {
-        match reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins").await {
-            Ok(response) => match response.json::<HashMap<String, BasePlugin>>().await {
-                Ok(plugins) => Ok(plugins),
-                Err(_) => Err(APIError::FetchError),
-            },
-            Err(_) => Err(APIError::FetchError),
-        }
-    }
-
-    pub fn fetch_plugin_details(title: &str) -> DetailsPlugin {
-        let response = reqwest::blocking::get(format!(
-            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
-            title.to_lowercase()
-        ))
-        .expect("Failed to connect with API")
-        .json::<JSONResponse>()
-        .expect("Failed to parse response");
-
-        DetailsPlugin::new(
-            response.plugin_id,
-            &response.title,
-            "",
-            &response.category,
-            &response.current_version,
-            &response.latest_version,
-            &response.folders,
-            &response.files,
-        )
-    }
-
-    // Used to synchronize the local database with the remote plugin server
-    pub async fn update_local_plugins() -> Result<(), ()> {
-        let fetched_plugins = Self::fetch_plugins().await;
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-
-        if fetched_plugins.is_ok() {
-            for (_, plugin) in fetched_plugins.unwrap() {
-                let installed_plugin = Synchronizer::get_plugin(&plugin.title);
-                if !installed_plugin.is_empty()
-                    && installed_plugin[0].latest_version != plugin.latest_version
-                {
-                    conn.execute("UPDATE plugin SET current_version = ?1, latest_version = ?2 WHERE plugin_id = ?3", params![installed_plugin[0].description, plugin.latest_version, plugin.plugin_id]).unwrap();
-                }
-            }
-        }
-        Ok(())
     }
 
     // Creates the local database if it doesn't exist.
@@ -228,32 +177,4 @@ impl Synchronizer {
         }
         plugins
     }
-
-    pub fn get_plugin(name: &str) -> Vec<InstalledPlugin> {
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin WHERE LOWER(title) = ?1")
-            .unwrap();
-
-        Self::execute_stmt(&mut stmt, &name.to_lowercase())
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
-struct JSONResponse {
-    pub plugin_id: i32,
-    pub title: String,
-    #[serde(default)]
-    pub description: String,
-    pub category: String,
-    #[serde(default)]
-    pub current_version: String,
-    pub latest_version: String,
-    pub folders: String,
-    pub files: Vec<String>,
-}
-
-#[derive(Debug, Clone)]
-pub enum APIError {
-    FetchError,
 }
