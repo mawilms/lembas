@@ -8,8 +8,12 @@ use std::{
     io::Read,
 };
 
+trait FileConfigurations {
+    fn new() -> Self;
+}
+
 lazy_static! {
-    pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::default());
+    pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::new());
 }
 
 #[derive(Debug, Clone)]
@@ -21,8 +25,8 @@ pub struct Config {
     pub application_settings: SettingsFile,
 }
 
-impl Default for Config {
-    fn default() -> Self {
+impl FileConfigurations for Config {
+    fn new() -> Self {
         let plugins_path = home_dir()
             .expect("Couldn't find your home directory")
             .join("Documents")
