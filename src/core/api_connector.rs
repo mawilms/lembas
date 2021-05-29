@@ -15,7 +15,7 @@ pub struct APIConnector {}
 #[async_trait]
 impl APIOperations for APIConnector {
     async fn fetch_plugins() -> Result<HashMap<String, BasePlugin>, APIError> {
-        match reqwest::get("https://young-hamlet-23901.herokuapp.com/plugins").await {
+        match reqwest::get("https://lembas-backend.herokuapp.com/plugins").await {
             Ok(response) => match response.json::<HashMap<String, BasePlugin>>().await {
                 Ok(plugins) => Ok(plugins),
                 Err(_) => Err(APIError::FetchError),
@@ -26,7 +26,7 @@ impl APIOperations for APIConnector {
 
     fn fetch_details(title: &str) -> DetailsPlugin {
         let response = reqwest::blocking::get(format!(
-            "https://young-hamlet-23901.herokuapp.com/plugins/{}",
+            "https://lembas-backend.herokuapp.com/plugins/{}",
             title.to_lowercase()
         ))
         .expect("Failed to connect with API")
