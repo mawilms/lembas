@@ -24,7 +24,6 @@ impl Synchronizer {
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            println!("{:?}", element.name);
             let retrieved_plugin = APIConnector::fetch_details(element.name.clone()).await;
             if db_plugins.contains_key(key) {
                 let local_plugin = db_plugins.get(key).unwrap();
@@ -68,7 +67,9 @@ impl Synchronizer {
 
                 for file in directory? {
                     let path = file?.path();
-                    if glob.is_match(&path) {
+                    if !path.to_str().unwrap().to_lowercase().contains("loader")
+                        && glob.is_match(&path)
+                    {
                         let xml_content = PluginParser::parse_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
                     }
