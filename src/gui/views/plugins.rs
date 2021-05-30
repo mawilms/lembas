@@ -1,5 +1,7 @@
 use crate::core::api_connector::APIOperations;
-use crate::core::{APIConnector, Installed as InstalledPlugin, Installer, Synchronizer};
+use crate::core::{
+    APIConnector, Installed as InstalledPlugin, Installer, Plugin as DetailPlugin, Synchronizer,
+};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -291,6 +293,8 @@ pub enum RowMessage {
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
     WebsitePressed(i32, String),
+    Updating(DetailPlugin),
+    Deleting(DetailPlugin),
 }
 
 pub enum Event {
@@ -349,56 +353,16 @@ impl PluginRow {
                 self.opened = !self.opened;
                 Event::Nothing
             }
-            RowMessage::UpdatePressed(mut plugin) => {
-                let fetched_plugin = APIConnector::fetch_details(&plugin.title);
-                if Installer::download(&fetched_plugin).is_ok() {
-                    plugin.status = "Downloaded".to_string();
-                    if Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
-                        .is_ok()
-                    {
-                        if Installer::extract(&fetched_plugin).is_ok() {
-                            plugin.status = "Unpacked".to_string();
-                            if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
-                                if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
-                                    plugin.status = "Installed".to_string();
-                                    Event::Synchronize
-                                } else {
-                                    plugin.status = "Install failed".to_string();
-                                    Event::Nothing
-                                }
-                            } else {
-                                plugin.status = "Installation failed".to_string();
-                                Event::Nothing
-                            }
-                        } else {
-                            plugin.status = "Unpacking failed".to_string();
-                            Event::Nothing
-                        }
-                    } else {
-                        plugin.status = "Installation failed".to_string();
-                        Event::Nothing
-                    }
-                } else {
-                    plugin.status = "Download failed".to_string();
-                    Event::Nothing
-                }
+            RowMessage::UpdatePressed(plugin) => {
+                Command::perform(
+                    APIConnector::fetch_details(plugin.title),
+                    RowMessage::Updating,
+                );
+                Event::Nothing
             }
-            RowMessage::DeletePressed(mut row) => {
-                let fetched_plugin = APIConnector::fetch_details(&row.title);
-                if let Ok(()) =
-                    Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
-                {
-                    if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
-                        row.status = "Deleted".to_string();
-                        Event::Synchronize
-                    } else {
-                        row.status = "Delete failed".to_string();
-                        Event::Nothing
-                    }
-                } else {
-                    row.status = "Delete failed".to_string();
-                    Event::Nothing
-                }
+            RowMessage::DeletePressed(row) => {
+                Command::perform(APIConnector::fetch_details(row.title), RowMessage::Deleting);
+                Event::Nothing
             }
             RowMessage::WebsitePressed(id, title) => {
                 webbrowser::open(&format!(
@@ -407,6 +371,55 @@ impl PluginRow {
                 ))
                 .unwrap();
                 Event::Nothing
+            }
+            RowMessage::Updating(fetched_plugin) => {
+                if Installer::download(&fetched_plugin).is_ok() {
+                    self.status = "Downloaded".to_string();
+                    if Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                        .is_ok()
+                    {
+                        if Installer::extract(&fetched_plugin).is_ok() {
+                            self.status = "Unpacked".to_string();
+                            if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
+                                if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
+                                    self.status = "Installed".to_string();
+                                    Event::Synchronize
+                                } else {
+                                    self.status = "Install failed".to_string();
+                                    Event::Nothing
+                                }
+                            } else {
+                                self.status = "Installation failed".to_string();
+                                Event::Nothing
+                            }
+                        } else {
+                            self.status = "Unpacking failed".to_string();
+                            Event::Nothing
+                        }
+                    } else {
+                        self.status = "Installation failed".to_string();
+                        Event::Nothing
+                    }
+                } else {
+                    self.status = "Download failed".to_string();
+                    Event::Nothing
+                }
+            }
+            RowMessage::Deleting(fetched_plugin) => {
+                if let Ok(()) =
+                    Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                {
+                    if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
+                        self.status = "Deleted".to_string();
+                        Event::Synchronize
+                    } else {
+                        self.status = "Delete failed".to_string();
+                        Event::Nothing
+                    }
+                } else {
+                    self.status = "Delete failed".to_string();
+                    Event::Nothing
+                }
             }
         }
     }

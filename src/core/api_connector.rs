@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub trait APIOperations {
     async fn fetch_plugins() -> Result<HashMap<String, BasePlugin>, APIError>;
 
-    async fn fetch_details(title: &str) -> DetailsPlugin;
+    async fn fetch_details(title: String) -> DetailsPlugin;
 }
 
 pub struct APIConnector {}
@@ -24,7 +24,7 @@ impl APIOperations for APIConnector {
         }
     }
 
-    async fn fetch_details(title: &str) -> DetailsPlugin {
+    async fn fetch_details(title: String) -> DetailsPlugin {
         let response = reqwest::get(format!(
             "https://lembas-backend.herokuapp.com/plugins/{}",
             title.to_lowercase()

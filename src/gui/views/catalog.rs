@@ -308,7 +308,7 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => Command::perform(
-                APIConnector::fetch_details(&plugin.title),
+                APIConnector::fetch_details(plugin.title),
                 RowMessage::DetailsFetched,
             ),
 
@@ -321,6 +321,7 @@ impl PluginRow {
                 Command::none()
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
+                println!("Hallo2");
                 if Installer::download(&fetched_plugin).is_ok() {
                     self.status = "Downloaded".to_string();
                     if Installer::extract(&fetched_plugin).is_ok() {
