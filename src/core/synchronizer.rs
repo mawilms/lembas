@@ -13,18 +13,18 @@ impl Synchronizer {
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_plugins();
-        
+
         Self::compare_local_state(&local_plugins, &local_db_plugins);
 
         Ok(())
     }
 
-    pub fn compare_local_state(
+    pub async fn compare_local_state(
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            let retrieved_plugin = APIConnector::fetch_details(&element.name);
+            let retrieved_plugin = APIConnector::fetch_details(&element.name).await;
             if db_plugins.contains_key(key) {
                 let local_plugin = db_plugins.get(key).unwrap();
                 if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {

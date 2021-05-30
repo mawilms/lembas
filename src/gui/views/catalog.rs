@@ -1,6 +1,7 @@
 use crate::core::api_connector::APIOperations;
 use crate::core::{
-    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Synchronizer,
+    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Plugin as DetailPlugin,
+    Synchronizer,
 };
 use crate::gui::style;
 use iced::{
@@ -280,6 +281,7 @@ pub struct PluginRow {
 pub enum RowMessage {
     InstallPressed(PluginRow),
     WebsitePressed(PluginRow),
+    DetailsFetched(DetailPlugin),
     NoEvent,
 }
 
@@ -303,10 +305,22 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) {
+    pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
-            RowMessage::InstallPressed(plugin) => {
-                let fetched_plugin = APIConnector::fetch_details(&plugin.title);
+            RowMessage::InstallPressed(plugin) => Command::perform(
+                APIConnector::fetch_details(&plugin.title),
+                RowMessage::DetailsFetched,
+            ),
+
+            RowMessage::WebsitePressed(row) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    row.id, row.title,
+                ))
+                .unwrap();
+                Command::none()
+            }
+            RowMessage::DetailsFetched(fetched_plugin) => {
                 if Installer::download(&fetched_plugin).is_ok() {
                     self.status = "Downloaded".to_string();
                     if Installer::extract(&fetched_plugin).is_ok() {
@@ -326,16 +340,9 @@ impl PluginRow {
                 } else {
                     self.status = "Download failed".to_string();
                 }
+                Command::none()
             }
-
-            RowMessage::WebsitePressed(row) => {
-                webbrowser::open(&format!(
-                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
-                    row.id, row.title,
-                ))
-                .unwrap();
-            }
-            RowMessage::NoEvent => {}
+            RowMessage::NoEvent => Command::none(),
         }
     }
 
