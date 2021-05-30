@@ -31,7 +31,7 @@ impl FileConfigurations for Config {
             .expect("Couldn't find your home directory")
             .join("Documents")
             .join("The Lord of the Rings Online")
-            .join("plugins");
+            .join("Plugins");
         let settings_path = data_dir().unwrap().join("lembas");
         let cache_path = cache_dir().unwrap().join("lembas");
 

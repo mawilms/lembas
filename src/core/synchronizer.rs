@@ -4,6 +4,7 @@ use crate::core::config::CONFIGURATION;
 use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
+use std::fs::metadata;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 pub struct Synchronizer {}
@@ -12,7 +13,7 @@ impl Synchronizer {
     pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
         let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_plugins();
-
+        
         Self::compare_local_state(&local_plugins, &local_db_plugins);
 
         Ok(())
@@ -57,23 +58,23 @@ impl Synchronizer {
     pub fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
+        let plugins_dir = &CONFIGURATION.lock().unwrap().plugins_dir;
 
-        for entry in read_dir(Path::new(&CONFIGURATION.lock().unwrap().plugins_dir))? {
-            let directory = read_dir(
-                Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
-                    .join(entry.unwrap().path())
-                    .to_str()
-                    .unwrap(),
-            );
+        for entry in read_dir(Path::new(plugins_dir))? {
+            let direcorty_path = Path::new(plugins_dir).join(entry.unwrap().path());
+            if metadata(&direcorty_path).unwrap().is_dir() {
+                let directory = read_dir(&direcorty_path.to_str().unwrap());
 
-            for file in directory? {
-                let path = file?.path();
-                if glob.is_match(&path) {
-                    let xml_content = PluginParser::parse_file(&path);
-                    local_plugins.insert(xml_content.name.clone(), xml_content);
+                for file in directory? {
+                    let path = file?.path();
+                    if glob.is_match(&path) {
+                        let xml_content = PluginParser::parse_file(&path);
+                        local_plugins.insert(xml_content.name.clone(), xml_content);
+                    }
                 }
             }
         }
+
         Ok(local_plugins)
     }
 
