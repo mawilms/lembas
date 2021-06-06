@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub trait APIOperations {
     async fn fetch_plugins() -> Result<HashMap<String, BasePlugin>, APIError>;
 
-    async fn fetch_details(title: String) -> DetailsPlugin;
+    async fn fetch_details(title: String) -> Result<DetailsPlugin, APIError>;
 }
 
 pub struct APIConnector {}
@@ -24,27 +24,28 @@ impl APIOperations for APIConnector {
         }
     }
 
-    async fn fetch_details(title: String) -> DetailsPlugin {
-        let response = reqwest::get(format!(
+    async fn fetch_details(title: String) -> Result<DetailsPlugin, APIError> {
+        match reqwest::get(format!(
             "https://lembas-backend.herokuapp.com/plugins/{}",
             title.to_lowercase()
         ))
         .await
-        .expect("Failed to connect with API")
-        .json::<JSONResponse>()
-        .await
-        .expect("Failed to parse response");
-
-        DetailsPlugin::new(
-            response.plugin_id,
-            &response.title,
-            "",
-            &response.category,
-            &response.current_version,
-            &response.latest_version,
-            &response.folders,
-            &response.files,
-        )
+        {
+            Ok(response) => match response.json::<JSONResponse>().await {
+                Ok(plugin) => Ok(DetailsPlugin::new(
+                    plugin.plugin_id,
+                    &plugin.title,
+                    "",
+                    &plugin.category,
+                    &plugin.current_version,
+                    &plugin.latest_version,
+                    &plugin.folders,
+                    &plugin.files,
+                )),
+                Err(_) => Err(APIError::FetchError),
+            },
+            Err(_) => Err(APIError::FetchError),
+        }
     }
 }
 

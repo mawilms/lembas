@@ -24,27 +24,28 @@ impl Synchronizer {
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            let retrieved_plugin = APIConnector::fetch_details(element.name.clone()).await;
-            if db_plugins.contains_key(key) {
-                let local_plugin = db_plugins.get(key).unwrap();
-                if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
-                    Self::update_plugin(
-                        &local_plugin.title,
+            if let Ok(retrieved_plugin) = APIConnector::fetch_details(element.name.clone()).await {
+                if db_plugins.contains_key(key) {
+                    let local_plugin = db_plugins.get(key).unwrap();
+                    if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
+                        Self::update_plugin(
+                            &local_plugin.title,
+                            &retrieved_plugin.base_plugin.latest_version,
+                        )
+                        .unwrap();
+                    }
+                } else {
+                    Self::insert_plugin(&InstalledPlugin::new(
+                        retrieved_plugin.base_plugin.plugin_id,
+                        &retrieved_plugin.base_plugin.title,
+                        &element.description,
+                        &retrieved_plugin.base_plugin.category,
+                        &element.version,
                         &retrieved_plugin.base_plugin.latest_version,
-                    )
+                        &retrieved_plugin.base_plugin.folder,
+                    ))
                     .unwrap();
                 }
-            } else {
-                Self::insert_plugin(&InstalledPlugin::new(
-                    retrieved_plugin.base_plugin.plugin_id,
-                    &retrieved_plugin.base_plugin.title,
-                    &element.description,
-                    &retrieved_plugin.base_plugin.category,
-                    &element.version,
-                    &retrieved_plugin.base_plugin.latest_version,
-                    &retrieved_plugin.base_plugin.folder,
-                ))
-                .unwrap();
             }
         }
 

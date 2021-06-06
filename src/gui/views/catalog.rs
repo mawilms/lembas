@@ -281,7 +281,7 @@ pub struct PluginRow {
 pub enum RowMessage {
     InstallPressed(PluginRow),
     WebsitePressed(PluginRow),
-    DetailsFetched(DetailPlugin),
+    DetailsFetched(Result<DetailPlugin, APIError>),
     NoEvent,
 }
 
@@ -321,25 +321,24 @@ impl PluginRow {
                 Command::none()
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
-                println!("Hallo2");
-                if Installer::download(&fetched_plugin).is_ok() {
-                    self.status = "Downloaded".to_string();
-                    if Installer::extract(&fetched_plugin).is_ok() {
-                        self.status = "Unpacked".to_string();
-                        if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
-                            if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
+                if fetched_plugin.is_ok() {
+                    let plugin = fetched_plugin.unwrap();
+                    if Installer::download(&plugin).is_ok() {
+                        self.status = "Downloaded".to_string();
+                        if Installer::extract(&plugin).is_ok() {
+                            self.status = "Unpacked".to_string();
+                            Installer::delete_cache_folder(&plugin);
+                            if Synchronizer::insert_plugin(&plugin).is_ok() {
                                 self.status = "Installed".to_string();
                             } else {
                                 self.status = "Installation failed".to_string();
                             }
                         } else {
-                            self.status = "Installation failed".to_string();
+                            self.status = "Unpacking failed".to_string();
                         }
                     } else {
-                        self.status = "Unpacking failed".to_string();
+                        self.status = "Download failed".to_string();
                     }
-                } else {
-                    self.status = "Download failed".to_string();
                 }
                 Command::none()
             }

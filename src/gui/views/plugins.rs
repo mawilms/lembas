@@ -1,4 +1,4 @@
-use crate::core::api_connector::APIOperations;
+use crate::core::api_connector::{APIError, APIOperations};
 use crate::core::{
     APIConnector, Installed as InstalledPlugin, Installer, Plugin as DetailPlugin, Synchronizer,
 };
@@ -70,7 +70,7 @@ impl Plugins {
         let local_plugins = Synchronizer::search_local().map_err(|_| ApplicationError::Synchronize);
         let local_db_plugins = Synchronizer::get_plugins();
 
-        Synchronizer::compare_local_state(&local_plugins.unwrap(), &local_db_plugins);
+        Synchronizer::compare_local_state(&local_plugins.unwrap(), &local_db_plugins).await;
 
         Ok(())
     }
@@ -94,7 +94,7 @@ impl Plugins {
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.folder,
-                            ))
+                            ));
                         }
                         state.plugins = plugins;
                     }
@@ -165,7 +165,7 @@ impl Plugins {
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.folder,
-                            ))
+                            ));
                         }
                         state.plugins = plugins;
                     }
@@ -199,7 +199,7 @@ impl Plugins {
                 let search_plugins = TextInput::new(
                     input,
                     "Search plugins...",
-                    &input_value,
+                    input_value,
                     PluginMessage::PluginInputChanged,
                 )
                 .padding(5);
@@ -293,8 +293,8 @@ pub enum RowMessage {
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
     WebsitePressed(i32, String),
-    Updating(DetailPlugin),
-    Deleting(DetailPlugin),
+    Updating(Result<DetailPlugin, APIError>),
+    Deleting(Result<DetailPlugin, APIError>),
 }
 
 pub enum Event {
@@ -373,14 +373,18 @@ impl PluginRow {
                 Event::Nothing
             }
             RowMessage::Updating(fetched_plugin) => {
-                if Installer::download(&fetched_plugin).is_ok() {
-                    self.status = "Downloaded".to_string();
-                    if Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                if let Ok(fetched_plugin) = fetched_plugin {
+                    if Installer::download(&fetched_plugin).is_ok() {
+                        self.status = "Downloaded".to_string();
+                        if Installer::delete(
+                            &fetched_plugin.base_plugin.folder,
+                            &fetched_plugin.files,
+                        )
                         .is_ok()
-                    {
-                        if Installer::extract(&fetched_plugin).is_ok() {
-                            self.status = "Unpacked".to_string();
-                            if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
+                        {
+                            if Installer::extract(&fetched_plugin).is_ok() {
+                                self.status = "Unpacked".to_string();
+                                Installer::delete_cache_folder(&fetched_plugin);
                                 if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                     self.status = "Installed".to_string();
                                     Event::Synchronize
@@ -389,15 +393,15 @@ impl PluginRow {
                                     Event::Nothing
                                 }
                             } else {
-                                self.status = "Installation failed".to_string();
+                                self.status = "Unpacking failed".to_string();
                                 Event::Nothing
                             }
                         } else {
-                            self.status = "Unpacking failed".to_string();
+                            self.status = "Installation failed".to_string();
                             Event::Nothing
                         }
                     } else {
-                        self.status = "Installation failed".to_string();
+                        self.status = "Download failed".to_string();
                         Event::Nothing
                     }
                 } else {
@@ -406,12 +410,17 @@ impl PluginRow {
                 }
             }
             RowMessage::Deleting(fetched_plugin) => {
-                if let Ok(()) =
-                    Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
-                {
-                    if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
-                        self.status = "Deleted".to_string();
-                        Event::Synchronize
+                if let Ok(fetched_plugin) = fetched_plugin {
+                    if let Ok(()) =
+                        Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
+                    {
+                        if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
+                            self.status = "Deleted".to_string();
+                            Event::Synchronize
+                        } else {
+                            self.status = "Delete failed".to_string();
+                            Event::Nothing
+                        }
                     } else {
                         self.status = "Delete failed".to_string();
                         Event::Nothing

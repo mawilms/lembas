@@ -102,7 +102,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(_state) = message {
-                    *self = Lembas::Loaded(State { ..State::default() })
+                    *self = Lembas::Loaded(State { ..State::default() });
                 }
                 Command::none()
             }
@@ -132,7 +132,6 @@ impl Application for Lembas {
                     Command::none()
                 }
                 Message::CatalogAction(msg) => {
-                    println!("Hallo1");
                     state.catalog_view.update(msg).map(Message::CatalogAction)
                 }
                 Message::Loaded(_) => Command::none(),
