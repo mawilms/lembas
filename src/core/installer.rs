@@ -94,7 +94,7 @@ impl Installer {
 
         zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
-        Self::move_files(&tmp_file_path.to_str().unwrap(), &plugin.base_plugin.folder);
+        Self::move_files(tmp_file_path.to_str().unwrap(), &plugin.base_plugin.folder);
 
         Ok(())
     }
@@ -142,15 +142,13 @@ impl Installer {
         }
     }
 
-    pub fn delete_cache_folder(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
+    pub fn delete_cache_folder(plugin: &Plugin) {
         let tmp_file_path = Path::new(&CONFIGURATION.lock().unwrap().cache_dir).join(format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));
 
         fs::remove_dir_all(tmp_file_path).unwrap();
-
-        Ok(())
     }
 
     fn back_plugin_folder() {

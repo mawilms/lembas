@@ -102,7 +102,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(_state) = message {
-                    *self = Lembas::Loaded(State { ..State::default() })
+                    *self = Lembas::Loaded(State { ..State::default() });
                 }
                 Command::none()
             }
@@ -257,7 +257,7 @@ impl Lembas {
 
     pub async fn init_application() -> State {
         Synchronizer::create_plugins_db();
-        Synchronizer::synchronize_application();
+        Synchronizer::synchronize_application().await.unwrap();
 
         State::default()
     }

@@ -4,6 +4,7 @@ use crate::core::config::CONFIGURATION;
 use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
+use std::fs::metadata;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
 pub struct Synchronizer {}
@@ -13,37 +14,38 @@ impl Synchronizer {
         let local_plugins = Self::search_local().unwrap();
         let local_db_plugins = Self::get_plugins();
 
-        Self::compare_local_state(&local_plugins, &local_db_plugins);
+        Self::compare_local_state(&local_plugins, &local_db_plugins).await;
 
         Ok(())
     }
 
-    pub fn compare_local_state(
+    pub async fn compare_local_state(
         local_plugins: &HashMap<String, Information>,
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            let retrieved_plugin = APIConnector::fetch_details(&element.name);
-            if db_plugins.contains_key(key) {
-                let local_plugin = db_plugins.get(key).unwrap();
-                if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
-                    Self::update_plugin(
-                        &local_plugin.title,
+            if let Ok(retrieved_plugin) = APIConnector::fetch_details(element.name.clone()).await {
+                if db_plugins.contains_key(key) {
+                    let local_plugin = db_plugins.get(key).unwrap();
+                    if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
+                        Self::update_plugin(
+                            &local_plugin.title,
+                            &retrieved_plugin.base_plugin.latest_version,
+                        )
+                        .unwrap();
+                    }
+                } else {
+                    Self::insert_plugin(&InstalledPlugin::new(
+                        retrieved_plugin.base_plugin.plugin_id,
+                        &retrieved_plugin.base_plugin.title,
+                        &element.description,
+                        &retrieved_plugin.base_plugin.category,
+                        &element.version,
                         &retrieved_plugin.base_plugin.latest_version,
-                    )
+                        &retrieved_plugin.base_plugin.folder,
+                    ))
                     .unwrap();
                 }
-            } else {
-                Self::insert_plugin(&InstalledPlugin::new(
-                    retrieved_plugin.base_plugin.plugin_id,
-                    &retrieved_plugin.base_plugin.title,
-                    &element.description,
-                    &retrieved_plugin.base_plugin.category,
-                    &element.version,
-                    &retrieved_plugin.base_plugin.latest_version,
-                    &retrieved_plugin.base_plugin.folder,
-                ))
-                .unwrap();
             }
         }
 
@@ -57,23 +59,25 @@ impl Synchronizer {
     pub fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugin")?.compile_matcher();
+        let plugins_dir = &CONFIGURATION.lock().unwrap().plugins_dir;
 
-        for entry in read_dir(Path::new(&CONFIGURATION.lock().unwrap().plugins_dir))? {
-            let directory = read_dir(
-                Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
-                    .join(entry.unwrap().path())
-                    .to_str()
-                    .unwrap(),
-            );
+        for entry in read_dir(Path::new(plugins_dir))? {
+            let direcorty_path = Path::new(plugins_dir).join(entry.unwrap().path());
+            if metadata(&direcorty_path).unwrap().is_dir() {
+                let directory = read_dir(&direcorty_path.to_str().unwrap());
 
-            for file in directory? {
-                let path = file?.path();
-                if glob.is_match(&path) {
-                    let xml_content = PluginParser::parse_file(&path);
-                    local_plugins.insert(xml_content.name.clone(), xml_content);
+                for file in directory? {
+                    let path = file?.path();
+                    if !path.to_str().unwrap().to_lowercase().contains("loader")
+                        && glob.is_match(&path)
+                    {
+                        let xml_content = PluginParser::parse_file(&path);
+                        local_plugins.insert(xml_content.name.clone(), xml_content);
+                    }
                 }
             }
         }
+
         Ok(local_plugins)
     }
 

@@ -1,6 +1,7 @@
 use crate::core::api_connector::APIOperations;
 use crate::core::{
-    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Synchronizer,
+    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Plugin as DetailPlugin,
+    Synchronizer,
 };
 use crate::gui::style;
 use iced::{
@@ -280,6 +281,7 @@ pub struct PluginRow {
 pub enum RowMessage {
     InstallPressed(PluginRow),
     WebsitePressed(PluginRow),
+    DetailsFetched(Result<DetailPlugin, APIError>),
     NoEvent,
 }
 
@@ -303,30 +305,12 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) {
+    pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
-            RowMessage::InstallPressed(plugin) => {
-                let fetched_plugin = APIConnector::fetch_details(&plugin.title);
-                if Installer::download(&fetched_plugin).is_ok() {
-                    self.status = "Downloaded".to_string();
-                    if Installer::extract(&fetched_plugin).is_ok() {
-                        self.status = "Unpacked".to_string();
-                        if Installer::delete_cache_folder(&fetched_plugin).is_ok() {
-                            if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
-                                self.status = "Installed".to_string();
-                            } else {
-                                self.status = "Installation failed".to_string();
-                            }
-                        } else {
-                            self.status = "Installation failed".to_string();
-                        }
-                    } else {
-                        self.status = "Unpacking failed".to_string();
-                    }
-                } else {
-                    self.status = "Download failed".to_string();
-                }
-            }
+            RowMessage::InstallPressed(plugin) => Command::perform(
+                APIConnector::fetch_details(plugin.title),
+                RowMessage::DetailsFetched,
+            ),
 
             RowMessage::WebsitePressed(row) => {
                 webbrowser::open(&format!(
@@ -334,8 +318,31 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
+                Command::none()
             }
-            RowMessage::NoEvent => {}
+            RowMessage::DetailsFetched(fetched_plugin) => {
+                if fetched_plugin.is_ok() {
+                    let plugin = fetched_plugin.unwrap();
+                    if Installer::download(&plugin).is_ok() {
+                        self.status = "Downloaded".to_string();
+                        if Installer::extract(&plugin).is_ok() {
+                            self.status = "Unpacked".to_string();
+                            Installer::delete_cache_folder(&plugin);
+                            if Synchronizer::insert_plugin(&plugin).is_ok() {
+                                self.status = "Installed".to_string();
+                            } else {
+                                self.status = "Installation failed".to_string();
+                            }
+                        } else {
+                            self.status = "Unpacking failed".to_string();
+                        }
+                    } else {
+                        self.status = "Download failed".to_string();
+                    }
+                }
+                Command::none()
+            }
+            RowMessage::NoEvent => Command::none(),
         }
     }
 
