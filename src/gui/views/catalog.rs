@@ -64,10 +64,9 @@ impl Catalog {
                     state.plugins = filerted_plugins;
                     Command::none()
                 }
-                Message::Catalog(index, msg) => {
-                    state.plugins[index].update(msg);
-                    Command::none()
-                }
+                Message::Catalog(index, msg) => state.plugins[index]
+                    .update(msg)
+                    .map(move |msg| Message::Catalog(index, msg)),
                 Message::LoadPlugins => {
                     Command::perform(APIConnector::fetch_plugins(), Message::LoadedPlugins)
                 }
@@ -308,7 +307,7 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => Command::perform(
-                APIConnector::fetch_details(plugin.title),
+                APIConnector::fetch_details(plugin.id),
                 RowMessage::DetailsFetched,
             ),
 
@@ -321,6 +320,7 @@ impl PluginRow {
                 Command::none()
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
+                println!("{:?}", fetched_plugin);
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(&fetched_plugin).is_ok() {
                         self.status = "Downloaded".to_string();

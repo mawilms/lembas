@@ -354,14 +354,11 @@ impl PluginRow {
                 Event::Nothing
             }
             RowMessage::UpdatePressed(plugin) => {
-                Command::perform(
-                    APIConnector::fetch_details(plugin.title),
-                    RowMessage::Updating,
-                );
+                Command::perform(APIConnector::fetch_details(plugin.id), RowMessage::Updating);
                 Event::Nothing
             }
             RowMessage::DeletePressed(row) => {
-                Command::perform(APIConnector::fetch_details(row.title), RowMessage::Deleting);
+                Command::perform(APIConnector::fetch_details(row.id), RowMessage::Deleting);
                 Event::Nothing
             }
             RowMessage::WebsitePressed(id, title) => {
