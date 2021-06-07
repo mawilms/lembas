@@ -2,7 +2,7 @@ cargo-features = ["strip"]
 
 [package]
 name = "lembas"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Marius Wilms <info@mariuswilms.dev>"]
 edition = "2018"
 license = "GPL-3.0-only"
