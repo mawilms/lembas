@@ -322,9 +322,7 @@ impl PluginRow {
             RowMessage::DetailsFetched(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(&fetched_plugin).is_ok() {
-                        self.status = "Downloaded".to_string();
                         if Installer::extract(&fetched_plugin).is_ok() {
-                            self.status = "Unpacked".to_string();
                             Installer::delete_cache_folder(&fetched_plugin);
                             if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                 self.status = "Installed".to_string();
@@ -332,12 +330,12 @@ impl PluginRow {
                             } else {
                                 self.status = "Installation failed".to_string();
                             }
-                        } else {
-                            self.status = "Unpacking failed".to_string();
                         }
                     } else {
                         self.status = "Download failed".to_string();
                     }
+                } else {
+                    self.status = "Download failed".to_string();
                 }
                 Command::none()
             }

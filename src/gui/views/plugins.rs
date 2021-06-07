@@ -376,7 +376,6 @@ impl PluginRow {
             RowMessage::Updating(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(&fetched_plugin).is_ok() {
-                        self.status = "Downloaded".to_string();
                         if Installer::delete(
                             &fetched_plugin.base_plugin.folder,
                             &fetched_plugin.files,
@@ -384,7 +383,6 @@ impl PluginRow {
                         .is_ok()
                         {
                             if Installer::extract(&fetched_plugin).is_ok() {
-                                self.status = "Unpacked".to_string();
                                 Installer::delete_cache_folder(&fetched_plugin);
                                 if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                     self.status = "Updated".to_string();
@@ -406,7 +404,7 @@ impl PluginRow {
                         (Event::Nothing, Command::none())
                     }
                 } else {
-                    self.status = "Download failed".to_string();
+                    self.status = "Update failed".to_string();
                     (Event::Nothing, Command::none())
                 }
             }
