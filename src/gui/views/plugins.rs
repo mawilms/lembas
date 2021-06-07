@@ -387,10 +387,10 @@ impl PluginRow {
                                 self.status = "Unpacked".to_string();
                                 Installer::delete_cache_folder(&fetched_plugin);
                                 if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
-                                    self.status = "Installed".to_string();
+                                    self.status = "Updated".to_string();
                                     (Event::Synchronize, Command::none())
                                 } else {
-                                    self.status = "Install failed".to_string();
+                                    self.status = "Update failed".to_string();
                                     (Event::Nothing, Command::none())
                                 }
                             } else {
