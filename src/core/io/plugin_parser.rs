@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_reader;
 use std::{fs::File, path::Path};
 
@@ -37,6 +37,8 @@ pub struct PluginCompendiumContent {
     pub info_url: String,
     pub download_url: String,
     pub descriptors: Descriptors,
+    #[serde(default)]
+    pub dependencies: Dependencies,
 }
 
 pub struct PluginCompendium {
@@ -47,6 +49,7 @@ pub struct PluginCompendium {
     pub info_url: String,
     pub download_url: String,
     pub plugin_file_location: String,
+    pub dependencies: Vec<String>,
 }
 
 impl PluginCompendiumContent {
@@ -68,6 +71,7 @@ impl PluginCompendiumContent {
                 info_url: self.info_url.clone(),
                 download_url: self.download_url.clone(),
                 plugin_file_location: purged_descriptors[0].clone(),
+                dependencies: self.dependencies.dependency.clone(),
             }
         } else {
             PluginCompendium {
@@ -78,6 +82,7 @@ impl PluginCompendiumContent {
                 info_url: self.info_url.clone(),
                 download_url: self.download_url.clone(),
                 plugin_file_location: String::new(),
+                dependencies: self.dependencies.dependency.clone(),
             }
         }
     }
@@ -86,6 +91,12 @@ impl PluginCompendiumContent {
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 pub struct Descriptors {
     pub descriptor: Vec<String>,
+}
+
+#[derive(Default, Deserialize, Debug, PartialEq, Hash, Eq)]
+pub struct Dependencies {
+    #[serde(default)]
+    pub dependency: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
@@ -115,6 +126,7 @@ mod tests {
         );
         assert_eq!(plugin.name, "Waypoint");
         assert_eq!(plugin.plugin_file_location, "Lunarwater\\Waypoint.plugin");
+        assert_eq!(plugin.dependencies.len(), 0);
     }
 
     #[test]
@@ -124,6 +136,7 @@ mod tests {
         );
         assert_eq!(plugin.name, "LOTRO Compendium");
         assert_eq!(plugin.plugin_file_location, "Compendium\\Compendium.plugin");
+        assert_eq!(plugin.dependencies, vec!["640"]);
     }
 
     #[test]
