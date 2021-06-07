@@ -1,7 +1,8 @@
 use super::api_connector::APIOperations;
-use super::plugin_parser::Information;
+use super::plugin_parser::PluginCompendium;
 use crate::core::config::CONFIGURATION;
-use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
+use crate::core::io::{APIConnector, PluginParser};
+use crate::core::Installed as InstalledPlugin;
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;
@@ -20,16 +21,14 @@ impl Synchronizer {
     }
 
     pub async fn compare_local_state(
-        local_plugins: &HashMap<String, Information>,
+        local_plugins: &HashMap<String, PluginCompendium>,
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            if !db_plugins.contains_key(key) {
-                Self::delete_plugin(&element.name).unwrap();
-            } else if let Ok(retrieved_plugin) =
-                APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
-            {
-                if db_plugins.contains_key(key) {
+            if db_plugins.contains_key(key) {
+                if let Ok(retrieved_plugin) =
+                    APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
+                {
                     let local_plugin = db_plugins.get(key).unwrap();
                     if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
                         Self::update_plugin(
@@ -38,25 +37,47 @@ impl Synchronizer {
                         )
                         .unwrap();
                     }
-                } else {
-                    Self::insert_plugin(&InstalledPlugin::new(
-                        retrieved_plugin.base_plugin.plugin_id,
-                        &retrieved_plugin.base_plugin.title,
-                        &element.description,
-                        &retrieved_plugin.base_plugin.category,
-                        &element.version,
-                        &retrieved_plugin.base_plugin.latest_version,
-                        &retrieved_plugin.base_plugin.folder,
-                    ))
-                    .unwrap();
                 }
+            } else if let Ok(retrieved_plugin) =
+                APIConnector::fetch_details(local_plugins.get(key).unwrap().id).await
+            {
+                let mut description = String::new();
+                if !&local_plugins
+                    .get(key)
+                    .unwrap()
+                    .plugin_file_location
+                    .is_empty()
+                {
+                    let information = PluginParser::parse_file(
+                        Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
+                            .join(&local_plugins.get(key).unwrap().plugin_file_location),
+                    );
+                    description = information.description;
+                }
+
+                Self::insert_plugin(&InstalledPlugin::new(
+                    retrieved_plugin.base_plugin.plugin_id,
+                    &retrieved_plugin.base_plugin.title,
+                    &description,
+                    &retrieved_plugin.base_plugin.category,
+                    &element.version,
+                    &retrieved_plugin.base_plugin.latest_version,
+                    &retrieved_plugin.base_plugin.folder,
+                ))
+                .unwrap();
+            }
+        }
+
+        for (key, element) in db_plugins {
+            if !local_plugins.contains_key(key) {
+                Self::delete_plugin(&element.title).unwrap();
             }
         }
     }
 
-    pub fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
+    pub fn search_local() -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let glob = Glob::new("*.plugin")?.compile_matcher();
+        let glob = Glob::new("*.plugincompendium")?.compile_matcher();
         let plugins_dir = &CONFIGURATION.lock().unwrap().plugins_dir;
 
         for entry in read_dir(Path::new(plugins_dir))? {
@@ -69,7 +90,7 @@ impl Synchronizer {
                     if !path.to_str().unwrap().to_lowercase().contains("loader")
                         && glob.is_match(&path)
                     {
-                        let xml_content = PluginParser::parse_file(&path);
+                        let xml_content = PluginParser::parse_compendium_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
                     }
                 }
@@ -111,9 +132,10 @@ impl Synchronizer {
             if glob.is_match(&path) {
                 let xml_content = PluginParser::parse_file(&path);
                 let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
+
                 conn.execute(
-                "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
-                params![plugin.as_ref().plugin_id, plugin.as_ref().title, &xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                        "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
+                        params![plugin.as_ref().plugin_id, plugin.as_ref().title,xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
             }
         }
 
