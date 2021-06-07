@@ -36,6 +36,7 @@ pub struct PluginCompendiumContent {
     pub author: String,
     pub info_url: String,
     pub download_url: String,
+    #[serde(default)]
     pub descriptors: Descriptors,
     #[serde(default)]
     pub dependencies: Dependencies,
@@ -88,8 +89,9 @@ impl PluginCompendiumContent {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
+#[derive(Default, Deserialize, Debug, PartialEq, Hash, Eq)]
 pub struct Descriptors {
+    #[serde(default)]
     pub descriptor: Vec<String>,
 }
 
