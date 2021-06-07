@@ -6,6 +6,16 @@ use std::{fs::File, path::Path};
 pub struct PluginParser {}
 
 impl PluginParser {
+    pub fn parse_compendium_file<P>(path: P) -> PluginCompendium
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::open(path).unwrap();
+
+        let content: PluginCompendium = from_reader(file).unwrap();
+        content
+    }
+
     pub fn parse_file<P>(path: P) -> Information
     where
         P: AsRef<Path>,
@@ -15,6 +25,23 @@ impl PluginParser {
         let content: Plugin = from_reader(file).unwrap();
         content.information
     }
+}
+
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
+#[serde(rename_all = "PascalCase")]
+pub struct PluginCompendium {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    pub info_url: String,
+    pub download_url: String,
+    pub descriptors: Descriptors,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
+pub struct Descriptors {
+    pub descriptor: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
@@ -35,10 +62,19 @@ pub struct Information {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::PluginParser;
+    use crate::core::*;
 
     #[test]
-    fn it_works() {
+    fn compendium_parsing() {
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/Waypoint.plugincompendium",
+        );
+        assert_eq!(plugin.name, "Waypoint");
+        assert_eq!(plugin.descriptors.descriptor, "Lunarwater\\Waypoint.plugin");
+    }
+
+    #[test]
+    fn plugin_parsing() {
         let plugin = PluginParser::parse_file("tests/samples/xml_files/PreciseCoords.plugin");
         assert_eq!(plugin.name, "Precise Coords");
     }

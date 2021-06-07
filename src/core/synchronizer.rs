@@ -1,5 +1,5 @@
 use super::api_connector::APIOperations;
-use super::plugin_parser::Information;
+use super::plugin_parser::PluginCompendium;
 use crate::core::config::CONFIGURATION;
 use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
 use globset::Glob;
@@ -20,7 +20,7 @@ impl Synchronizer {
     }
 
     pub async fn compare_local_state(
-        local_plugins: &HashMap<String, Information>,
+        local_plugins: &HashMap<String, PluginCompendium>,
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
@@ -42,7 +42,7 @@ impl Synchronizer {
                     Self::insert_plugin(&InstalledPlugin::new(
                         retrieved_plugin.base_plugin.plugin_id,
                         &retrieved_plugin.base_plugin.title,
-                        &element.description,
+                        "", // TODO: Fix wenn plugincompendium parsing fertig
                         &retrieved_plugin.base_plugin.category,
                         &element.version,
                         &retrieved_plugin.base_plugin.latest_version,
@@ -54,9 +54,9 @@ impl Synchronizer {
         }
     }
 
-    pub fn search_local() -> Result<HashMap<String, Information>, Box<dyn Error>> {
+    pub fn search_local() -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let glob = Glob::new("*.plugin")?.compile_matcher();
+        let glob = Glob::new("*.plugincompendium")?.compile_matcher();
         let plugins_dir = &CONFIGURATION.lock().unwrap().plugins_dir;
 
         for entry in read_dir(Path::new(plugins_dir))? {
@@ -69,7 +69,7 @@ impl Synchronizer {
                     if !path.to_str().unwrap().to_lowercase().contains("loader")
                         && glob.is_match(&path)
                     {
-                        let xml_content = PluginParser::parse_file(&path);
+                        let xml_content = PluginParser::parse_compendium_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
                     }
                 }
@@ -109,11 +109,19 @@ impl Synchronizer {
         for file in directory? {
             let path = file?.path();
             if glob.is_match(&path) {
-                let xml_content = PluginParser::parse_file(&path);
+                let xml_content = PluginParser::parse_compendium_file(&path);
                 let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
-                conn.execute(
-                "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
-                params![plugin.as_ref().plugin_id, plugin.as_ref().title, &xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                if xml_content.descriptors.descriptor.is_empty() {
+                    conn.execute(
+                        "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
+                        params![plugin.as_ref().plugin_id, plugin.as_ref().title,"", plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                } else {
+                    let information =
+                        PluginParser::parse_file(Path::new(&xml_content.descriptors.descriptor));
+                    conn.execute(
+                            "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
+                            params![plugin.as_ref().plugin_id, plugin.as_ref().title, information.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                }
             }
         }
 
