@@ -175,7 +175,7 @@ impl Catalog {
                 let search_plugins = TextInput::new(
                     input,
                     "Search plugins...",
-                    &input_value,
+                    input_value,
                     Message::CatalogInputChanged,
                 )
                 .padding(5);
@@ -321,14 +321,13 @@ impl PluginRow {
                 Command::none()
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
-                if fetched_plugin.is_ok() {
-                    let plugin = fetched_plugin.unwrap();
-                    if Installer::download(&plugin).is_ok() {
+                if let Ok(fetched_plugin) = fetched_plugin {
+                    if Installer::download(&fetched_plugin).is_ok() {
                         self.status = "Downloaded".to_string();
-                        if Installer::extract(&plugin).is_ok() {
+                        if Installer::extract(&fetched_plugin).is_ok() {
                             self.status = "Unpacked".to_string();
-                            Installer::delete_cache_folder(&plugin);
-                            if Synchronizer::insert_plugin(&plugin).is_ok() {
+                            Installer::delete_cache_folder(&fetched_plugin);
+                            if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                 self.status = "Installed".to_string();
                             } else {
                                 self.status = "Installation failed".to_string();
