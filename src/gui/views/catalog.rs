@@ -320,7 +320,6 @@ impl PluginRow {
                 Command::none()
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
-                println!("{:?}", fetched_plugin);
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(&fetched_plugin).is_ok() {
                         self.status = "Downloaded".to_string();
@@ -329,7 +328,7 @@ impl PluginRow {
                             Installer::delete_cache_folder(&fetched_plugin);
                             if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                 self.status = "Installed".to_string();
-                                self.latest_version = fetched_plugin.base_plugin.latest_version;
+                                self.current_version = fetched_plugin.base_plugin.latest_version;
                             } else {
                                 self.status = "Installation failed".to_string();
                             }
