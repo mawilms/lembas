@@ -1,7 +1,8 @@
 use super::api_connector::APIOperations;
 use super::plugin_parser::PluginCompendium;
 use crate::core::config::CONFIGURATION;
-use crate::core::{APIConnector, Installed as InstalledPlugin, PluginParser};
+use crate::core::io::{APIConnector, PluginParser};
+use crate::core::Installed as InstalledPlugin;
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;

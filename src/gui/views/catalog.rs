@@ -1,8 +1,8 @@
-use crate::core::api_connector::APIOperations;
-use crate::core::{
-    api_connector::APIError, APIConnector, Base as BasePlugin, Installer, Plugin as DetailPlugin,
-    Synchronizer,
+use crate::core::io::{
+    api_connector::{APIError, APIOperations},
+    APIConnector, Synchronizer,
 };
+use crate::core::{Base as BasePlugin, Installer, Plugin as DetailPlugin};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,

@@ -62,7 +62,7 @@ pub struct Information {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::*;
+    use crate::core::io::*;
 
     #[test]
     fn compendium_parsing() {

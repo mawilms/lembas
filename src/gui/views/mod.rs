@@ -4,7 +4,7 @@ pub mod configuration;
 pub mod plugins;
 
 use super::views::plugins::PluginMessage;
-use crate::core::Synchronizer;
+use crate::core::io::Synchronizer;
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
