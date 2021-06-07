@@ -12,8 +12,8 @@ impl PluginParser {
     {
         let file = File::open(path).unwrap();
 
-        let content: PluginCompendium = from_reader(file).unwrap();
-        content
+        let content: PluginCompendiumContent = from_reader(file).unwrap();
+        content.purge_descriptors()
     }
 
     pub fn parse_file<P>(path: P) -> Information
@@ -29,7 +29,7 @@ impl PluginParser {
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 #[serde(rename_all = "PascalCase")]
-pub struct PluginCompendium {
+pub struct PluginCompendiumContent {
     pub id: String,
     pub name: String,
     pub version: String,
@@ -39,9 +39,53 @@ pub struct PluginCompendium {
     pub descriptors: Descriptors,
 }
 
+pub struct PluginCompendium {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    pub info_url: String,
+    pub download_url: String,
+    pub plugin_file_location: String,
+}
+
+impl PluginCompendiumContent {
+    pub fn purge_descriptors(&self) -> PluginCompendium {
+        let purged_descriptors: Vec<String> = self
+            .descriptors
+            .descriptor
+            .clone()
+            .into_iter()
+            .filter(|element| !element.contains("loader"))
+            .collect();
+
+        if !purged_descriptors.is_empty() && purged_descriptors.len() < 2 {
+            PluginCompendium {
+                id: self.id.clone(),
+                name: self.name.clone(),
+                version: self.version.clone(),
+                author: self.author.clone(),
+                info_url: self.info_url.clone(),
+                download_url: self.download_url.clone(),
+                plugin_file_location: purged_descriptors[0].clone(),
+            }
+        } else {
+            PluginCompendium {
+                id: self.id.clone(),
+                name: self.name.clone(),
+                version: self.version.clone(),
+                author: self.author.clone(),
+                info_url: self.info_url.clone(),
+                download_url: self.download_url.clone(),
+                plugin_file_location: String::new(),
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 pub struct Descriptors {
-    pub descriptor: String,
+    pub descriptor: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
@@ -62,15 +106,24 @@ pub struct Information {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::io::*;
+    use crate::core::io::PluginParser;
 
     #[test]
-    fn compendium_parsing() {
+    fn compendium_parsing_single_descriptor() {
         let plugin = PluginParser::parse_compendium_file(
             "tests/samples/xml_files/Waypoint.plugincompendium",
         );
         assert_eq!(plugin.name, "Waypoint");
-        assert_eq!(plugin.descriptors.descriptor, "Lunarwater\\Waypoint.plugin");
+        assert_eq!(plugin.plugin_file_location, "Lunarwater\\Waypoint.plugin");
+    }
+
+    #[test]
+    fn compendium_parsing_multiple_descriptor() {
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/Compendium.plugincompendium",
+        );
+        assert_eq!(plugin.name, "LOTRO Compendium");
+        assert_eq!(plugin.plugin_file_location, "Compendium\\Compendium.plugin");
     }
 
     #[test]
