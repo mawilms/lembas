@@ -128,8 +128,7 @@ impl Application for Lembas {
                     Command::none()
                 }
                 Message::PluginAction(msg) => {
-                    state.plugins_view.update(msg);
-                    Command::none()
+                    state.plugins_view.update(msg).map(Message::PluginAction)
                 }
                 Message::CatalogAction(msg) => {
                     state.catalog_view.update(msg).map(Message::CatalogAction)
