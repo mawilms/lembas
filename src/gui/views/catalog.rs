@@ -329,6 +329,7 @@ impl PluginRow {
                             Installer::delete_cache_folder(&fetched_plugin);
                             if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
                                 self.status = "Installed".to_string();
+                                self.latest_version = fetched_plugin.base_plugin.latest_version;
                             } else {
                                 self.status = "Installation failed".to_string();
                             }
