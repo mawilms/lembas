@@ -25,12 +25,10 @@ impl Synchronizer {
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            if !db_plugins.contains_key(key) {
-                Self::delete_plugin(&element.name).unwrap();
-            } else if let Ok(retrieved_plugin) =
-                APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
-            {
-                if db_plugins.contains_key(key) {
+            if db_plugins.contains_key(key) {
+                if let Ok(retrieved_plugin) =
+                    APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
+                {
                     let local_plugin = db_plugins.get(key).unwrap();
                     if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
                         Self::update_plugin(
@@ -39,18 +37,40 @@ impl Synchronizer {
                         )
                         .unwrap();
                     }
-                } else {
-                    Self::insert_plugin(&InstalledPlugin::new(
-                        retrieved_plugin.base_plugin.plugin_id,
-                        &retrieved_plugin.base_plugin.title,
-                        "", // TODO: Fix wenn plugincompendium parsing fertig
-                        &retrieved_plugin.base_plugin.category,
-                        &element.version,
-                        &retrieved_plugin.base_plugin.latest_version,
-                        &retrieved_plugin.base_plugin.folder,
-                    ))
-                    .unwrap();
                 }
+            } else if let Ok(retrieved_plugin) =
+                APIConnector::fetch_details(local_plugins.get(key).unwrap().id).await
+            {
+                let mut description = String::new();
+                if !&local_plugins
+                    .get(key)
+                    .unwrap()
+                    .plugin_file_location
+                    .is_empty()
+                {
+                    let information = PluginParser::parse_file(
+                        Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
+                            .join(&local_plugins.get(key).unwrap().plugin_file_location),
+                    );
+                    description = information.description;
+                }
+
+                Self::insert_plugin(&InstalledPlugin::new(
+                    retrieved_plugin.base_plugin.plugin_id,
+                    &retrieved_plugin.base_plugin.title,
+                    &description,
+                    &retrieved_plugin.base_plugin.category,
+                    &element.version,
+                    &retrieved_plugin.base_plugin.latest_version,
+                    &retrieved_plugin.base_plugin.folder,
+                ))
+                .unwrap();
+            }
+        }
+
+        for (key, element) in db_plugins {
+            if !local_plugins.contains_key(key) {
+                Self::delete_plugin(&element.title).unwrap();
             }
         }
     }
@@ -102,7 +122,7 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(plugin: impl AsRef<InstalledPlugin>) -> Result<(), Box<dyn Error>> {
-        let glob = Glob::new("*.plugin")?.compile_matcher();
+        let glob = Glob::new("*.plugincompendium")?.compile_matcher();
         let directory = read_dir(
             Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(&plugin.as_ref().folder),
         );
@@ -117,8 +137,10 @@ impl Synchronizer {
                         "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
                         params![plugin.as_ref().plugin_id, plugin.as_ref().title,"", plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
                 } else {
-                    let information =
-                        PluginParser::parse_file(Path::new(&xml_content.plugin_file_location));
+                    let information = PluginParser::parse_file(
+                        Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
+                            .join(&xml_content.plugin_file_location),
+                    );
                     conn.execute(
                             "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
                             params![plugin.as_ref().plugin_id, plugin.as_ref().title, information.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_xml_rs::from_reader;
 use std::{fs::File, path::Path};
 
@@ -30,7 +30,7 @@ impl PluginParser {
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 #[serde(rename_all = "PascalCase")]
 pub struct PluginCompendiumContent {
-    pub id: String,
+    pub id: i32,
     pub name: String,
     pub version: String,
     pub author: String,
@@ -42,8 +42,9 @@ pub struct PluginCompendiumContent {
     pub dependencies: Dependencies,
 }
 
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 pub struct PluginCompendium {
-    pub id: String,
+    pub id: i32,
     pub name: String,
     pub version: String,
     pub author: String,
@@ -65,7 +66,7 @@ impl PluginCompendiumContent {
 
         if !purged_descriptors.is_empty() && purged_descriptors.len() < 2 {
             PluginCompendium {
-                id: self.id.clone(),
+                id: self.id,
                 name: self.name.clone(),
                 version: self.version.clone(),
                 author: self.author.clone(),
@@ -76,7 +77,7 @@ impl PluginCompendiumContent {
             }
         } else {
             PluginCompendium {
-                id: self.id.clone(),
+                id: self.id,
                 name: self.name.clone(),
                 version: self.version.clone(),
                 author: self.author.clone(),
