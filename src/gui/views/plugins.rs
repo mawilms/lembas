@@ -79,7 +79,8 @@ impl Plugins {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
-                    if let Event::Synchronize = state.plugins[index].update(msg) {
+                    let update_event = state.plugins[index].update(msg);
+                    if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
                             Synchronizer::get_plugins().values().cloned().collect();
@@ -98,7 +99,9 @@ impl Plugins {
                         }
                         state.plugins = plugins;
                     }
-                    Command::none()
+                    update_event
+                        .1
+                        .map(move |msg| PluginMessage::Plugin(index, msg))
                 }
 
                 PluginMessage::RefreshPressed => {
@@ -127,6 +130,7 @@ impl Plugins {
                             &plugin.latest_version,
                             &plugin.folder,
                         ));
+                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
                     state.plugins = plugins;
                     Command::none()
@@ -347,35 +351,31 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) -> Event {
+    pub fn update(&mut self, message: RowMessage) -> (Event, Command<RowMessage>) {
         match message {
             RowMessage::ToggleView => {
                 self.opened = !self.opened;
-                Event::Nothing
+                (Event::Nothing, Command::none())
             }
-            RowMessage::UpdatePressed(plugin) => {
-                Command::perform(
-                    APIConnector::fetch_details(plugin.title),
-                    RowMessage::Updating,
-                );
-                Event::Nothing
-            }
-            RowMessage::DeletePressed(row) => {
-                Command::perform(APIConnector::fetch_details(row.title), RowMessage::Deleting);
-                Event::Nothing
-            }
+            RowMessage::UpdatePressed(plugin) => (
+                Event::Nothing,
+                Command::perform(APIConnector::fetch_details(plugin.id), RowMessage::Updating),
+            ),
+            RowMessage::DeletePressed(row) => (
+                Event::Nothing,
+                Command::perform(APIConnector::fetch_details(row.id), RowMessage::Deleting),
+            ),
             RowMessage::WebsitePressed(id, title) => {
                 webbrowser::open(&format!(
                     "https://www.lotrointerface.com/downloads/info{}-{}.html",
                     id, title,
                 ))
                 .unwrap();
-                Event::Nothing
+                (Event::Nothing, Command::none())
             }
             RowMessage::Updating(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(&fetched_plugin).is_ok() {
-                        self.status = "Downloaded".to_string();
                         if Installer::delete(
                             &fetched_plugin.base_plugin.folder,
                             &fetched_plugin.files,
@@ -383,30 +383,29 @@ impl PluginRow {
                         .is_ok()
                         {
                             if Installer::extract(&fetched_plugin).is_ok() {
-                                self.status = "Unpacked".to_string();
                                 Installer::delete_cache_folder(&fetched_plugin);
                                 if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
-                                    self.status = "Installed".to_string();
-                                    Event::Synchronize
+                                    self.status = "Updated".to_string();
+                                    (Event::Synchronize, Command::none())
                                 } else {
-                                    self.status = "Install failed".to_string();
-                                    Event::Nothing
+                                    self.status = "Update failed".to_string();
+                                    (Event::Nothing, Command::none())
                                 }
                             } else {
                                 self.status = "Unpacking failed".to_string();
-                                Event::Nothing
+                                (Event::Nothing, Command::none())
                             }
                         } else {
                             self.status = "Installation failed".to_string();
-                            Event::Nothing
+                            (Event::Nothing, Command::none())
                         }
                     } else {
                         self.status = "Download failed".to_string();
-                        Event::Nothing
+                        (Event::Nothing, Command::none())
                     }
                 } else {
-                    self.status = "Download failed".to_string();
-                    Event::Nothing
+                    self.status = "Update failed".to_string();
+                    (Event::Nothing, Command::none())
                 }
             }
             RowMessage::Deleting(fetched_plugin) => {
@@ -416,18 +415,18 @@ impl PluginRow {
                     {
                         if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
                             self.status = "Deleted".to_string();
-                            Event::Synchronize
+                            (Event::Synchronize, Command::none())
                         } else {
                             self.status = "Delete failed".to_string();
-                            Event::Nothing
+                            (Event::Nothing, Command::none())
                         }
                     } else {
                         self.status = "Delete failed".to_string();
-                        Event::Nothing
+                        (Event::Nothing, Command::none())
                     }
                 } else {
                     self.status = "Delete failed".to_string();
-                    Event::Nothing
+                    (Event::Nothing, Command::none())
                 }
             }
         }

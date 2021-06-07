@@ -24,7 +24,11 @@ impl Synchronizer {
         db_plugins: &HashMap<String, InstalledPlugin>,
     ) {
         for (key, element) in local_plugins {
-            if let Ok(retrieved_plugin) = APIConnector::fetch_details(element.name.clone()).await {
+            if !db_plugins.contains_key(key) {
+                Self::delete_plugin(&element.name).unwrap();
+            } else if let Ok(retrieved_plugin) =
+                APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
+            {
                 if db_plugins.contains_key(key) {
                     let local_plugin = db_plugins.get(key).unwrap();
                     if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
@@ -46,12 +50,6 @@ impl Synchronizer {
                     ))
                     .unwrap();
                 }
-            }
-        }
-
-        for (key, element) in db_plugins {
-            if !local_plugins.contains_key(key) {
-                Self::delete_plugin(&element.title).unwrap();
             }
         }
     }

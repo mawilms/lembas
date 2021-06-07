@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub trait APIOperations {
     async fn fetch_plugins() -> Result<HashMap<String, BasePlugin>, APIError>;
 
-    async fn fetch_details(title: String) -> Result<DetailsPlugin, APIError>;
+    async fn fetch_details(plugin_id: i32) -> Result<DetailsPlugin, APIError>;
 }
 
 pub struct APIConnector {}
@@ -24,10 +24,10 @@ impl APIOperations for APIConnector {
         }
     }
 
-    async fn fetch_details(title: String) -> Result<DetailsPlugin, APIError> {
+    async fn fetch_details(plugin_id: i32) -> Result<DetailsPlugin, APIError> {
         match reqwest::get(format!(
             "https://lembas-backend.herokuapp.com/plugins/{}",
-            title.to_lowercase()
+            plugin_id
         ))
         .await
         {

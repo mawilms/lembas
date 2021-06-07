@@ -156,7 +156,7 @@ impl Installer {
             .expect("Couldn't find your home directory")
             .join("Documents")
             .join("The Lord of the Rings Online")
-            .join("plugins_backup");
+            .join("PluginsBackup");
 
         if !backup_path.exists() {
             create_dir(&backup_path).unwrap();

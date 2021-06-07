@@ -6,7 +6,8 @@
 
 ![Github testing](https://github.com/mawilms/lembas/actions/workflows/testing.yml/badge.svg)
 ![GitHub issues](https://img.shields.io/github/issues/mawilms/lembas)
-[![GitHub license](https://img.shields.io/github/license/mawilms/lembas)](https://github.com/mawilms/lembas/blob/main/LICENSE)
+![GitHub downloads](https://img.shields.io/github/downloads/mawilms/lembas/total)
+![GitHub Latest version](https://img.shields.io/github/v/release/mawilms/lembas?include_prereleases)
 
 </div>
 
