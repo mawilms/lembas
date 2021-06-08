@@ -7,6 +7,7 @@ use globset::Glob;
 use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
+use std::path::MAIN_SEPARATOR;
 
 pub struct Synchronizer {}
 
@@ -50,7 +51,7 @@ impl Synchronizer {
                 {
                     let information = PluginParser::parse_file(
                         Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
-                            .join(&local_plugins.get(key).unwrap().plugin_file_location),
+                            .join(&local_plugins.get(key).unwrap().plugin_file_location.replace("\\", &MAIN_SEPARATOR.to_string())),
                     );
                     description = information.description;
                 }

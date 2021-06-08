@@ -172,7 +172,6 @@ impl Plugins {
                         }
                         state.plugins = plugins;
                     }
-
                     Command::none()
                 }
             },
