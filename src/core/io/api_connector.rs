@@ -67,3 +67,22 @@ struct JSONResponse {
 pub enum APIError {
     FetchError,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::core::io::{api_connector::APIOperations, APIConnector};
+
+    #[tokio::test]
+    async fn fetch_plugins() {
+        let result = APIConnector::fetch_plugins().await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn fetch_details() {
+        let result = APIConnector::fetch_details(365).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().base_plugin.title, "PetCarousel");
+    }
+}
