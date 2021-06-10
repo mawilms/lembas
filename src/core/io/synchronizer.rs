@@ -203,3 +203,14 @@ impl Synchronizer {
         plugins
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use crate::core::Config;
+
+//     #[test]
+//     fn test_bla() {
+//         let mut mock = MockConfig::new();
+//         mock.expect_
+//     }
+// }

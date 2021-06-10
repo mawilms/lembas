@@ -1,5 +1,6 @@
 use dirs::{cache_dir, data_dir, home_dir};
 use lazy_static::lazy_static;
+use mockall::automock;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Mutex;
@@ -7,10 +8,6 @@ use std::{
     fs::{self, write, File},
     io::Read,
 };
-
-trait FileConfigurations {
-    fn new() -> Self;
-}
 
 lazy_static! {
     pub static ref CONFIGURATION: Mutex<Config> = Mutex::new(Config::new());
@@ -25,7 +22,8 @@ pub struct Config {
     pub application_settings: SettingsFile,
 }
 
-impl FileConfigurations for Config {
+#[automock]
+impl Config {
     fn new() -> Self {
         let plugins_path = home_dir()
             .expect("Couldn't find your home directory")
@@ -68,9 +66,7 @@ impl FileConfigurations for Config {
             application_settings: initial_settings,
         }
     }
-}
 
-impl Config {
     pub fn save_changes(&self) {
         let settings_file_path = Path::new(&self.settings).join("settings.json");
 

@@ -179,3 +179,8 @@ impl Installer {
         .unwrap();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::core::Config;
+}
