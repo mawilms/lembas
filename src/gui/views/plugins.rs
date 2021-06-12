@@ -1,6 +1,6 @@
 use crate::core::io::api_connector::{APIError, APIOperations};
 use crate::core::io::{APIConnector, Synchronizer};
-use crate::core::{Installed as InstalledPlugin, Installer, Plugin as DetailPlugin};
+use crate::core::{Config, Installed as InstalledPlugin, Installer, Plugin as DetailPlugin};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -13,8 +13,8 @@ pub enum Plugins {
     Loaded(State),
 }
 
-impl Default for Plugins {
-    fn default() -> Self {
+impl Plugins {
+    pub fn new(config: Config) -> Self {
         let mut installed_plugins: Vec<InstalledPlugin> =
             Synchronizer::get_plugins().values().cloned().collect();
         installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
@@ -32,6 +32,7 @@ impl Default for Plugins {
         }
 
         Self::Loaded(State {
+            config,
             base_plugins: plugins.clone(),
             plugins,
             ..State::default()
@@ -41,6 +42,7 @@ impl Default for Plugins {
 
 #[derive(Default, Debug, Clone)]
 pub struct State {
+    config: Config,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
     pub plugins: Vec<PluginRow>,
@@ -181,6 +183,7 @@ impl Plugins {
     pub fn view(&mut self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
+                config,
                 plugin_scrollable_state,
                 input_value,
                 plugins,

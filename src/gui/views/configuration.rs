@@ -1,5 +1,4 @@
-use crate::core::config::CONFIGURATION;
-use crate::gui::style;
+use crate::{core::Config, gui::style};
 use iced::{Checkbox, Column, Container, Element, Length, Text};
 
 #[derive(Debug, Clone)]
@@ -8,15 +7,11 @@ pub struct Configuration {
     backup: bool,
 }
 
-impl Default for Configuration {
-    fn default() -> Self {
+impl Configuration {
+    pub fn new(config: Config) -> Self {
         Self {
             description: "Enable Backup".to_string(),
-            backup: CONFIGURATION
-                .lock()
-                .unwrap()
-                .application_settings
-                .backup_enabled,
+            backup: config.application_settings.backup_enabled,
         }
     }
 }

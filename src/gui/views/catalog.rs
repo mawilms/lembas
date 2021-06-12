@@ -1,6 +1,9 @@
-use crate::core::io::{
-    api_connector::{APIError, APIOperations},
-    APIConnector, Synchronizer,
+use crate::core::{
+    io::{
+        api_connector::{APIError, APIOperations},
+        APIConnector, Synchronizer,
+    },
+    Config,
 };
 use crate::core::{Base as BasePlugin, Installer, Plugin as DetailPlugin};
 use crate::gui::style;
@@ -16,14 +19,18 @@ pub enum Catalog {
     NoInternet(State),
 }
 
-impl Default for Catalog {
-    fn default() -> Self {
-        Self::Loaded(State { ..State::default() })
+impl Catalog {
+    pub fn new(config: Config) -> Self {
+        Self::Loaded(State {
+            config,
+            ..State::default()
+        })
     }
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct State {
+    config: Config,
     input: text_input::State,
     plugin_scrollable_state: scrollable::State,
     retry_btn_state: button::State,
@@ -164,6 +171,7 @@ impl Catalog {
     pub fn view(&mut self) -> Element<Message> {
         match self {
             Catalog::Loaded(State {
+                config,
                 input,
                 plugin_scrollable_state,
                 plugins,
@@ -229,6 +237,7 @@ impl Catalog {
                     .into()
             }
             Catalog::NoInternet(State {
+                config,
                 retry_btn_state,
                 input: _,
                 plugin_scrollable_state: _,
