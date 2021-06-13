@@ -17,27 +17,28 @@ pub struct Installer {
 }
 
 impl Installer {
-    pub fn new(config: Config) -> Self {
-        Self { config }
-    }
-
-    pub fn download(plugin: &Plugin) -> Result<(), Box<dyn Error>> {
-        if config.application_settings.backup_enabled {
-            Self::back_plugin_folder(config.plugins_dir);
+    pub fn download(
+        plugin: &Plugin,
+        plugins_dir: &str,
+        cache_dir: &str,
+        backup_enabled: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        if backup_enabled {
+            Self::back_plugin_folder(plugins_dir);
         }
         let response = reqwest::blocking::get(&format!(
             "https://www.lotrointerface.com/downloads/download{}-{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ))?;
 
-        let tmp_file_path = Path::new(&config.cache_dir).join(&format!(
+        let tmp_file_path = Path::new(cache_dir).join(&format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
         ));
 
         fs::create_dir(&tmp_file_path)?;
 
-        let cache_path = Path::new(&config.cache_dir)
+        let cache_path = Path::new(cache_dir)
             .join(&format!(
                 "{}_{}",
                 &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
@@ -150,7 +151,7 @@ impl Installer {
         fs::remove_dir_all(tmp_file_path).unwrap();
     }
 
-    fn back_plugin_folder(plugins_dir: String) {
+    fn back_plugin_folder(plugins_dir: &str) {
         let backup_path = home_dir()
             .expect("Couldn't find your home directory")
             .join("Documents")

@@ -274,9 +274,6 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        Synchronizer::create_plugins_db();
-        Synchronizer::synchronize_application().await.unwrap();
-
         let paths = Paths {
             plugins: home_dir()
                 .expect("Couldn't find your home directory")
@@ -287,6 +284,12 @@ impl Lembas {
             cache: cache_dir().unwrap().join("lembas"),
         };
         let config = Config::new(paths);
+
+        Synchronizer::create_plugins_db(&config.db_file);
+        Synchronizer::synchronize_application(&config.plugins_dir, &config.db_file)
+            .await
+            .unwrap();
+
         State::new(config)
     }
 }
