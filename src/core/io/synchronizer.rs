@@ -15,24 +15,24 @@ pub struct Synchronizer {
 }
 
 impl Synchronizer {
-    pub fn new(config: Config) -> Self {
-        Self { config }
-    }
+    pub async fn synchronize_application(
+        plugins_dir: &str,
+        db_file: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
+        let local_db_plugins = Synchronizer::get_plugins(db_file);
 
-    pub async fn synchronize_application(&self) -> Result<(), Box<dyn Error>> {
-        let local_plugins = self.search_local().unwrap();
-        let local_db_plugins = self.get_plugins();
-
-        self.compare_local_state(&local_plugins, &local_db_plugins)
+        Synchronizer::compare_local_state(&local_plugins, &local_db_plugins, plugins_dir, db_file)
             .await;
 
         Ok(())
     }
 
     pub async fn compare_local_state(
-        &self,
         local_plugins: &HashMap<String, PluginCompendium>,
         db_plugins: &HashMap<String, InstalledPlugin>,
+        plugins_dir: &str,
+        db_file: &str,
     ) {
         for (key, element) in local_plugins {
             if db_plugins.contains_key(key) {
@@ -41,9 +41,10 @@ impl Synchronizer {
                 {
                     let local_plugin = db_plugins.get(key).unwrap();
                     if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
-                        self.update_plugin(
+                        Synchronizer::update_plugin(
                             &local_plugin.title,
                             &retrieved_plugin.base_plugin.latest_version,
+                            db_file,
                         )
                         .unwrap();
                     }
@@ -59,7 +60,7 @@ impl Synchronizer {
                     .is_empty()
                 {
                     let information = PluginParser::parse_file(
-                        Path::new(&self.config.plugins_dir).join(
+                        Path::new(&plugins_dir).join(
                             &local_plugins
                                 .get(key)
                                 .unwrap()
@@ -70,32 +71,38 @@ impl Synchronizer {
                     description = information.description;
                 }
 
-                self.insert_plugin(&InstalledPlugin::new(
-                    retrieved_plugin.base_plugin.plugin_id,
-                    &retrieved_plugin.base_plugin.title,
-                    &description,
-                    &retrieved_plugin.base_plugin.category,
-                    &element.version,
-                    &retrieved_plugin.base_plugin.latest_version,
-                    &retrieved_plugin.base_plugin.folder,
-                ))
+                Synchronizer::insert_plugin(
+                    &InstalledPlugin::new(
+                        retrieved_plugin.base_plugin.plugin_id,
+                        &retrieved_plugin.base_plugin.title,
+                        &description,
+                        &retrieved_plugin.base_plugin.category,
+                        &element.version,
+                        &retrieved_plugin.base_plugin.latest_version,
+                        &retrieved_plugin.base_plugin.folder,
+                    ),
+                    plugins_dir,
+                    db_file,
+                )
                 .unwrap();
             }
         }
 
         for (key, element) in db_plugins {
             if !local_plugins.contains_key(key) {
-                self.delete_plugin(&element.title).unwrap();
+                Synchronizer::delete_plugin(&element.title, db_file).unwrap();
             }
         }
     }
 
-    pub fn search_local(&self) -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
+    pub fn search_local(
+        plugins_dir: &str,
+    ) -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugincompendium")?.compile_matcher();
 
-        for entry in read_dir(Path::new(&self.config.plugins_dir))? {
-            let direcorty_path = Path::new(&self.config.plugins_dir).join(entry.unwrap().path());
+        for entry in read_dir(Path::new(&plugins_dir))? {
+            let direcorty_path = Path::new(&plugins_dir).join(entry.unwrap().path());
             if metadata(&direcorty_path).unwrap().is_dir() {
                 let directory = read_dir(&direcorty_path.to_str().unwrap());
 
@@ -115,8 +122,8 @@ impl Synchronizer {
     }
 
     // Creates the local database if it doesn't exist.
-    pub fn create_plugins_db(&self) {
-        let conn = Connection::open(&self.config.db_file).unwrap();
+    pub fn create_plugins_db(db_file: &str) {
+        let conn = Connection::open(db_file).unwrap();
         conn.execute(
             "
                 CREATE TABLE IF NOT EXISTS plugin (
@@ -135,15 +142,19 @@ impl Synchronizer {
         .unwrap();
     }
 
-    pub fn insert_plugin(&self, plugin: impl AsRef<InstalledPlugin>) -> Result<(), Box<dyn Error>> {
+    pub fn insert_plugin(
+        plugin: impl AsRef<InstalledPlugin>,
+        plugins_dir: &str,
+        db_file: &str,
+    ) -> Result<(), Box<dyn Error>> {
         let glob = Glob::new("*.plugin")?.compile_matcher();
-        let directory = read_dir(Path::new(&self.config.plugins_dir).join(&plugin.as_ref().folder));
+        let directory = read_dir(Path::new(plugins_dir).join(&plugin.as_ref().folder));
 
         for file in directory? {
             let path = file?.path();
             if glob.is_match(&path) {
                 let xml_content = PluginParser::parse_file(&path);
-                let conn = Connection::open(&self.config.db_file)?;
+                let conn = Connection::open(db_file)?;
 
                 conn.execute(
                         "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
@@ -154,8 +165,8 @@ impl Synchronizer {
         Ok(())
     }
 
-    fn update_plugin(&self, title: &str, version: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&self.config.db_file)?;
+    fn update_plugin(title: &str, version: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
+        let conn = Connection::open(db_file)?;
         conn.execute(
             "UPDATE plugin SET latest_version=?2 WHERE title=?1;",
             params![title, version],
@@ -163,8 +174,8 @@ impl Synchronizer {
         Ok(())
     }
 
-    pub fn delete_plugin(&self, title: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&self.config.db_file)?;
+    pub fn delete_plugin(title: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
+        let conn = Connection::open(db_file)?;
         conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
         Ok(())
     }
@@ -200,10 +211,10 @@ impl Synchronizer {
         all_plugins
     }
 
-    pub fn get_plugins(&self) -> HashMap<String, InstalledPlugin> {
+    pub fn get_plugins(db_file: &str) -> HashMap<String, InstalledPlugin> {
         let mut plugins = HashMap::new();
 
-        let conn = Connection::open(&self.config.db_file).unwrap();
+        let conn = Connection::open(db_file).unwrap();
         let mut stmt = conn
             .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin ORDER BY title;")
             .unwrap();
