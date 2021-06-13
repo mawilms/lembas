@@ -3,6 +3,7 @@ use iced::{Checkbox, Column, Container, Element, Length, Text};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
+    config: Config,
     description: String,
     backup: bool,
 }
@@ -10,6 +11,7 @@ pub struct Configuration {
 impl Configuration {
     pub fn new(config: Config) -> Self {
         Self {
+            config,
             description: "Enable Backup".to_string(),
             backup: config.application_settings.backup_enabled,
         }
@@ -26,12 +28,8 @@ impl Configuration {
         match msg {
             Message::BackupTriggered(toggled) => {
                 self.backup = toggled;
-                CONFIGURATION
-                    .lock()
-                    .unwrap()
-                    .application_settings
-                    .backup_enabled = self.backup;
-                CONFIGURATION.lock().unwrap().save_changes();
+                self.config.application_settings.backup_enabled = self.backup;
+                self.config.save_changes();
             }
         }
     }

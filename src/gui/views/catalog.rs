@@ -23,6 +23,7 @@ impl Catalog {
     pub fn new(config: Config) -> Self {
         Self::Loaded(State {
             config,
+            synchronizer: Synchronizer::new(config),
             ..State::default()
         })
     }
@@ -31,6 +32,7 @@ impl Catalog {
 #[derive(Default, Debug, Clone)]
 pub struct State {
     config: Config,
+    synchronizer: Synchronizer,
     input: text_input::State,
     plugin_scrollable_state: scrollable::State,
     retry_btn_state: button::State,
@@ -80,7 +82,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = Synchronizer::get_plugins();
+                        let installed_plugins = state.synchronizer.get_plugins();
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -126,7 +128,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = Synchronizer::get_plugins();
+                        let installed_plugins = state.synchronizer.get_plugins();
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -134,6 +136,7 @@ impl Catalog {
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
+                                state.config,
                             );
                             match installed_plugins.get(&plugin.title) {
                                 Some(value) => {
@@ -172,6 +175,7 @@ impl Catalog {
         match self {
             Catalog::Loaded(State {
                 config,
+                synchronizer,
                 input,
                 plugin_scrollable_state,
                 plugins,
@@ -238,6 +242,7 @@ impl Catalog {
             }
             Catalog::NoInternet(State {
                 config,
+                synchronizer,
                 retry_btn_state,
                 input: _,
                 plugin_scrollable_state: _,
@@ -330,7 +335,7 @@ impl PluginRow {
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(&fetched_plugin).is_ok() {
+                    if Installer::download(&fetched_plugin, self.config).is_ok() {
                         if Installer::extract(&fetched_plugin).is_ok() {
                             Installer::delete_cache_folder(&fetched_plugin);
                             if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {

@@ -80,7 +80,7 @@ impl State {
             plugins_view: PluginsView::new(config),
             catalog_view: CatalogView::new(config),
             about_view: AboutView::default(),
-            config_view: ConfigView::default(),
+            config_view: ConfigView::new(config),
             input_value: "".to_string(),
             plugins_btn: button::State::default(),
             catalog_btn: button::State::default(),
