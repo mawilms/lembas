@@ -1,4 +1,3 @@
-use super::Config;
 use super::Plugin;
 use chrono::offset::Utc;
 use chrono::DateTime;
@@ -12,9 +11,7 @@ use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
-pub struct Installer {
-    config: Config,
-}
+pub struct Installer;
 
 impl Installer {
     pub fn download(
@@ -54,7 +51,7 @@ impl Installer {
         Ok(())
     }
 
-    pub fn delete(name: &str, files: &[String], plugins_dir: String) -> Result<(), Box<dyn Error>> {
+    pub fn delete(name: &str, files: &[String], plugins_dir: &str) -> Result<(), Box<dyn Error>> {
         for file in files {
             let path = Path::new(&plugins_dir).join(name).join(file);
             let md = metadata(&path).unwrap();
@@ -79,8 +76,8 @@ impl Installer {
 
     pub fn extract(
         plugin: &Plugin,
-        plugins_dir: String,
-        cache_dir: String,
+        plugins_dir: &str,
+        cache_dir: &str,
     ) -> Result<(), Box<dyn Error>> {
         let tmp_file_path = Path::new(&cache_dir).join(format!(
             "{}_{}",
@@ -107,7 +104,7 @@ impl Installer {
         Ok(())
     }
 
-    fn move_files(tmp_path: &str, folder_name: &str, plugins_dir: String) {
+    fn move_files(tmp_path: &str, folder_name: &str, plugins_dir: &str) {
         let tmp_folder = fs::read_dir(&Path::new(tmp_path).join(&folder_name)).unwrap();
         fs::remove_file(&Path::new(tmp_path).join("plugin.zip")).unwrap();
 
@@ -142,7 +139,7 @@ impl Installer {
         }
     }
 
-    pub fn delete_cache_folder(plugin: &Plugin, cache_dir: String) {
+    pub fn delete_cache_folder(plugin: &Plugin, cache_dir: &str) {
         let tmp_file_path = Path::new(&cache_dir).join(format!(
             "{}_{}",
             &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
@@ -177,5 +174,5 @@ impl Installer {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::Config;
+    
 }

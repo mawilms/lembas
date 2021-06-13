@@ -73,12 +73,12 @@ pub enum Message {
 }
 
 impl State {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
-            config,
+            config: config.clone(),
             view: View::default(),
-            plugins_view: PluginsView::new(config),
-            catalog_view: CatalogView::new(config),
+            plugins_view: PluginsView::new(config.clone()),
+            catalog_view: CatalogView::new(config.clone()),
             about_view: AboutView::default(),
             config_view: ConfigView::new(config),
             input_value: "".to_string(),
@@ -120,7 +120,7 @@ impl Application for Lembas {
                         cache: cache_dir().unwrap().join("lembas"),
                     };
                     let config = Config::new(paths);
-                    *self = Lembas::Loaded(State::new(config));
+                    *self = Lembas::Loaded(State::new(&config));
                 }
                 Command::none()
             }
@@ -164,7 +164,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
-                config,
+                config: _,
                 view,
                 plugins_view,
                 catalog_view,
@@ -290,7 +290,7 @@ impl Lembas {
             .await
             .unwrap();
 
-        State::new(config)
+        State::new(&config)
     }
 }
 

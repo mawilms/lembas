@@ -9,9 +9,9 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
-            config,
+            config: config.clone(),
             description: "Enable Backup".to_string(),
             backup: config.application_settings.backup_enabled,
         }

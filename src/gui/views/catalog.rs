@@ -23,7 +23,6 @@ impl Catalog {
     pub fn new(config: Config) -> Self {
         Self::Loaded(State {
             config,
-            synchronizer: Synchronizer::new(config),
             ..State::default()
         })
     }
@@ -32,7 +31,6 @@ impl Catalog {
 #[derive(Default, Debug, Clone)]
 pub struct State {
     config: Config,
-    synchronizer: Synchronizer,
     input: text_input::State,
     plugin_scrollable_state: scrollable::State,
     retry_btn_state: button::State,
@@ -82,7 +80,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = state.synchronizer.get_plugins();
+                        let installed_plugins = Synchronizer::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -90,6 +88,10 @@ impl Catalog {
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
+                                state.config.application_settings.backup_enabled,
                             );
                             match installed_plugins.get(&plugin.title) {
                                 Some(value) => {
@@ -128,7 +130,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = state.synchronizer.get_plugins();
+                        let installed_plugins = Synchronizer::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -136,7 +138,10 @@ impl Catalog {
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
-                                state.config,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
+                                state.config.application_settings.backup_enabled,
                             );
                             match installed_plugins.get(&plugin.title) {
                                 Some(value) => {
@@ -175,7 +180,6 @@ impl Catalog {
         match self {
             Catalog::Loaded(State {
                 config,
-                synchronizer,
                 input,
                 plugin_scrollable_state,
                 plugins,
@@ -242,7 +246,6 @@ impl Catalog {
             }
             Catalog::NoInternet(State {
                 config,
-                synchronizer,
                 retry_btn_state,
                 input: _,
                 plugin_scrollable_state: _,
@@ -285,6 +288,10 @@ pub struct PluginRow {
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
+    pub plugins_dir: String,
+    pub cache_dir: String,
+    pub db_file: String,
+    pub backup_enabled: bool,
 
     install_btn_state: button::State,
     website_btn_state: button::State,
@@ -305,6 +312,10 @@ impl PluginRow {
         category: &str,
         current_version: &str,
         latest_version: &str,
+        plugins_dir: &str,
+        cache_dir: &str,
+        db_file: &str,
+        backup_enabled: bool,
     ) -> Self {
         Self {
             id,
@@ -315,6 +326,10 @@ impl PluginRow {
             status: "Installed".to_string(),
             install_btn_state: button::State::default(),
             website_btn_state: button::State::default(),
+            plugins_dir: plugins_dir.to_string(),
+            cache_dir: cache_dir.to_string(),
+            db_file: db_file.to_string(),
+            backup_enabled,
         }
     }
 
@@ -335,10 +350,25 @@ impl PluginRow {
             }
             RowMessage::DetailsFetched(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(&fetched_plugin, self.config).is_ok() {
-                        if Installer::extract(&fetched_plugin).is_ok() {
-                            Installer::delete_cache_folder(&fetched_plugin);
-                            if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
+                    if Installer::download(
+                        &fetched_plugin,
+                        &self.plugins_dir,
+                        &self.cache_dir,
+                        self.backup_enabled,
+                    )
+                    .is_ok()
+                    {
+                        if Installer::extract(&fetched_plugin, &self.plugins_dir, &self.cache_dir)
+                            .is_ok()
+                        {
+                            Installer::delete_cache_folder(&fetched_plugin, &self.cache_dir);
+                            if Synchronizer::insert_plugin(
+                                &fetched_plugin,
+                                &self.plugins_dir,
+                                &self.db_file,
+                            )
+                            .is_ok()
+                            {
                                 self.status = "Installed".to_string();
                                 self.current_version = fetched_plugin.base_plugin.latest_version;
                             } else {

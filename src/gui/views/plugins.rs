@@ -16,7 +16,10 @@ pub enum Plugins {
 impl Plugins {
     pub fn new(config: Config) -> Self {
         let mut installed_plugins: Vec<InstalledPlugin> =
-            Synchronizer::get_plugins().values().cloned().collect();
+            Synchronizer::get_plugins(&config.db_file)
+                .values()
+                .cloned()
+                .collect();
         installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
@@ -28,6 +31,10 @@ impl Plugins {
                 &plugin.current_version,
                 &plugin.latest_version,
                 &plugin.folder,
+                &config.plugins_dir,
+                &config.cache_dir,
+                &config.db_file,
+                config.application_settings.backup_enabled,
             ));
         }
 
@@ -67,11 +74,18 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    async fn refresh_db() -> Result<(), ApplicationError> {
-        let local_plugins = Synchronizer::search_local().map_err(|_| ApplicationError::Synchronize);
-        let local_db_plugins = Synchronizer::get_plugins();
+    async fn refresh_db(config: Config) -> Result<(), ApplicationError> {
+        let local_plugins = Synchronizer::search_local(&config.plugins_dir)
+            .map_err(|_| ApplicationError::Synchronize);
+        let local_db_plugins = Synchronizer::get_plugins(&config.db_file);
 
-        Synchronizer::compare_local_state(&local_plugins.unwrap(), &local_db_plugins).await;
+        Synchronizer::compare_local_state(
+            &local_plugins.unwrap(),
+            &local_db_plugins,
+            &config.plugins_dir,
+            &config.db_file,
+        )
+        .await;
 
         Ok(())
     }
@@ -84,7 +98,10 @@ impl Plugins {
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins().values().cloned().collect();
+                            Synchronizer::get_plugins(&state.config.db_file)
+                                .values()
+                                .cloned()
+                                .collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -96,6 +113,10 @@ impl Plugins {
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.folder,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
+                                state.config.application_settings.backup_enabled,
                             ));
                         }
                         state.plugins = plugins;
@@ -105,9 +126,10 @@ impl Plugins {
                         .map(move |msg| PluginMessage::Plugin(index, msg))
                 }
 
-                PluginMessage::RefreshPressed => {
-                    Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
-                }
+                PluginMessage::RefreshPressed => Command::perform(
+                    Self::refresh_db(state.config.clone()),
+                    PluginMessage::DbRefreshed,
+                ),
                 PluginMessage::UpdateAllPressed => {
                     for i in 1..state.plugins.len() {
                         if state.plugins[i].current_version != state.plugins[i].latest_version {
@@ -120,7 +142,10 @@ impl Plugins {
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins: Vec<InstalledPlugin> =
-                        Synchronizer::get_plugins().values().cloned().collect();
+                        Synchronizer::get_plugins(&state.config.db_file)
+                            .values()
+                            .cloned()
+                            .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.plugin_id,
@@ -130,6 +155,10 @@ impl Plugins {
                             &plugin.current_version,
                             &plugin.latest_version,
                             &plugin.folder,
+                            &state.config.plugins_dir,
+                            &state.config.cache_dir,
+                            &state.config.db_file,
+                            state.config.application_settings.backup_enabled,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -158,7 +187,10 @@ impl Plugins {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins().values().cloned().collect();
+                            Synchronizer::get_plugins(&state.config.db_file)
+                                .values()
+                                .cloned()
+                                .collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -170,6 +202,10 @@ impl Plugins {
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.folder,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
+                                state.config.application_settings.backup_enabled,
                             ));
                         }
                         state.plugins = plugins;
@@ -183,7 +219,7 @@ impl Plugins {
     pub fn view(&mut self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
-                config,
+                config: _,
                 plugin_scrollable_state,
                 input_value,
                 plugins,
@@ -278,6 +314,10 @@ pub struct PluginRow {
     pub latest_version: String,
     pub status: String,
     pub folder_name: String,
+    pub plugins_dir: String,
+    pub cache_dir: String,
+    pub db_file: String,
+    pub backup_enabled: bool,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -316,6 +356,10 @@ impl PluginRow {
         current_version: &str,
         latest_version: &str,
         folder_name: &str,
+        plugins_dir: &str,
+        cache_dir: &str,
+        db_file: &str,
+        backup_enabled: bool,
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -332,6 +376,10 @@ impl PluginRow {
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                plugins_dir: plugins_dir.to_string(),
+                cache_dir: cache_dir.to_string(),
+                db_file: db_file.to_string(),
+                backup_enabled,
             }
         } else {
             Self {
@@ -348,6 +396,10 @@ impl PluginRow {
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                plugins_dir: plugins_dir.to_string(),
+                cache_dir: cache_dir.to_string(),
+                db_file: db_file.to_string(),
+                backup_enabled,
             }
         }
     }
@@ -376,16 +428,36 @@ impl PluginRow {
             }
             RowMessage::Updating(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(&fetched_plugin).is_ok() {
+                    if Installer::download(
+                        &fetched_plugin,
+                        &self.plugins_dir,
+                        &self.cache_dir,
+                        self.backup_enabled,
+                    )
+                    .is_ok()
+                    {
                         if Installer::delete(
                             &fetched_plugin.base_plugin.folder,
                             &fetched_plugin.files,
+                            &self.plugins_dir,
                         )
                         .is_ok()
                         {
-                            if Installer::extract(&fetched_plugin).is_ok() {
-                                Installer::delete_cache_folder(&fetched_plugin);
-                                if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
+                            if Installer::extract(
+                                &fetched_plugin,
+                                &self.plugins_dir,
+                                &self.cache_dir,
+                            )
+                            .is_ok()
+                            {
+                                Installer::delete_cache_folder(&fetched_plugin, &self.cache_dir);
+                                if Synchronizer::insert_plugin(
+                                    &fetched_plugin,
+                                    &self.plugins_dir,
+                                    &self.db_file,
+                                )
+                                .is_ok()
+                                {
                                     self.status = "Updated".to_string();
                                     (Event::Synchronize, Command::none())
                                 } else {
@@ -411,10 +483,17 @@ impl PluginRow {
             }
             RowMessage::Deleting(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
-                    if let Ok(()) =
-                        Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
-                    {
-                        if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
+                    if let Ok(()) = Installer::delete(
+                        &fetched_plugin.base_plugin.folder,
+                        &fetched_plugin.files,
+                        &self.plugins_dir,
+                    ) {
+                        if Synchronizer::delete_plugin(
+                            &fetched_plugin.base_plugin.title,
+                            &self.db_file,
+                        )
+                        .is_ok()
+                        {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
