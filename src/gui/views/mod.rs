@@ -3,12 +3,18 @@ pub mod catalog;
 pub mod configuration;
 pub mod plugins;
 
+use std::path::PathBuf;
+
 use super::views::plugins::PluginMessage;
 use crate::core::io::Synchronizer;
+use crate::core::Config;
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
+use dirs::cache_dir;
+use dirs::data_dir;
+use dirs::home_dir;
 use iced::{
     button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
     Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
@@ -37,6 +43,7 @@ pub enum Lembas {
 
 #[derive(Debug, Clone)]
 pub struct State {
+    config: Config,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -65,14 +72,15 @@ pub enum Message {
     ConfigAction(ConfigMessage),
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    pub fn new(config: &Config) -> Self {
         Self {
+            config: config.clone(),
             view: View::default(),
-            plugins_view: PluginsView::default(),
-            catalog_view: CatalogView::default(),
+            plugins_view: PluginsView::new(config.clone()),
+            catalog_view: CatalogView::new(config.clone()),
             about_view: AboutView::default(),
-            config_view: ConfigView::default(),
+            config_view: ConfigView::new(config),
             input_value: "".to_string(),
             plugins_btn: button::State::default(),
             catalog_btn: button::State::default(),
@@ -102,7 +110,17 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(_state) = message {
-                    *self = Lembas::Loaded(State { ..State::default() });
+                    let paths = Paths {
+                        plugins: home_dir()
+                            .expect("Couldn't find your home directory")
+                            .join("Documents")
+                            .join("The Lord of the Rings Online")
+                            .join("Plugins"),
+                        settings: data_dir().unwrap().join("lembas"),
+                        cache: cache_dir().unwrap().join("lembas"),
+                    };
+                    let config = Config::new(paths);
+                    *self = Lembas::Loaded(State::new(&config));
                 }
                 Command::none()
             }
@@ -146,6 +164,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
+                config: _,
                 view,
                 plugins_view,
                 catalog_view,
@@ -255,10 +274,23 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        Synchronizer::create_plugins_db();
-        Synchronizer::synchronize_application().await.unwrap();
+        let paths = Paths {
+            plugins: home_dir()
+                .expect("Couldn't find your home directory")
+                .join("Documents")
+                .join("The Lord of the Rings Online")
+                .join("Plugins"),
+            settings: data_dir().unwrap().join("lembas"),
+            cache: cache_dir().unwrap().join("lembas"),
+        };
+        let config = Config::new(paths);
 
-        State::default()
+        Synchronizer::create_plugins_db(&config.db_file);
+        Synchronizer::synchronize_application(&config.plugins_dir, &config.db_file)
+            .await
+            .unwrap();
+
+        State::new(&config)
     }
 }
 
@@ -275,4 +307,10 @@ fn loading_data<'a>() -> Element<'a, Message> {
     .center_x()
     .style(style::Content)
     .into()
+}
+
+pub struct Paths {
+    pub plugins: PathBuf,
+    pub settings: PathBuf,
+    pub cache: PathBuf,
 }
