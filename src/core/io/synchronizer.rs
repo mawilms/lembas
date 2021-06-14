@@ -154,11 +154,13 @@ impl Synchronizer {
             let path = file?.path();
             if glob.is_match(&path) {
                 let xml_content = PluginParser::parse_file(&path);
-                let conn = Connection::open(db_file)?;
+                if xml_content.name == plugin.as_ref().title {
+                    let conn = Connection::open(db_file)?;
 
-                conn.execute(
+                    conn.execute(
                         "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
                         params![plugin.as_ref().plugin_id, plugin.as_ref().title,xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
+                }
             }
         }
 
@@ -226,13 +228,169 @@ impl Synchronizer {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::core::Config;
+#[cfg(test)]
+mod tests {
+    use super::{InstalledPlugin, Synchronizer};
+    use std::{
+        fs::{create_dir_all, remove_dir_all},
+        path::PathBuf,
+    };
 
-//     #[test]
-//     fn test_bla() {
-//         let mut mock = MockConfig::new();
-//         mock.expect_
-//     }
-// }
+    #[test]
+    fn insert_plugin_succesful() {
+        let test_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("environment");
+        let plugins_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("samples");
+        let db_file = test_directory.join("db.sqlite3");
+
+        // Setup
+        create_dir_all(&test_directory).unwrap();
+        Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
+
+        let plugin = InstalledPlugin::new(
+            1108,
+            "Animalerie",
+            "Test",
+            "Lore-Master",
+            "1.24",
+            "1.24",
+            "Homeopatix",
+        );
+
+        Synchronizer::insert_plugin(
+            plugin,
+            plugins_dir.to_str().unwrap(),
+            db_file.to_str().unwrap(),
+        )
+        .unwrap();
+        let result = Synchronizer::get_plugins(db_file.to_str().unwrap());
+
+        assert_eq!(result.len(), 1);
+        assert!(result.contains_key("Animalerie"));
+
+        // Teardown
+        remove_dir_all(test_directory).unwrap();
+    }
+
+    #[test]
+    fn insert_plugin_failure() {
+        println!("Bla");
+        let test_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("environment");
+        println!("{:?}", test_directory);
+        let plugins_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("samples");
+        let db_file = test_directory.join("db.sqlite3");
+
+        // Setup
+        create_dir_all(&test_directory).unwrap();
+        Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
+
+        let plugin = InstalledPlugin::new(
+            1108,
+            "Hello World",
+            "Test",
+            "Lore-Master",
+            "1.24",
+            "1.24",
+            "Homeopatix",
+        );
+
+        Synchronizer::insert_plugin(
+            plugin,
+            plugins_dir.to_str().unwrap(),
+            db_file.to_str().unwrap(),
+        )
+        .unwrap();
+        let result = Synchronizer::get_plugins(db_file.to_str().unwrap());
+
+        assert_eq!(result.len(), 0);
+
+        // Teardown
+        remove_dir_all(test_directory).unwrap();
+        println!("Blagjghj");
+    }
+
+    #[test]
+    fn update() {
+        let test_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("environment");
+        let plugins_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("samples");
+        let db_file = test_directory.join("db.sqlite3");
+
+        // Setup
+        create_dir_all(&test_directory).unwrap();
+        Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
+
+        let plugin = InstalledPlugin::new(
+            1108,
+            "Animalerie",
+            "Test",
+            "Lore-Master",
+            "1.24",
+            "1.24",
+            "Homeopatix",
+        );
+
+        Synchronizer::insert_plugin(
+            plugin,
+            plugins_dir.to_str().unwrap(),
+            db_file.to_str().unwrap(),
+        )
+        .unwrap();
+        Synchronizer::update_plugin("Animalerie", "1.25", db_file.to_str().unwrap()).unwrap();
+        let result = Synchronizer::get_plugins(db_file.to_str().unwrap());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get("Animalerie").unwrap().latest_version, "1.25");
+
+        // Teardown
+        remove_dir_all(test_directory).unwrap();
+    }
+
+    #[test]
+    fn delete() {
+        let test_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("environment");
+        let plugins_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("samples");
+        let db_file = test_directory.join("db.sqlite3");
+
+        // Setup
+        create_dir_all(&test_directory).unwrap();
+        Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
+
+        let plugin = InstalledPlugin::new(
+            1108,
+            "Animalerie",
+            "Test",
+            "Lore-Master",
+            "1.24",
+            "1.24",
+            "Homeopatix",
+        );
+
+        Synchronizer::insert_plugin(
+            plugin,
+            plugins_dir.to_str().unwrap(),
+            db_file.to_str().unwrap(),
+        )
+        .unwrap();
+        Synchronizer::delete_plugin("Animalerie", db_file.to_str().unwrap()).unwrap();
+        let result = Synchronizer::get_plugins(db_file.to_str().unwrap());
+
+        assert_eq!(result.len(), 0);
+
+        // Teardown
+        remove_dir_all(test_directory).unwrap();
+    }
+}
