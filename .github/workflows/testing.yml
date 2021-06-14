@@ -20,7 +20,7 @@ jobs:
       - name: Run clippy
         run: cargo clippy
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --test-threads=1
       - name: Cache
         uses: actions/cache@v2.1.4
         with:
