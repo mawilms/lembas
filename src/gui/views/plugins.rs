@@ -556,7 +556,6 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .align_items(Align::Center)
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
