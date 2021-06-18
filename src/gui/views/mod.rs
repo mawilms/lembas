@@ -109,18 +109,8 @@ impl Application for Lembas {
     fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match self {
             Lembas::Loading => {
-                if let Message::Loaded(_state) = message {
-                    let paths = Paths {
-                        plugins: home_dir()
-                            .expect("Couldn't find your home directory")
-                            .join("Documents")
-                            .join("The Lord of the Rings Online")
-                            .join("Plugins"),
-                        settings: data_dir().unwrap().join("lembas"),
-                        cache: cache_dir().unwrap().join("lembas"),
-                    };
-                    let config = Config::new(paths);
-                    *self = Lembas::Loaded(State::new(&config));
+                if let Message::Loaded(state) = message {
+                    *self = Lembas::Loaded(state);
                 }
                 Command::none()
             }
