@@ -1,5 +1,5 @@
 use crate::{core::Config, gui::style};
-use iced::{Align, Checkbox, Column, Container, Element, Length, Row, Text, TextInput, text_input};
+use iced::{text_input, Align, Checkbox, Column, Container, Element, Length, Row, Text, TextInput};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
@@ -17,7 +17,7 @@ impl Configuration {
             description: "Enable Backup".to_string(),
             backup: config.application_settings.backup_enabled,
             feed_url: text_input::State::default(),
-            feed_url_value: "".to_string(),
+            feed_url_value: config.application_settings.feed_url.clone(),
         }
     }
 }

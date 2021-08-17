@@ -31,11 +31,12 @@ impl Config {
             let mut file = File::open(settings_file_path).unwrap();
             let mut data = String::new();
             file.read_to_string(&mut data).unwrap();
-
             initial_settings = serde_json::from_str(&data).unwrap();
         } else {
             File::create(&settings_file_path).unwrap();
             initial_settings.backup_enabled = true;
+            initial_settings.feed_url =
+                String::from("http://api.lotrointerface.com/fav/plugincompendium.xml");
             write(
                 &settings_file_path,
                 serde_json::to_string(&initial_settings).unwrap(),
@@ -66,4 +67,5 @@ impl Config {
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsFile {
     pub backup_enabled: bool,
+    pub feed_url: String,
 }
