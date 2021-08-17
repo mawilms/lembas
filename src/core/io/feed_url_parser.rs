@@ -1,0 +1,53 @@
+use serde::Deserialize;
+use serde_xml_rs::from_str;
+
+#[derive(Debug, Default)]
+pub struct FeedUrlParser {}
+
+impl FeedUrlParser {
+    pub fn parse_response(xml_content: &str) -> Favorites {
+        let favorites: Favorites = from_str(&xml_content.replace("&", "&amp;")).unwrap();
+        favorites
+    }
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
+pub struct Favorites {
+    pub Ui: Vec<Ui>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
+pub struct Ui {
+    UID: i32,
+    UIName: String,
+    UIAuthorName: String,
+    UIVersion: String,
+    UIUpdated: i32,
+    UIDownloads: i32,
+    UICategory: String,
+    UIDescription: String,
+    UIFile: String,
+    #[serde(default)]
+    UIMD5: String,
+    UISize: i32,
+    UIFileURL: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use crate::core::io::FeedUrlParser;
+
+    #[test]
+    fn parse_response() {
+        let xml_content: String =
+            fs::read_to_string("tests/samples/xml_files/feed_url.xml").unwrap();
+
+        let feed_url = FeedUrlParser::parse_response(&xml_content);
+
+        assert_eq!(feed_url.Ui.len(), 2);
+    }
+}
