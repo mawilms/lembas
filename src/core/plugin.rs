@@ -8,6 +8,17 @@ pub struct Base {
     pub latest_version: String,
 }
 
+impl Base {
+    pub fn new(plugin_id: i32, title: &str, category: &str, latest_version: &str) -> Self {
+        Base {
+            plugin_id,
+            title: title.to_string(),
+            category: category.to_string(),
+            latest_version: latest_version.to_string(),
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct Installed {
     pub plugin_id: i32,

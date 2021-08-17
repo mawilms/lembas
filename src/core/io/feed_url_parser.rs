@@ -20,14 +20,14 @@ pub struct Favorites {
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 pub struct Ui {
-    UID: i32,
-    UIName: String,
-    UIAuthorName: String,
-    UIVersion: String,
+    pub UID: i32,
+    pub UIName: String,
+    pub UIAuthorName: String,
+    pub UIVersion: String,
     UIUpdated: i32,
     UIDownloads: i32,
-    UICategory: String,
-    UIDescription: String,
+    pub UICategory: String,
+    pub UIDescription: String,
     UIFile: String,
     #[serde(default)]
     UIMD5: String,

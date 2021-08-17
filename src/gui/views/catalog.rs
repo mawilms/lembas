@@ -74,9 +74,10 @@ impl Catalog {
                 Message::Catalog(index, msg) => state.plugins[index]
                     .update(msg)
                     .map(move |msg| Message::Catalog(index, msg)),
-                Message::LoadPlugins => {
-                    Command::perform(APIConnector::fetch_plugins(), Message::LoadedPlugins)
-                }
+                Message::LoadPlugins => Command::perform(
+                    APIConnector::fetch_plugins(state.config.application_settings.feed_url.clone()),
+                    Message::LoadedPlugins,
+                ),
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
@@ -124,9 +125,10 @@ impl Catalog {
                 Message::RetryPressed => Command::none(),
             },
             Catalog::NoInternet(state) => match message {
-                Message::RetryPressed => {
-                    Command::perform(APIConnector::fetch_plugins(), Message::LoadedPlugins)
-                }
+                Message::RetryPressed => Command::perform(
+                    APIConnector::fetch_plugins(state.config.application_settings.feed_url.clone()),
+                    Message::LoadedPlugins,
+                ),
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
@@ -179,7 +181,7 @@ impl Catalog {
     pub fn view(&mut self) -> Element<Message> {
         match self {
             Catalog::Loaded(State {
-                config,
+                config: _,
                 input,
                 plugin_scrollable_state,
                 plugins,
@@ -245,7 +247,7 @@ impl Catalog {
                     .into()
             }
             Catalog::NoInternet(State {
-                config,
+                config: _,
                 retry_btn_state,
                 input: _,
                 plugin_scrollable_state: _,

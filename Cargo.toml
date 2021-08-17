@@ -34,7 +34,10 @@ fs_extra = "^1"
 globset = "^0"
 chrono = "^0"
 async-trait = "^0"
+
+[dev-dependencies]
 mockall = "^0"
+mockall_double = "^0"
 
 [build-dependencies]
 embed-resource = "^1"
