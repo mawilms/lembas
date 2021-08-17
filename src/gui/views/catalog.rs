@@ -5,7 +5,7 @@ use crate::core::{
     },
     Config,
 };
-use crate::core::{Base as BasePlugin, Installer, Plugin as DetailPlugin};
+use crate::core::{Installer, Plugin};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -45,7 +45,7 @@ pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
     LoadPlugins,
-    LoadedPlugins(Result<HashMap<String, BasePlugin>, crate::gui::views::catalog::APIError>),
+    LoadedPlugins(Result<HashMap<String, Plugin>, crate::gui::views::catalog::APIError>),
     RetryPressed,
 }
 
@@ -89,6 +89,7 @@ impl Catalog {
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
+                                &plugin.download_url,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
@@ -140,6 +141,7 @@ impl Catalog {
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
+                                &plugin.download_url,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
@@ -290,6 +292,7 @@ pub struct PluginRow {
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
+    pub download_url: String,
     pub plugins_dir: String,
     pub cache_dir: String,
     pub db_file: String,
@@ -303,7 +306,6 @@ pub struct PluginRow {
 pub enum RowMessage {
     InstallPressed(PluginRow),
     WebsitePressed(PluginRow),
-    DetailsFetched(Result<DetailPlugin, APIError>),
     NoEvent,
 }
 
@@ -314,6 +316,7 @@ impl PluginRow {
         category: &str,
         current_version: &str,
         latest_version: &str,
+        download_url: &str,
         plugins_dir: &str,
         cache_dir: &str,
         db_file: &str,
@@ -328,6 +331,7 @@ impl PluginRow {
             status: "Installed".to_string(),
             install_btn_state: button::State::default(),
             website_btn_state: button::State::default(),
+            download_url: download_url.to_string(),
             plugins_dir: plugins_dir.to_string(),
             cache_dir: cache_dir.to_string(),
             db_file: db_file.to_string(),
@@ -337,10 +341,40 @@ impl PluginRow {
 
     pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
-            RowMessage::InstallPressed(plugin) => Command::perform(
-                APIConnector::fetch_details(plugin.id),
-                RowMessage::DetailsFetched,
-            ),
+            RowMessage::InstallPressed(plugin) => {
+                if Installer::download(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.download_url,
+                    &self.plugins_dir,
+                    &self.cache_dir,
+                    self.backup_enabled,
+                )
+                .is_ok()
+                {
+                    if Installer::extract(
+                        plugin.id,
+                        &plugin.title,
+                        &self.plugins_dir,
+                        &self.cache_dir,
+                    )
+                    .is_ok()
+                    {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                        if Synchronizer::insert_plugin(&plugin, &self.plugins_dir, &self.db_file)
+                            .is_ok()
+                        {
+                            self.status = "Installed".to_string();
+                            self.current_version = plugin.latest_version;
+                        } else {
+                            self.status = "Installation failed".to_string();
+                        }
+                    }
+                } else {
+                    self.status = "Download failed".to_string();
+                }
+                Command::none()
+            }
 
             RowMessage::WebsitePressed(row) => {
                 webbrowser::open(&format!(
@@ -348,41 +382,6 @@ impl PluginRow {
                     row.id, row.title,
                 ))
                 .unwrap();
-                Command::none()
-            }
-            RowMessage::DetailsFetched(fetched_plugin) => {
-                if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(
-                        &fetched_plugin,
-                        &self.plugins_dir,
-                        &self.cache_dir,
-                        self.backup_enabled,
-                    )
-                    .is_ok()
-                    {
-                        if Installer::extract(&fetched_plugin, &self.plugins_dir, &self.cache_dir)
-                            .is_ok()
-                        {
-                            Installer::delete_cache_folder(&fetched_plugin, &self.cache_dir);
-                            if Synchronizer::insert_plugin(
-                                &fetched_plugin,
-                                &self.plugins_dir,
-                                &self.db_file,
-                            )
-                            .is_ok()
-                            {
-                                self.status = "Installed".to_string();
-                                self.current_version = fetched_plugin.base_plugin.latest_version;
-                            } else {
-                                self.status = "Installation failed".to_string();
-                            }
-                        }
-                    } else {
-                        self.status = "Download failed".to_string();
-                    }
-                } else {
-                    self.status = "Download failed".to_string();
-                }
                 Command::none()
             }
             RowMessage::NoEvent => Command::none(),

@@ -1,8 +1,6 @@
-use super::api_connector::APIOperations;
 use super::plugin_parser::PluginCompendium;
 use crate::core::io::{APIConnector, PluginParser};
-use crate::core::Config;
-use crate::core::Installed as InstalledPlugin;
+use crate::core::{Config, Plugin};
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;
@@ -30,7 +28,7 @@ impl Synchronizer {
 
     pub async fn compare_local_state(
         local_plugins: &HashMap<String, PluginCompendium>,
-        db_plugins: &HashMap<String, InstalledPlugin>,
+        db_plugins: &HashMap<String, Plugin>,
         plugins_dir: &str,
         db_file: &str,
     ) {
@@ -40,10 +38,10 @@ impl Synchronizer {
                     APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
                 {
                     let local_plugin = db_plugins.get(key).unwrap();
-                    if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
+                    if local_plugin.latest_version != retrieved_plugin.latest_version {
                         Synchronizer::update_plugin(
                             &local_plugin.title,
-                            &retrieved_plugin.base_plugin.latest_version,
+                            &retrieved_plugin.latest_version,
                             db_file,
                         )
                         .unwrap();
@@ -72,14 +70,14 @@ impl Synchronizer {
                 }
 
                 Synchronizer::insert_plugin(
-                    &InstalledPlugin::new(
-                        retrieved_plugin.base_plugin.plugin_id,
-                        &retrieved_plugin.base_plugin.title,
+                    &Plugin::new(
+                        retrieved_plugin.plugin_id,
+                        &retrieved_plugin.title,
                         &description,
-                        &retrieved_plugin.base_plugin.category,
+                        &retrieved_plugin.category,
                         &element.version,
-                        &retrieved_plugin.base_plugin.latest_version,
-                        &retrieved_plugin.base_plugin.folder,
+                        &retrieved_plugin.latest_version,
+                        &retrieved_plugin.folder,
                     ),
                     plugins_dir,
                     db_file,
@@ -143,7 +141,7 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(
-        plugin: impl AsRef<InstalledPlugin>,
+        plugin: impl AsRef<Plugin>,
         plugins_dir: &str,
         db_file: &str,
     ) -> Result<(), Box<dyn Error>> {
@@ -182,7 +180,7 @@ impl Synchronizer {
         Ok(())
     }
 
-    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<InstalledPlugin> {
+    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Plugin> {
         let mut all_plugins = Vec::new();
 
         let empty_params = params![];
@@ -195,7 +193,7 @@ impl Synchronizer {
 
         let plugin_iter = stmt
             .query_map(query_params, |row| {
-                Ok(InstalledPlugin {
+                Ok(Plugin {
                     plugin_id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
                     description: row.get(2).unwrap(),
@@ -213,7 +211,7 @@ impl Synchronizer {
         all_plugins
     }
 
-    pub fn get_plugins(db_file: &str) -> HashMap<String, InstalledPlugin> {
+    pub fn get_plugins(db_file: &str) -> HashMap<String, Plugin> {
         let mut plugins = HashMap::new();
 
         let conn = Connection::open(db_file).unwrap();
@@ -230,7 +228,7 @@ impl Synchronizer {
 
 #[cfg(test)]
 mod tests {
-    use super::{InstalledPlugin, Synchronizer};
+    use super::{Plugin, Synchronizer};
     use std::{
         fs::{create_dir_all, remove_dir_all},
         path::PathBuf,
@@ -250,7 +248,7 @@ mod tests {
         create_dir_all(&test_directory).unwrap();
         Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
 
-        let plugin = InstalledPlugin::new(
+        let plugin = Plugin::new(
             1108,
             "Animalerie",
             "Test",
@@ -291,7 +289,7 @@ mod tests {
         create_dir_all(&test_directory).unwrap();
         Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
 
-        let plugin = InstalledPlugin::new(
+        let plugin = Plugin::new(
             1108,
             "Hello World",
             "Test",
@@ -330,7 +328,7 @@ mod tests {
         create_dir_all(&test_directory).unwrap();
         Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
 
-        let plugin = InstalledPlugin::new(
+        let plugin = Plugin::new(
             1108,
             "Animalerie",
             "Test",
@@ -369,7 +367,7 @@ mod tests {
         create_dir_all(&test_directory).unwrap();
         Synchronizer::create_plugins_db(test_directory.join("db.sqlite3").to_str().unwrap());
 
-        let plugin = InstalledPlugin::new(
+        let plugin = Plugin::new(
             1108,
             "Animalerie",
             "Test",

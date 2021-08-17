@@ -24,15 +24,15 @@ pub struct Ui {
     pub UIName: String,
     pub UIAuthorName: String,
     pub UIVersion: String,
-    UIUpdated: i32,
-    UIDownloads: i32,
+    pub UIUpdated: i32,
+    pub UIDownloads: i32,
     pub UICategory: String,
     pub UIDescription: String,
-    UIFile: String,
+    pub UIFile: String,
     #[serde(default)]
     UIMD5: String,
     UISize: i32,
-    UIFileURL: String,
+    pub UIFileURL: String,
 }
 
 #[cfg(test)]
