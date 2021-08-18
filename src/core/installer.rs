@@ -1,4 +1,3 @@
-use super::Plugin;
 use chrono::offset::Utc;
 use chrono::DateTime;
 use dirs::home_dir;
@@ -41,11 +40,13 @@ impl Installer {
                 file.write_all(&content)?;
                 let mut zip_archive = zip::ZipArchive::new(file)?;
 
+                let root_folder_name = zip_archive.by_index(0).unwrap().name();
+
                 zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
                 Self::move_files(
                     tmp_file_path.to_str().unwrap(),
-                    &plugin.base_plugin.folder,
+                    root_folder_name,
                     plugins_dir,
                 );
             }

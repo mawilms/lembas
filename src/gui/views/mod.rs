@@ -276,9 +276,13 @@ impl Lembas {
         let config = Config::new(paths);
 
         Synchronizer::create_plugins_db(&config.db_file);
-        Synchronizer::synchronize_application(&config.plugins_dir, &config.db_file)
-            .await
-            .unwrap();
+        Synchronizer::synchronize_application(
+            &config.plugins_dir,
+            &config.db_file,
+            &config.application_settings.feed_url,
+        )
+        .await
+        .unwrap();
 
         State::new(&config)
     }

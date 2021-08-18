@@ -1,3 +1,4 @@
+use super::api_connector::APIOperations;
 use super::plugin_parser::PluginCompendium;
 use crate::core::io::{APIConnector, PluginParser};
 use crate::core::{Config, Plugin};
@@ -16,12 +17,19 @@ impl Synchronizer {
     pub async fn synchronize_application(
         plugins_dir: &str,
         db_file: &str,
+        feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
         let local_db_plugins = Synchronizer::get_plugins(db_file);
 
-        Synchronizer::compare_local_state(&local_plugins, &local_db_plugins, plugins_dir, db_file)
-            .await;
+        Synchronizer::compare_local_state(
+            &local_plugins,
+            &local_db_plugins,
+            plugins_dir,
+            db_file,
+            feed_url,
+        )
+        .await;
 
         Ok(())
     }
@@ -31,60 +39,64 @@ impl Synchronizer {
         db_plugins: &HashMap<String, Plugin>,
         plugins_dir: &str,
         db_file: &str,
+        feed_url: &str,
     ) {
-        for (key, element) in local_plugins {
-            if db_plugins.contains_key(key) {
-                if let Ok(retrieved_plugin) =
-                    APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
-                {
-                    let local_plugin = db_plugins.get(key).unwrap();
-                    if local_plugin.latest_version != retrieved_plugin.latest_version {
-                        Synchronizer::update_plugin(
-                            &local_plugin.title,
-                            &retrieved_plugin.latest_version,
+        match APIConnector::fetch_plugins(feed_url.to_string()).await {
+            Ok(remote_plugins) => {
+                for (key, element) in local_plugins {
+                    if db_plugins.contains_key(key) {
+                        if remote_plugins.contains_key(key) {
+                            let local_plugin = db_plugins.get(key).unwrap();
+                            if local_plugin.latest_version
+                                != remote_plugins.get(key).unwrap().latest_version
+                            {
+                                Synchronizer::update_plugin(
+                                    &local_plugin.title,
+                                    &remote_plugins.get(key).unwrap().latest_version,
+                                    db_file,
+                                )
+                                .unwrap();
+                            }
+                        }
+                    } else {
+                        let mut description = String::new();
+                        if !&local_plugins
+                            .get(key)
+                            .unwrap()
+                            .plugin_file_location
+                            .is_empty()
+                        {
+                            let information = PluginParser::parse_file(
+                                Path::new(&plugins_dir).join(
+                                    &local_plugins
+                                        .get(key)
+                                        .unwrap()
+                                        .plugin_file_location
+                                        .replace("\\", &MAIN_SEPARATOR.to_string()),
+                                ),
+                            );
+                            description = information.description;
+                        }
+
+                        Synchronizer::insert_plugin(
+                            Plugin::new(
+                                retrieved_plugin.plugin_id,
+                                &retrieved_plugin.title,
+                                &description,
+                                &retrieved_plugin.category,
+                                &element.version,
+                                &retrieved_plugin.latest_version,
+                                &retrieved_plugin.folder,
+                            ),
+                            plugins_dir,
                             db_file,
                         )
                         .unwrap();
                     }
                 }
-            } else if let Ok(retrieved_plugin) =
-                APIConnector::fetch_details(local_plugins.get(key).unwrap().id).await
-            {
-                let mut description = String::new();
-                if !&local_plugins
-                    .get(key)
-                    .unwrap()
-                    .plugin_file_location
-                    .is_empty()
-                {
-                    let information = PluginParser::parse_file(
-                        Path::new(&plugins_dir).join(
-                            &local_plugins
-                                .get(key)
-                                .unwrap()
-                                .plugin_file_location
-                                .replace("\\", &MAIN_SEPARATOR.to_string()),
-                        ),
-                    );
-                    description = information.description;
-                }
-
-                Synchronizer::insert_plugin(
-                    &Plugin::new(
-                        retrieved_plugin.plugin_id,
-                        &retrieved_plugin.title,
-                        &description,
-                        &retrieved_plugin.category,
-                        &element.version,
-                        &retrieved_plugin.latest_version,
-                        &retrieved_plugin.folder,
-                    ),
-                    plugins_dir,
-                    db_file,
-                )
-                .unwrap();
             }
-        }
+            Err(_) => todo!(),
+        };
 
         for (key, element) in db_plugins {
             if !local_plugins.contains_key(key) {
@@ -141,7 +153,7 @@ impl Synchronizer {
     }
 
     pub fn insert_plugin(
-        plugin: impl AsRef<Plugin>,
+        plugin: Plugin,
         plugins_dir: &str,
         db_file: &str,
     ) -> Result<(), Box<dyn Error>> {

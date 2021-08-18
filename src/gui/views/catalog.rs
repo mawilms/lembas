@@ -352,23 +352,14 @@ impl PluginRow {
                 )
                 .is_ok()
                 {
-                    if Installer::extract(
-                        plugin.id,
-                        &plugin.title,
-                        &self.plugins_dir,
-                        &self.cache_dir,
-                    )
-                    .is_ok()
+                    Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                    if Synchronizer::insert_plugin(&plugin, &self.plugins_dir, &self.db_file)
+                        .is_ok()
                     {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                        if Synchronizer::insert_plugin(&plugin, &self.plugins_dir, &self.db_file)
-                            .is_ok()
-                        {
-                            self.status = "Installed".to_string();
-                            self.current_version = plugin.latest_version;
-                        } else {
-                            self.status = "Installation failed".to_string();
-                        }
+                        self.status = "Installed".to_string();
+                        self.current_version = plugin.latest_version;
+                    } else {
+                        self.status = "Installation failed".to_string();
                     }
                 } else {
                     self.status = "Download failed".to_string();

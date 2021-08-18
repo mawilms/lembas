@@ -1,6 +1,6 @@
-use crate::core::io::api_connector::{APIError, APIOperations};
+use crate::core::io::api_connector::APIError;
 use crate::core::io::{APIConnector, Synchronizer};
-use crate::core::{Config, Installed as InstalledPlugin, Installer, Plugin as DetailPlugin};
+use crate::core::{Config, Installer, Plugin};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -15,7 +15,7 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<InstalledPlugin> =
+        let mut installed_plugins: Vec<Plugin> =
             Synchronizer::get_plugins(&config.db_file)
                 .values()
                 .cloned()
@@ -97,7 +97,7 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
+                        let mut all_plugins: Vec<Plugin> =
                             Synchronizer::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -141,7 +141,7 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<InstalledPlugin> =
+                    let installed_plugins: Vec<Plugin> =
                         Synchronizer::get_plugins(&state.config.db_file)
                             .values()
                             .cloned()
@@ -186,7 +186,7 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
+                        let mut all_plugins: Vec<Plugin> =
                             Synchronizer::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -338,8 +338,8 @@ pub enum RowMessage {
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
     WebsitePressed(i32, String),
-    Updating(Result<DetailPlugin, APIError>),
-    Deleting(Result<DetailPlugin, APIError>),
+    Updating(Result<Plugin, APIError>),
+    Deleting(Result<Plugin, APIError>),
 }
 
 pub enum Event {
