@@ -1,6 +1,7 @@
 use crate::core::{
     io::{
         api_connector::{APIError, APIOperations},
+        synchronizer::CacheItem,
         APIConnector, Synchronizer,
     },
     Config,
@@ -353,9 +354,14 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    if Synchronizer::insert_plugin(&plugin, &self.plugins_dir, &self.db_file)
-                        .is_ok()
-                    {
+                    let cache_item = CacheItem::new(
+                        plugin.id,
+                        &plugin.title,
+                        &plugin.current_version,
+                        &plugin.latest_version,
+                        &plugin.download_url,
+                    );
+                    if Synchronizer::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
                         self.current_version = plugin.latest_version;
                     } else {

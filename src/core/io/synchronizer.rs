@@ -1,19 +1,20 @@
 use super::api_connector::APIOperations;
 use super::plugin_parser::PluginCompendium;
 use crate::core::io::{APIConnector, PluginParser};
-use crate::core::{Config, Plugin};
+use crate::core::Config;
 use globset::Glob;
 use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;
 use std::path::MAIN_SEPARATOR;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
 
-struct CacheItem {
-    id: i32,
-    title: String,
-    current_version: String,
-    latest_version: String,
-    download_url: String,
+#[derive(Debug, Clone)]
+pub struct CacheItem {
+    pub id: i32,
+    pub title: String,
+    pub current_version: String,
+    pub latest_version: String,
+    pub download_url: String,
 }
 
 impl CacheItem {
@@ -62,7 +63,7 @@ impl Synchronizer {
 
     pub async fn compare_local_state(
         local_plugins: &HashMap<String, PluginCompendium>,
-        db_plugins: &HashMap<String, Plugin>,
+        db_plugins: &HashMap<String, CacheItem>,
         plugins_dir: &str,
         db_file: &str,
         feed_url: &str,
@@ -113,7 +114,7 @@ impl Synchronizer {
                         if remote_plugins.contains_key(key) {
                             let remote_plugin = remote_plugins.get(key).unwrap();
                             Synchronizer::insert_plugin(
-                                CacheItem::new(
+                                &CacheItem::new(
                                     remote_plugin.plugin_id,
                                     &remote_plugin.title,
                                     &remote_plugin.current_version,
@@ -126,7 +127,7 @@ impl Synchronizer {
                         } else {
                             let local_plugin = local_plugins.get(key).unwrap();
                             Synchronizer::insert_plugin(
-                                CacheItem::new(
+                                &CacheItem::new(
                                     local_plugin.id,
                                     &local_plugin.name,
                                     &local_plugin.version,
@@ -195,7 +196,7 @@ impl Synchronizer {
         .unwrap();
     }
 
-    pub fn insert_plugin(cache_item: CacheItem, db_file: &str) -> Result<(), Box<dyn Error>> {
+    pub fn insert_plugin(cache_item: &CacheItem, db_file: &str) -> Result<(), Box<dyn Error>> {
         let conn = Connection::open(db_file)?;
 
         conn.execute(
@@ -220,7 +221,7 @@ impl Synchronizer {
         Ok(())
     }
 
-    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Plugin> {
+    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<CacheItem> {
         let mut all_plugins = Vec::new();
 
         let empty_params = params![];
@@ -233,14 +234,12 @@ impl Synchronizer {
 
         let plugin_iter = stmt
             .query_map(query_params, |row| {
-                Ok(Plugin {
-                    plugin_id: row.get(0).unwrap(),
+                Ok(CacheItem {
+                    id: row.get(0).unwrap(),
                     title: row.get(1).unwrap(),
-                    description: row.get(2).unwrap(),
-                    category: row.get(3).unwrap(),
-                    current_version: row.get(4).unwrap(),
-                    latest_version: row.get(5).unwrap(),
-                    folder: row.get(6).unwrap(),
+                    current_version: row.get(2).unwrap(),
+                    latest_version: row.get(3).unwrap(),
+                    download_url: row.get(4).unwrap(),
                 })
             })
             .unwrap();
@@ -251,7 +250,7 @@ impl Synchronizer {
         all_plugins
     }
 
-    pub fn get_plugins(db_file: &str) -> HashMap<String, Plugin> {
+    pub fn get_plugins(db_file: &str) -> HashMap<String, CacheItem> {
         let mut plugins = HashMap::new();
 
         let conn = Connection::open(db_file).unwrap();

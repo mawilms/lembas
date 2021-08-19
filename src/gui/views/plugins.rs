@@ -1,4 +1,5 @@
 use crate::core::io::api_connector::APIError;
+use crate::core::io::synchronizer::CacheItem;
 use crate::core::io::{APIConnector, Synchronizer};
 use crate::core::{Config, Installer, Plugin};
 use crate::gui::style;
@@ -15,25 +16,18 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<Plugin> =
-            Synchronizer::get_plugins(&config.db_file)
-                .values()
-                .cloned()
-                .collect();
+        let mut installed_plugins: Vec<CacheItem> = Synchronizer::get_plugins(&config.db_file)
+            .values()
+            .cloned()
+            .collect();
         installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
             plugins.push(PluginRow::new(
-                plugin.plugin_id,
+                plugin.id,
                 &plugin.title,
-                &plugin.description,
-                &plugin.category,
                 &plugin.current_version,
                 &plugin.latest_version,
-                &plugin.folder,
-                &config.plugins_dir,
-                &config.cache_dir,
-                &config.db_file,
                 config.application_settings.backup_enabled,
             ));
         }
@@ -84,6 +78,7 @@ impl Plugins {
             &local_db_plugins,
             &config.plugins_dir,
             &config.db_file,
+            &config.application_settings.feed_url,
         )
         .await;
 
@@ -97,7 +92,7 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Plugin> =
+                        let mut all_plugins: Vec<CacheItem> =
                             Synchronizer::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -106,16 +101,10 @@ impl Plugins {
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
+                                plugin.id,
                                 &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
                                 &plugin.current_version,
                                 &plugin.latest_version,
-                                &plugin.folder,
-                                &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             ));
                         }
@@ -141,23 +130,17 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<Plugin> =
+                    let installed_plugins: Vec<CacheItem> =
                         Synchronizer::get_plugins(&state.config.db_file)
                             .values()
                             .cloned()
                             .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
-                            plugin.plugin_id,
+                            plugin.id,
                             &plugin.title,
-                            &plugin.description,
-                            &plugin.category,
                             &plugin.current_version,
                             &plugin.latest_version,
-                            &plugin.folder,
-                            &state.config.plugins_dir,
-                            &state.config.cache_dir,
-                            &state.config.db_file,
                             state.config.application_settings.backup_enabled,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
@@ -186,7 +169,7 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Plugin> =
+                        let mut all_plugins: Vec<CacheItem> =
                             Synchronizer::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -195,16 +178,10 @@ impl Plugins {
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
+                                plugin.id,
                                 &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
                                 &plugin.current_version,
                                 &plugin.latest_version,
-                                &plugin.folder,
-                                &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             ));
                         }
@@ -306,17 +283,13 @@ pub struct PluginRow {
     pub id: i32,
     pub title: String,
     #[serde(default)]
-    pub description: String,
-    #[serde(default)]
-    pub category: String,
-    #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
-    pub folder_name: String,
-    pub plugins_dir: String,
-    pub cache_dir: String,
-    pub db_file: String,
+    // pub folder_name: String,
+    // pub plugins_dir: String,
+    // pub cache_dir: String,
+    //pub db_file: String,
     pub backup_enabled: bool,
 
     #[serde(skip)]
@@ -351,54 +324,45 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
-        description: &str,
-        category: &str,
         current_version: &str,
         latest_version: &str,
-        folder_name: &str,
-        plugins_dir: &str,
-        cache_dir: &str,
-        db_file: &str,
+        // plugins_dir: &str,
+        // cache_dir: &str,
+        // db_file: &str,
         backup_enabled: bool,
     ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
-                description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
-                folder_name: folder_name.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                // plugins_dir: plugins_dir.to_string(),
+                // cache_dir: cache_dir.to_string(),
+                // db_file: db_file.to_string(),
                 backup_enabled,
             }
         } else {
             Self {
                 id,
                 title: title.to_string(),
-                description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
-                folder_name: folder_name.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                // plugins_dir: plugins_dir.to_string(),
+                // cache_dir: cache_dir.to_string(),
+                // db_file: db_file.to_string(),
                 backup_enabled,
             }
         }
@@ -429,7 +393,9 @@ impl PluginRow {
             RowMessage::Updating(fetched_plugin) => {
                 if let Ok(fetched_plugin) = fetched_plugin {
                     if Installer::download(
-                        &fetched_plugin,
+                        fetched_plugin.plugin_id,
+                        &fetched_plugin.title,
+                        &fetched_plugin.download_url,
                         &self.plugins_dir,
                         &self.cache_dir,
                         self.backup_enabled,
