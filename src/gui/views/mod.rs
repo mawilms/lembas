@@ -6,6 +6,7 @@ pub mod plugins;
 use std::path::PathBuf;
 
 use super::views::plugins::PluginMessage;
+use crate::core::io::cache::create_cache_db;
 use crate::core::io::Synchronizer;
 use crate::core::Config;
 use crate::gui::style;
@@ -275,7 +276,7 @@ impl Lembas {
         };
         let config = Config::new(paths);
 
-        Synchronizer::create_plugins_db(&config.db_file);
+        create_cache_db(&config.db_file);
         Synchronizer::synchronize_application(
             &config.plugins_dir,
             &config.db_file,

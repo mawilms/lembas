@@ -1,4 +1,5 @@
 pub mod api_connector;
+pub mod cache;
 pub mod feed_url_parser;
 pub mod plugin_parser;
 pub mod synchronizer;

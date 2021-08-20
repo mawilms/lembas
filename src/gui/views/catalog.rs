@@ -1,8 +1,7 @@
 use crate::core::{
     io::{
         api_connector::{APIError, APIOperations},
-        synchronizer::CacheItem,
-        APIConnector, Synchronizer,
+        cache, APIConnector,
     },
     Config,
 };
@@ -82,7 +81,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = Synchronizer::get_plugins(&state.config.db_file);
+                        let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -134,7 +133,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = Synchronizer::get_plugins(&state.config.db_file);
+                        let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
@@ -354,14 +353,15 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    let cache_item = CacheItem::new(
+                    let cache_item = cache::CacheItem::new(
                         plugin.id,
                         &plugin.title,
+                        &plugin.description,
                         &plugin.current_version,
                         &plugin.latest_version,
                         &plugin.download_url,
                     );
-                    if Synchronizer::insert_plugin(&cache_item, &self.db_file).is_ok() {
+                    if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
                         self.current_version = plugin.latest_version;
                     } else {

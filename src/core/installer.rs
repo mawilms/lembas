@@ -20,7 +20,9 @@ impl Installer {
         plugins_dir: &str,
         cache_dir: &str,
         backup_enabled: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(String, Vec<String>), Box<dyn Error>> {
+        let files: Vec<String> = Vec::new();
+
         if backup_enabled {
             Self::back_plugin_folder(plugins_dir);
         }
@@ -42,6 +44,11 @@ impl Installer {
 
                 let root_folder_name = zip_archive.by_index(0).unwrap().name();
 
+                let files = zip_archive
+                    .file_names()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>();
+
                 zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
                 Self::move_files(
@@ -51,7 +58,7 @@ impl Installer {
                 );
             }
         };
-        Ok(())
+        Ok((plugins_dir.to_string(), files))
     }
 
     pub fn delete(name: &str, files: &[String], plugins_dir: &str) -> Result<(), Box<dyn Error>> {

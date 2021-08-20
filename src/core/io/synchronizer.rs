@@ -1,39 +1,12 @@
 use super::api_connector::APIOperations;
+use super::cache;
 use super::plugin_parser::PluginCompendium;
 use crate::core::io::{APIConnector, PluginParser};
 use crate::core::Config;
 use globset::Glob;
-use rusqlite::{params, Connection, Statement};
 use std::fs::metadata;
 use std::path::MAIN_SEPARATOR;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
-
-#[derive(Debug, Clone)]
-pub struct CacheItem {
-    pub id: i32,
-    pub title: String,
-    pub current_version: String,
-    pub latest_version: String,
-    pub download_url: String,
-}
-
-impl CacheItem {
-    pub fn new(
-        id: i32,
-        title: &str,
-        current_version: &str,
-        latest_version: &str,
-        download_url: &str,
-    ) -> Self {
-        CacheItem {
-            id,
-            title: title.to_string(),
-            current_version: current_version.to_string(),
-            latest_version: latest_version.to_string(),
-            download_url: download_url.to_string(),
-        }
-    }
-}
 
 #[derive(Default, Debug, Clone)]
 pub struct Synchronizer {
@@ -47,7 +20,7 @@ impl Synchronizer {
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
-        let local_db_plugins = Synchronizer::get_plugins(db_file);
+        let local_db_plugins = cache::get_plugins(db_file);
 
         Synchronizer::compare_local_state(
             &local_plugins,
@@ -63,7 +36,7 @@ impl Synchronizer {
 
     pub async fn compare_local_state(
         local_plugins: &HashMap<String, PluginCompendium>,
-        db_plugins: &HashMap<String, CacheItem>,
+        db_plugins: &HashMap<String, cache::CacheItem>,
         plugins_dir: &str,
         db_file: &str,
         feed_url: &str,
@@ -77,7 +50,7 @@ impl Synchronizer {
                             if local_plugin.latest_version
                                 != remote_plugins.get(key).unwrap().latest_version
                             {
-                                Synchronizer::update_plugin(
+                                cache::update_plugin(
                                     &local_plugin.title,
                                     &remote_plugins.get(key).unwrap().latest_version,
                                     db_file,
@@ -85,12 +58,8 @@ impl Synchronizer {
                                 .unwrap();
                             }
                         } else {
-                            Synchronizer::update_plugin(
-                                &db_plugins.get(key).unwrap().title,
-                                "",
-                                db_file,
-                            )
-                            .unwrap();
+                            cache::update_plugin(&db_plugins.get(key).unwrap().title, "", db_file)
+                                .unwrap();
                         }
                     } else {
                         let mut description = String::new();
@@ -113,10 +82,11 @@ impl Synchronizer {
                         }
                         if remote_plugins.contains_key(key) {
                             let remote_plugin = remote_plugins.get(key).unwrap();
-                            Synchronizer::insert_plugin(
-                                &CacheItem::new(
+                            cache::insert_plugin(
+                                &cache::CacheItem::new(
                                     remote_plugin.plugin_id,
                                     &remote_plugin.title,
+                                    &remote_plugin.description,
                                     &remote_plugin.current_version,
                                     &remote_plugin.latest_version,
                                     &remote_plugin.download_url,
@@ -126,10 +96,11 @@ impl Synchronizer {
                             .unwrap();
                         } else {
                             let local_plugin = local_plugins.get(key).unwrap();
-                            Synchronizer::insert_plugin(
-                                &CacheItem::new(
+                            cache::insert_plugin(
+                                &cache::CacheItem::new(
                                     local_plugin.id,
                                     &local_plugin.name,
+                                    "",
                                     &local_plugin.version,
                                     "",
                                     &local_plugin.download_url,
@@ -146,7 +117,7 @@ impl Synchronizer {
 
         for (key, element) in db_plugins {
             if !local_plugins.contains_key(key) {
-                Synchronizer::delete_plugin(&element.title, db_file).unwrap();
+                cache::delete_plugin(&element.title, db_file).unwrap();
             }
         }
     }
@@ -175,93 +146,6 @@ impl Synchronizer {
         }
 
         Ok(local_plugins)
-    }
-
-    // Creates the local database if it doesn't exist.
-    pub fn create_plugins_db(db_file: &str) {
-        let conn = Connection::open(db_file).unwrap();
-        conn.execute(
-            "
-                CREATE TABLE IF NOT EXISTS plugin (
-                    id INTEGER PRIMARY KEY,
-                    plugin_id INTEGER UNIQUE,
-                    title TEXT,
-                    current_version TEXT,
-                    latest_version TEXT,
-                    download_url TEXT
-                );
-        ",
-            [],
-        )
-        .unwrap();
-    }
-
-    pub fn insert_plugin(cache_item: &CacheItem, db_file: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(db_file)?;
-
-        conn.execute(
-            "INSERT INTO plugin (plugin_id, title, current_version, latest_version, download_url) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, current_version=?3, latest_version=?4, download_url=?5;",
-        params![cache_item.id, cache_item.title, cache_item.latest_version, cache_item.latest_version, cache_item.download_url])?;
-
-        Ok(())
-    }
-
-    fn update_plugin(title: &str, version: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(db_file)?;
-        conn.execute(
-            "UPDATE plugin SET latest_version=?2 WHERE title=?1;",
-            params![title, version],
-        )?;
-        Ok(())
-    }
-
-    pub fn delete_plugin(title: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(db_file)?;
-        conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
-        Ok(())
-    }
-
-    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<CacheItem> {
-        let mut all_plugins = Vec::new();
-
-        let empty_params = params![];
-        let has_params = params![params];
-        let mut query_params = empty_params;
-
-        if !params.is_empty() {
-            query_params = has_params;
-        }
-
-        let plugin_iter = stmt
-            .query_map(query_params, |row| {
-                Ok(CacheItem {
-                    id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    current_version: row.get(2).unwrap(),
-                    latest_version: row.get(3).unwrap(),
-                    download_url: row.get(4).unwrap(),
-                })
-            })
-            .unwrap();
-
-        for plugin in plugin_iter {
-            all_plugins.push(plugin.unwrap());
-        }
-        all_plugins
-    }
-
-    pub fn get_plugins(db_file: &str) -> HashMap<String, CacheItem> {
-        let mut plugins = HashMap::new();
-
-        let conn = Connection::open(db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin ORDER BY title;")
-            .unwrap();
-
-        for element in Self::execute_stmt(&mut stmt, "") {
-            plugins.insert(element.title.clone(), element);
-        }
-        plugins
     }
 }
 
