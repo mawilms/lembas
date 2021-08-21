@@ -39,6 +39,7 @@ pub fn create_cache_db(db_file: &str) {
                 id INTEGER PRIMARY KEY,
                 plugin_id INTEGER UNIQUE,
                 title TEXT,
+                description TEXT,
                 current_version TEXT,
                 latest_version TEXT,
                 download_url TEXT
@@ -59,18 +60,18 @@ pub fn insert_plugin(cache_item: &CacheItem, db_file: &str) -> Result<(), Box<dy
     Ok(())
 }
 
-pub fn update_plugin(title: &str, version: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
+pub fn update_plugin(plugin_id: i32, version: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_file)?;
     conn.execute(
-        "UPDATE plugin SET latest_version=?2 WHERE title=?1;",
-        params![title, version],
+        "UPDATE plugin SET latest_version=?2 WHERE plugin_id=?1;",
+        params![plugin_id, version],
     )?;
     Ok(())
 }
 
-pub fn delete_plugin(title: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
+pub fn delete_plugin(plugin_id: i32, db_file: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_file)?;
-    conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
+    conn.execute("DELETE FROM plugin WHERE plugin_id=?1;", params![plugin_id])?;
     Ok(())
 }
 

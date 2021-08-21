@@ -86,6 +86,7 @@ impl Catalog {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
@@ -138,6 +139,7 @@ impl Catalog {
                             let mut plugin_row = PluginRow::new(
                                 plugin.plugin_id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.category,
                                 "",
                                 &plugin.latest_version,
@@ -288,6 +290,7 @@ impl Catalog {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    pub description: String,
     pub category: String,
     pub current_version: String,
     pub latest_version: String,
@@ -313,6 +316,7 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
+        description: &str,
         category: &str,
         current_version: &str,
         latest_version: &str,
@@ -325,6 +329,7 @@ impl PluginRow {
         Self {
             id,
             title: title.to_string(),
+            description: description.to_string(),
             category: category.to_string(),
             current_version: current_version.to_string(),
             latest_version: latest_version.to_string(),

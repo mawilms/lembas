@@ -19,12 +19,12 @@ impl Synchronizer {
         db_file: &str,
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
-        let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
-        let local_db_plugins = cache::get_plugins(db_file);
+        let folder_plugins = Synchronizer::search_local(plugins_dir).unwrap();
+        let db_plugins = cache::get_plugins(db_file);
 
         Synchronizer::compare_local_state(
-            &local_plugins,
-            &local_db_plugins,
+            &folder_plugins,
+            &db_plugins,
             plugins_dir,
             db_file,
             feed_url,
@@ -51,18 +51,16 @@ impl Synchronizer {
                                 != remote_plugins.get(key).unwrap().latest_version
                             {
                                 cache::update_plugin(
-                                    &local_plugin.title,
+                                    local_plugin.id,
                                     &remote_plugins.get(key).unwrap().latest_version,
                                     db_file,
                                 )
                                 .unwrap();
                             }
-                        } else {
-                            cache::update_plugin(&db_plugins.get(key).unwrap().title, "", db_file)
-                                .unwrap();
                         }
                     } else {
-                        let mut description = String::new();
+                        let remote_plugin = remote_plugins.get(key).unwrap();
+
                         if !&local_plugins
                             .get(key)
                             .unwrap()
@@ -78,10 +76,20 @@ impl Synchronizer {
                                         .replace("\\", &MAIN_SEPARATOR.to_string()),
                                 ),
                             );
-                            description = information.description;
-                        }
-                        if remote_plugins.contains_key(key) {
-                            let remote_plugin = remote_plugins.get(key).unwrap();
+
+                            cache::insert_plugin(
+                                &cache::CacheItem::new(
+                                    remote_plugin.plugin_id,
+                                    &remote_plugin.title,
+                                    &remote_plugin.description,
+                                    &information.version,
+                                    &remote_plugin.latest_version,
+                                    &remote_plugin.download_url,
+                                ),
+                                db_file,
+                            )
+                            .unwrap();
+                        } else if remote_plugins.contains_key(key) {
                             cache::insert_plugin(
                                 &cache::CacheItem::new(
                                     remote_plugin.plugin_id,
@@ -100,7 +108,7 @@ impl Synchronizer {
                                 &cache::CacheItem::new(
                                     local_plugin.id,
                                     &local_plugin.name,
-                                    "",
+                                    &local_plugin.description,
                                     &local_plugin.version,
                                     "",
                                     &local_plugin.download_url,
@@ -117,7 +125,7 @@ impl Synchronizer {
 
         for (key, element) in db_plugins {
             if !local_plugins.contains_key(key) {
-                cache::delete_plugin(&element.title, db_file).unwrap();
+                cache::delete_plugin(element.id, db_file).unwrap();
             }
         }
     }
