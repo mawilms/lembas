@@ -58,30 +58,29 @@ impl Synchronizer {
                                 .unwrap();
                             }
                         }
-                    } else {
-                        let remote_plugin = remote_plugins.get(key).unwrap();
+                    } else if !&local_plugins
+                        .get(key)
+                        .unwrap()
+                        .plugin_file_location
+                        .is_empty()
+                    {
+                        let information = PluginParser::parse_file(
+                            Path::new(&plugins_dir).join(
+                                &local_plugins
+                                    .get(key)
+                                    .unwrap()
+                                    .plugin_file_location
+                                    .replace("\\", &MAIN_SEPARATOR.to_string()),
+                            ),
+                        );
 
-                        if !&local_plugins
-                            .get(key)
-                            .unwrap()
-                            .plugin_file_location
-                            .is_empty()
-                        {
-                            let information = PluginParser::parse_file(
-                                Path::new(&plugins_dir).join(
-                                    &local_plugins
-                                        .get(key)
-                                        .unwrap()
-                                        .plugin_file_location
-                                        .replace("\\", &MAIN_SEPARATOR.to_string()),
-                                ),
-                            );
-
+                        if remote_plugins.contains_key(key) {
+                            let remote_plugin = remote_plugins.get(key).unwrap();
                             cache::insert_plugin(
                                 &cache::CacheItem::new(
-                                    remote_plugin.plugin_id,
-                                    &remote_plugin.title,
-                                    &remote_plugin.description,
+                                    element.id,
+                                    &information.name,
+                                    &information.description,
                                     &information.version,
                                     &remote_plugin.latest_version,
                                     &remote_plugin.download_url,
@@ -89,34 +88,34 @@ impl Synchronizer {
                                 db_file,
                             )
                             .unwrap();
-                        } else if remote_plugins.contains_key(key) {
-                            cache::insert_plugin(
-                                &cache::CacheItem::new(
-                                    remote_plugin.plugin_id,
-                                    &remote_plugin.title,
-                                    &remote_plugin.description,
-                                    &remote_plugin.current_version,
-                                    &remote_plugin.latest_version,
-                                    &remote_plugin.download_url,
-                                ),
-                                db_file,
-                            )
-                            .unwrap();
                         } else {
-                            let local_plugin = local_plugins.get(key).unwrap();
                             cache::insert_plugin(
                                 &cache::CacheItem::new(
-                                    local_plugin.id,
-                                    &local_plugin.name,
-                                    &local_plugin.description,
-                                    &local_plugin.version,
+                                    element.id,
+                                    &information.name,
+                                    &information.description,
+                                    &information.version,
                                     "",
-                                    &local_plugin.download_url,
+                                    "",
                                 ),
                                 db_file,
                             )
                             .unwrap();
                         }
+                    } else if remote_plugins.contains_key(key) {
+                        let remote_plugin = remote_plugins.get(key).unwrap();
+                        cache::insert_plugin(
+                            &cache::CacheItem::new(
+                                remote_plugin.plugin_id,
+                                &remote_plugin.title,
+                                &remote_plugin.description,
+                                &remote_plugin.current_version,
+                                &remote_plugin.latest_version,
+                                &remote_plugin.download_url,
+                            ),
+                            db_file,
+                        )
+                        .unwrap();
                     }
                 }
             }

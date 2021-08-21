@@ -25,6 +25,7 @@ impl Plugins {
             plugins.push(PluginRow::new(
                 plugin.id,
                 &plugin.title,
+                &plugin.description,
                 &plugin.current_version,
                 &plugin.latest_version,
                 &plugin.download_url,
@@ -106,13 +107,14 @@ impl Plugins {
                             plugins.push(PluginRow::new(
                                 plugin.id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.download_url,
                                 state.config.application_settings.backup_enabled,
-                                state.config.plugins_dir,
-                                state.config.cache_dir,
-                                state.config.db_file,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
                             ));
                         }
                         state.plugins = plugins;
@@ -146,13 +148,14 @@ impl Plugins {
                         plugins.push(PluginRow::new(
                             plugin.id,
                             &plugin.title,
+                            &plugin.description,
                             &plugin.current_version,
                             &plugin.latest_version,
                             &plugin.download_url,
                             state.config.application_settings.backup_enabled,
-                            state.config.plugins_dir,
-                            state.config.cache_dir,
-                            state.config.db_file,
+                            &state.config.plugins_dir,
+                            &state.config.cache_dir,
+                            &state.config.db_file,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -191,13 +194,14 @@ impl Plugins {
                             plugins.push(PluginRow::new(
                                 plugin.id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.download_url,
                                 state.config.application_settings.backup_enabled,
-                                state.config.plugins_dir,
-                                state.config.cache_dir,
-                                state.config.db_file,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file,
                             ));
                         }
                         state.plugins = plugins;
@@ -297,6 +301,7 @@ impl Plugins {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    pub description: String,
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
@@ -337,6 +342,7 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
+        description: &str,
         current_version: &str,
         latest_version: &str,
         download_url: &str,
@@ -349,6 +355,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
@@ -367,6 +374,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
@@ -411,6 +419,7 @@ impl PluginRow {
                             &CacheItem::new(
                                 plugin.id,
                                 &plugin.title,
+                                &plugin.description,
                                 &plugin.current_version,
                                 &plugin.latest_version,
                                 &plugin.download_url,
@@ -448,7 +457,7 @@ impl PluginRow {
                         &install_information.1,
                         &self.plugins_dir,
                     ) {
-                        if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
+                        if cache::delete_plugin(plugin.id, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {

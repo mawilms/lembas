@@ -110,7 +110,7 @@ pub fn get_plugins(db_file: &str) -> HashMap<String, CacheItem> {
 
     let conn = Connection::open(db_file).unwrap();
     let mut stmt = conn
-        .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, download_url FROM plugin ORDER BY title;")
+        .prepare("SELECT plugin_id, title, description, current_version, latest_version, download_url FROM plugin ORDER BY title;")
         .unwrap();
 
     for element in execute_stmt(&mut stmt, "") {
