@@ -5,18 +5,26 @@
 mod core;
 mod gui;
 
-//use std::fs::File;
+use chrono::Local;
+use env_logger::Builder;
+use std::io::Write;
 
 fn main() {
+    Builder::new()
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{} [{}] - {}",
+                Local::now().format("%Y-%m-%dT%H:%M:%S"),
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
+
+    log::warn!("warn");
+    log::info!("info");
+    log::debug!("debug");
+
     gui::views::Lembas::start();
-
-    // let file = File::open("./tests/samples/archives/VoyageV3.13.zip").unwrap();
-    // let mut zip_archive = zip::ZipArchive::new(file).unwrap();
-
-    // // let item = zip_archive.by_index(0).unwrap();
-    // // println!("{:?}", item.name());
-
-    // for element in zip_archive.file_names() {
-    //     println!("{}", element);
-    // }
 }
