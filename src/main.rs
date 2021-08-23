@@ -1,30 +1,19 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::too_many_lines)]
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
+
 
 mod core;
 mod gui;
 
-use chrono::Local;
-use env_logger::Builder;
-use std::io::Write;
+use log::{debug, info, warn};
 
 fn main() {
-    Builder::new()
-        .format(|buf, record| {
-            writeln!(
-                buf,
-                "{} [{}] - {}",
-                Local::now().format("%Y-%m-%dT%H:%M:%S"),
-                record.level(),
-                record.args()
-            )
-        })
-        .init();
+    env_logger::init();
 
-    log::warn!("warn");
-    log::info!("info");
-    log::debug!("debug");
+    warn!("warn");
+    info!("info");
+    debug!("debug");
 
     gui::views::Lembas::start();
 }
