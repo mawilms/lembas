@@ -12,6 +12,7 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
 };
 use std::collections::HashMap;
+use log::debug;
 
 #[derive(Debug, Clone)]
 pub enum Catalog {
@@ -373,6 +374,7 @@ impl PluginRow {
                         self.status = "Installation failed".to_string();
                     }
                 } else {
+                    debug!("Download failed");
                     self.status = "Download failed".to_string();
                 }
                 Command::none()
