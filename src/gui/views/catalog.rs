@@ -11,8 +11,8 @@ use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
 };
-use std::collections::HashMap;
 use log::debug;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Catalog {
@@ -89,14 +89,16 @@ impl Catalog {
                                 &plugin.title,
                                 &plugin.description,
                                 &plugin.category,
-                                "",
-                                &plugin.latest_version,
+                            )
+                            .with_versions("", &plugin.latest_version)
+                            .with_information(
                                 &plugin.download_url,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             );
+
                             match installed_plugins.get(&plugin.title) {
                                 Some(value) => {
                                     plugin_row.current_version = value.current_version.clone();
@@ -142,14 +144,16 @@ impl Catalog {
                                 &plugin.title,
                                 &plugin.description,
                                 &plugin.category,
-                                "",
-                                &plugin.latest_version,
+                            )
+                            .with_versions("", &plugin.latest_version)
+                            .with_information(
                                 &plugin.download_url,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             );
+
                             match installed_plugins.get(&plugin.title) {
                                 Some(value) => {
                                     plugin_row.current_version = value.current_version.clone();
@@ -314,35 +318,47 @@ pub enum RowMessage {
 }
 
 impl PluginRow {
-    pub fn new(
-        id: i32,
-        title: &str,
-        description: &str,
-        category: &str,
-        current_version: &str,
-        latest_version: &str,
+    pub fn new(id: i32, title: &str, description: &str, category: &str) -> Self {
+        Self {
+            id,
+            title: title.to_string(),
+            description: description.to_string(),
+            category: category.to_string(),
+            current_version: String::new(),
+            latest_version: String::new(),
+            status: "Installed".to_string(),
+            install_btn_state: button::State::default(),
+            website_btn_state: button::State::default(),
+            download_url: String::new(),
+            plugins_dir: String::new(),
+            cache_dir: String::new(),
+            db_file: String::new(),
+            backup_enabled: true,
+        }
+    }
+
+    fn with_versions(mut self, current_version: &str, latest_version: &str) -> Self {
+        self.current_version = current_version.to_string();
+        self.latest_version = latest_version.to_string();
+
+        self
+    }
+
+    fn with_information(
+        mut self,
         download_url: &str,
         plugins_dir: &str,
         cache_dir: &str,
         db_file: &str,
         backup_enabled: bool,
     ) -> Self {
-        Self {
-            id,
-            title: title.to_string(),
-            description: description.to_string(),
-            category: category.to_string(),
-            current_version: current_version.to_string(),
-            latest_version: latest_version.to_string(),
-            status: "Installed".to_string(),
-            install_btn_state: button::State::default(),
-            website_btn_state: button::State::default(),
-            download_url: download_url.to_string(),
-            plugins_dir: plugins_dir.to_string(),
-            cache_dir: cache_dir.to_string(),
-            db_file: db_file.to_string(),
-            backup_enabled,
-        }
+        self.download_url = download_url.to_string();
+        self.plugins_dir = plugins_dir.to_string();
+        self.cache_dir = cache_dir.to_string();
+        self.db_file = db_file.to_string();
+        self.backup_enabled = backup_enabled;
+
+        self
     }
 
     pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
