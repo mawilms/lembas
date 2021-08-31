@@ -1,4 +1,3 @@
-use super::Plugin;
 use chrono::offset::Utc;
 use chrono::DateTime;
 use dirs::home_dir;
@@ -15,40 +14,49 @@ pub struct Installer;
 
 impl Installer {
     pub fn download(
-        plugin: &Plugin,
+        plugin_id: i32,
+        plugin_title: &str,
+        download_url: &str,
         plugins_dir: &str,
         cache_dir: &str,
         backup_enabled: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(String, Vec<String>), Box<dyn Error>> {
         if backup_enabled {
             Self::back_plugin_folder(plugins_dir);
         }
-        let response = reqwest::blocking::get(&format!(
-            "https://www.lotrointerface.com/downloads/download{}-{}",
-            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-        ))?;
+        let response = reqwest::blocking::get(download_url)?;
 
-        let tmp_file_path = Path::new(cache_dir).join(&format!(
-            "{}_{}",
-            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-        ));
+        let tmp_file_path = Path::new(cache_dir).join(&format!("{}_{}", plugin_id, plugin_title));
 
         fs::create_dir(&tmp_file_path)?;
 
         let cache_path = Path::new(cache_dir)
-            .join(&format!(
-                "{}_{}",
-                &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-            ))
+            .join(&format!("{}_{}", plugin_id, plugin_title))
             .join("plugin.zip");
         match File::create(cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
                 let content = response.bytes()?;
                 file.write_all(&content)?;
+                let mut zip_archive = zip::ZipArchive::new(file)?;
+
+                zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
+
+                let root_folder_name = zip_archive.by_index(0).unwrap().name().to_string();
+
+                let files = zip_archive
+                    .file_names()
+                    .map(std::string::ToString::to_string)
+                    .collect::<Vec<String>>();
+
+                Self::move_files(
+                    tmp_file_path.to_str().unwrap(),
+                    &root_folder_name,
+                    plugins_dir,
+                );
+                Ok((plugins_dir.to_string(), files))
             }
-        };
-        Ok(())
+        }
     }
 
     pub fn delete(name: &str, files: &[String], plugins_dir: &str) -> Result<(), Box<dyn Error>> {
@@ -70,36 +78,6 @@ impl Installer {
         {
             fs::remove_dir_all(Path::new(&plugins_dir).join(name))?;
         }
-
-        Ok(())
-    }
-
-    pub fn extract(
-        plugin: &Plugin,
-        plugins_dir: &str,
-        cache_dir: &str,
-    ) -> Result<(), Box<dyn Error>> {
-        let tmp_file_path = Path::new(&cache_dir).join(format!(
-            "{}_{}",
-            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-        ));
-
-        let cache_path = Path::new(&cache_dir)
-            .join(format!(
-                "{}_{}",
-                &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-            ))
-            .join("plugin.zip");
-        let file = File::open(&cache_path)?;
-        let mut zip_archive = zip::ZipArchive::new(file)?;
-
-        zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
-
-        Self::move_files(
-            tmp_file_path.to_str().unwrap(),
-            &plugin.base_plugin.folder,
-            plugins_dir,
-        );
 
         Ok(())
     }
@@ -139,11 +117,8 @@ impl Installer {
         }
     }
 
-    pub fn delete_cache_folder(plugin: &Plugin, cache_dir: &str) {
-        let tmp_file_path = Path::new(&cache_dir).join(format!(
-            "{}_{}",
-            &plugin.base_plugin.plugin_id, &plugin.base_plugin.title
-        ));
+    pub fn delete_cache_folder(plugin_id: i32, plugin_title: &str, cache_dir: &str) {
+        let tmp_file_path = Path::new(&cache_dir).join(format!("{}_{}", plugin_id, plugin_title));
 
         fs::remove_dir_all(tmp_file_path).unwrap();
     }
@@ -173,6 +148,4 @@ impl Installer {
 }
 
 #[cfg(test)]
-mod tests {
-    
-}
+mod tests {}

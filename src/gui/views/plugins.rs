@@ -1,6 +1,6 @@
-use crate::core::io::api_connector::{APIError, APIOperations};
-use crate::core::io::{APIConnector, Synchronizer};
-use crate::core::{Config, Installed as InstalledPlugin, Installer, Plugin as DetailPlugin};
+use crate::core::io::cache::{self, CacheItem};
+use crate::core::io::Synchronizer;
+use crate::core::{Config, Installer};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -15,26 +15,24 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<InstalledPlugin> =
-            Synchronizer::get_plugins(&config.db_file)
-                .values()
-                .cloned()
-                .collect();
+        let mut installed_plugins: Vec<CacheItem> = cache::get_plugins(&config.db_file)
+            .values()
+            .cloned()
+            .collect();
         installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
             plugins.push(PluginRow::new(
-                plugin.plugin_id,
+                plugin.id,
                 &plugin.title,
                 &plugin.description,
-                &plugin.category,
                 &plugin.current_version,
                 &plugin.latest_version,
-                &plugin.folder,
+                &plugin.download_url,
+                config.application_settings.backup_enabled,
                 &config.plugins_dir,
                 &config.cache_dir,
                 &config.db_file,
-                config.application_settings.backup_enabled,
             ));
         }
 
@@ -77,13 +75,14 @@ impl Plugins {
     async fn refresh_db(config: Config) -> Result<(), ApplicationError> {
         let local_plugins = Synchronizer::search_local(&config.plugins_dir)
             .map_err(|_| ApplicationError::Synchronize);
-        let local_db_plugins = Synchronizer::get_plugins(&config.db_file);
+        let local_db_plugins = cache::get_plugins(&config.db_file);
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
             &local_db_plugins,
             &config.plugins_dir,
             &config.db_file,
+            &config.application_settings.feed_url,
         )
         .await;
 
@@ -97,8 +96,8 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins(&state.config.db_file)
+                        let mut all_plugins: Vec<CacheItem> =
+                            cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -106,17 +105,16 @@ impl Plugins {
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
+                                plugin.id,
                                 &plugin.title,
                                 &plugin.description,
-                                &plugin.category,
                                 &plugin.current_version,
                                 &plugin.latest_version,
-                                &plugin.folder,
+                                &plugin.download_url,
+                                state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
-                                state.config.application_settings.backup_enabled,
                             ));
                         }
                         state.plugins = plugins;
@@ -141,24 +139,23 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<InstalledPlugin> =
-                        Synchronizer::get_plugins(&state.config.db_file)
+                    let installed_plugins: Vec<CacheItem> =
+                        cache::get_plugins(&state.config.db_file)
                             .values()
                             .cloned()
                             .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
-                            plugin.plugin_id,
+                            plugin.id,
                             &plugin.title,
                             &plugin.description,
-                            &plugin.category,
                             &plugin.current_version,
                             &plugin.latest_version,
-                            &plugin.folder,
+                            &plugin.download_url,
+                            state.config.application_settings.backup_enabled,
                             &state.config.plugins_dir,
                             &state.config.cache_dir,
                             &state.config.db_file,
-                            state.config.application_settings.backup_enabled,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -186,8 +183,8 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins(&state.config.db_file)
+                        let mut all_plugins: Vec<CacheItem> =
+                            cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -195,17 +192,16 @@ impl Plugins {
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
+                                plugin.id,
                                 &plugin.title,
                                 &plugin.description,
-                                &plugin.category,
                                 &plugin.current_version,
                                 &plugin.latest_version,
-                                &plugin.folder,
+                                &plugin.download_url,
+                                state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
-                                state.config.application_settings.backup_enabled,
                             ));
                         }
                         state.plugins = plugins;
@@ -305,19 +301,16 @@ impl Plugins {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
-    #[serde(default)]
     pub description: String,
-    #[serde(default)]
-    pub category: String,
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
-    pub folder_name: String,
+    pub download_url: String,
+    pub backup_enabled: bool,
     pub plugins_dir: String,
     pub cache_dir: String,
     pub db_file: String,
-    pub backup_enabled: bool,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -338,8 +331,6 @@ pub enum RowMessage {
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
     WebsitePressed(i32, String),
-    Updating(Result<DetailPlugin, APIError>),
-    Deleting(Result<DetailPlugin, APIError>),
 }
 
 pub enum Event {
@@ -352,54 +343,51 @@ impl PluginRow {
         id: i32,
         title: &str,
         description: &str,
-        category: &str,
         current_version: &str,
         latest_version: &str,
-        folder_name: &str,
+        download_url: &str,
+        backup_enabled: bool,
         plugins_dir: &str,
         cache_dir: &str,
         db_file: &str,
-        backup_enabled: bool,
     ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
                 description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
-                folder_name: folder_name.to_string(),
+                download_url: download_url.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                backup_enabled,
                 plugins_dir: plugins_dir.to_string(),
                 cache_dir: cache_dir.to_string(),
                 db_file: db_file.to_string(),
-                backup_enabled,
             }
         } else {
             Self {
                 id,
                 title: title.to_string(),
                 description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
-                folder_name: folder_name.to_string(),
+                download_url: download_url.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                backup_enabled,
                 plugins_dir: plugins_dir.to_string(),
                 cache_dir: cache_dir.to_string(),
                 db_file: db_file.to_string(),
-                backup_enabled,
             }
         }
     }
@@ -410,90 +398,66 @@ impl PluginRow {
                 self.opened = !self.opened;
                 (Event::Nothing, Command::none())
             }
-            RowMessage::UpdatePressed(plugin) => (
-                Event::Nothing,
-                Command::perform(APIConnector::fetch_details(plugin.id), RowMessage::Updating),
-            ),
-            RowMessage::DeletePressed(row) => (
-                Event::Nothing,
-                Command::perform(APIConnector::fetch_details(row.id), RowMessage::Deleting),
-            ),
-            RowMessage::WebsitePressed(id, title) => {
-                webbrowser::open(&format!(
-                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
-                    id, title,
-                ))
-                .unwrap();
-                (Event::Nothing, Command::none())
-            }
-            RowMessage::Updating(fetched_plugin) => {
-                if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(
-                        &fetched_plugin,
+            RowMessage::UpdatePressed(plugin) => {
+                if let Ok(install_information) = Installer::download(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.download_url,
+                    &self.plugins_dir,
+                    &self.cache_dir,
+                    self.backup_enabled,
+                ) {
+                    if Installer::delete(
+                        &install_information.0,
+                        &install_information.1,
                         &self.plugins_dir,
-                        &self.cache_dir,
-                        self.backup_enabled,
                     )
                     .is_ok()
                     {
-                        if Installer::delete(
-                            &fetched_plugin.base_plugin.folder,
-                            &fetched_plugin.files,
-                            &self.plugins_dir,
-                        )
-                        .is_ok()
-                        {
-                            if Installer::extract(
-                                &fetched_plugin,
-                                &self.plugins_dir,
-                                &self.cache_dir,
-                            )
-                            .is_ok()
-                            {
-                                Installer::delete_cache_folder(&fetched_plugin, &self.cache_dir);
-                                if Synchronizer::insert_plugin(
-                                    &fetched_plugin,
-                                    &self.plugins_dir,
-                                    &self.db_file,
-                                )
-                                .is_ok()
-                                {
-                                    self.status = "Updated".to_string();
-                                    (Event::Synchronize, Command::none())
-                                } else {
-                                    self.status = "Update failed".to_string();
-                                    (Event::Nothing, Command::none())
-                                }
-                            } else {
-                                self.status = "Unpacking failed".to_string();
-                                (Event::Nothing, Command::none())
-                            }
-                        } else {
-                            self.status = "Installation failed".to_string();
-                            (Event::Nothing, Command::none())
-                        }
-                    } else {
-                        self.status = "Download failed".to_string();
-                        (Event::Nothing, Command::none())
-                    }
-                } else {
-                    self.status = "Update failed".to_string();
-                    (Event::Nothing, Command::none())
-                }
-            }
-            RowMessage::Deleting(fetched_plugin) => {
-                if let Ok(fetched_plugin) = fetched_plugin {
-                    if let Ok(()) = Installer::delete(
-                        &fetched_plugin.base_plugin.folder,
-                        &fetched_plugin.files,
-                        &self.plugins_dir,
-                    ) {
-                        if Synchronizer::delete_plugin(
-                            &fetched_plugin.base_plugin.title,
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                        if cache::insert_plugin(
+                            &CacheItem::new(
+                                plugin.id,
+                                &plugin.title,
+                                &plugin.description,
+                                &plugin.current_version,
+                                &plugin.latest_version,
+                                &plugin.download_url,
+                            ),
                             &self.db_file,
                         )
                         .is_ok()
                         {
+                            self.status = "Updated".to_string();
+                            (Event::Synchronize, Command::none())
+                        } else {
+                            self.status = "Update failed".to_string();
+                            (Event::Nothing, Command::none())
+                        }
+                    } else {
+                        self.status = "Installation failed".to_string();
+                        (Event::Nothing, Command::none())
+                    }
+                } else {
+                    self.status = "Download failed".to_string();
+                    (Event::Nothing, Command::none())
+                }
+            }
+            RowMessage::DeletePressed(plugin) => {
+                if let Ok(install_information) = Installer::download(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.download_url,
+                    &self.plugins_dir,
+                    &self.cache_dir,
+                    self.backup_enabled,
+                ) {
+                    if let Ok(()) = Installer::delete(
+                        &install_information.0,
+                        &install_information.1,
+                        &self.plugins_dir,
+                    ) {
+                        if cache::delete_plugin(plugin.id, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -508,6 +472,14 @@ impl PluginRow {
                     self.status = "Delete failed".to_string();
                     (Event::Nothing, Command::none())
                 }
+            }
+            RowMessage::WebsitePressed(id, title) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    id, title,
+                ))
+                .unwrap();
+                (Event::Nothing, Command::none())
             }
         }
     }

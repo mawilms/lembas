@@ -6,6 +6,7 @@ pub mod plugins;
 use std::path::PathBuf;
 
 use super::views::plugins::PluginMessage;
+use crate::core::io::cache::create_cache_db;
 use crate::core::io::Synchronizer;
 use crate::core::Config;
 use crate::gui::style;
@@ -201,7 +202,6 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
-                        //plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
@@ -275,10 +275,14 @@ impl Lembas {
         };
         let config = Config::new(paths);
 
-        Synchronizer::create_plugins_db(&config.db_file);
-        Synchronizer::synchronize_application(&config.plugins_dir, &config.db_file)
-            .await
-            .unwrap();
+        create_cache_db(&config.db_file);
+        Synchronizer::synchronize_application(
+            &config.plugins_dir,
+            &config.db_file,
+            &config.application_settings.feed_url,
+        )
+        .await
+        .unwrap();
 
         State::new(&config)
     }
