@@ -54,6 +54,21 @@ pub struct PluginCompendium {
     pub dependencies: Vec<String>,
 }
 
+impl PluginCompendium {
+    pub fn new(name: &str, version: &str, author: &str) -> Self {
+        Self {
+            id: 0,
+            name: name.to_string(),
+            version: version.to_string(),
+            author: author.to_string(),
+            info_url: String::new(),
+            download_url: String::new(),
+            plugin_file_location: String::new(),
+            dependencies: vec![],
+        }
+    }
+}
+
 impl PluginCompendiumContent {
     pub fn purge_descriptors(&self) -> PluginCompendium {
         let purged_descriptors: Vec<String> = self

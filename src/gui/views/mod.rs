@@ -3,6 +3,7 @@ pub mod catalog;
 pub mod configuration;
 pub mod plugins;
 
+use std::env;
 use std::path::PathBuf;
 
 use super::views::plugins::PluginMessage;
@@ -21,6 +22,8 @@ use iced::{
     Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone)]
 pub enum View {
@@ -104,7 +107,7 @@ impl Application for Lembas {
     }
 
     fn title(&self) -> String {
-        String::from("Lembas")
+        format!("Lembas {}", VERSION)
     }
 
     fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
