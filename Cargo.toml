@@ -2,7 +2,7 @@ cargo-features = ["strip"]
 
 [package]
 name = "lembas"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Marius Wilms <info@mariuswilms.dev>"]
 edition = "2018"
 license = "GPL-3.0-only"
@@ -34,6 +34,12 @@ fs_extra = "^1"
 globset = "^0"
 chrono = "^0"
 async-trait = "^0"
+log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] }
+env_logger = "^0"
+
+[dev-dependencies]
+mockall = "^0"
+mockall_double = "^0"
 
 [build-dependencies]
 embed-resource = "^1"
