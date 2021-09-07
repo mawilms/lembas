@@ -60,54 +60,45 @@ impl Synchronizer {
         plugins_dir: &str,
         db_file: &str,
     ) {
-        for (key, element) in local_plugins {
+        for key in local_plugins.keys() {
             if remote_plugins.contains_key(key) {
                 let remote_plugin = remote_plugins.get(key).unwrap();
-                cache::insert_plugin(
-                    &cache::Item::new(
-                        remote_plugin.plugin_id,
-                        &remote_plugin.title,
-                        &remote_plugin.description,
-                        &remote_plugin.current_version,
-                        &remote_plugin.latest_version,
-                        &remote_plugin.download_url,
-                    ),
-                    db_file,
-                )
-                .unwrap();
-                debug!(
-                    "{}",
-                    format!("Cached remote plugin {}", &remote_plugin.title)
-                );
-            } else if !&local_plugins
-                .get(key)
-                .unwrap()
-                .plugin_file_location
-                .is_empty()
-            {
-                let information = PluginParser::parse_file(
-                    Path::new(&plugins_dir).join(
-                        &local_plugins
-                            .get(key)
-                            .unwrap()
-                            .plugin_file_location
-                            .replace("\\", &MAIN_SEPARATOR.to_string()),
-                    ),
-                );
-
-                cache::insert_plugin(
-                    &cache::Item::new(
-                        element.id,
-                        &format!("{} (unmanaged)", information.name),
-                        &information.description,
-                        &information.version,
-                        "",
-                        "",
-                    ),
-                    db_file,
-                )
-                .unwrap();
-                debug!("{}", format!("Cached local plugin {}", &information.name));
+                if local_plugins.contains_key(&remote_plugin.title) {
+                    let local_plugin = local_plugins.get(&remote_plugin.title).unwrap();
+                    cache::insert_plugin(
+                        &cache::Item::new(
+                            remote_plugin.plugin_id,
+                            &remote_plugin.title,
+                            &remote_plugin.description,
+                            &local_plugin.version,
+                            &remote_plugin.latest_version,
+                            &remote_plugin.download_url,
+                        ),
+                        db_file,
+                    )
+                    .unwrap();
+                    debug!(
+                        "{}",
+                        format!("Cached remote plugin {}", &remote_plugin.title)
+                    );
+                } else {
+                    cache::insert_plugin(
+                        &cache::Item::new(
+                            remote_plugin.plugin_id,
+                            &remote_plugin.title,
+                            &remote_plugin.description,
+                            &remote_plugin.current_version,
+                            &remote_plugin.latest_version,
+                            &remote_plugin.download_url,
+                        ),
+                        db_file,
+                    )
+                    .unwrap();
+                    debug!(
+                        "{}",
+                        format!("Cached remote plugin {}", &remote_plugin.title)
+                    );
+                }
             }
         }
     }
