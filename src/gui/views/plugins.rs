@@ -1,4 +1,4 @@
-use crate::core::io::cache::{self, CacheItem};
+use crate::core::io::cache::{self, Item};
 use crate::core::io::Synchronizer;
 use crate::core::{Config, Installer};
 use crate::gui::style;
@@ -15,7 +15,7 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<CacheItem> = cache::get_plugins(&config.db_file)
+        let mut installed_plugins: Vec<Item> = cache::get_plugins(&config.db_file)
             .values()
             .cloned()
             .collect();
@@ -75,11 +75,9 @@ impl Plugins {
     async fn refresh_db(config: Config) -> Result<(), ApplicationError> {
         let local_plugins = Synchronizer::search_local(&config.plugins_dir)
             .map_err(|_| ApplicationError::Synchronize);
-        let local_db_plugins = cache::get_plugins(&config.db_file);
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &local_db_plugins,
             &config.plugins_dir,
             &config.db_file,
             &config.application_settings.feed_url,
@@ -96,7 +94,7 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<CacheItem> =
+                        let mut all_plugins: Vec<Item> =
                             cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -139,7 +137,7 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<CacheItem> =
+                    let installed_plugins: Vec<Item> =
                         cache::get_plugins(&state.config.db_file)
                             .values()
                             .cloned()
@@ -183,7 +181,7 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<CacheItem> =
+                        let mut all_plugins: Vec<Item> =
                             cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
@@ -416,7 +414,7 @@ impl PluginRow {
                     {
                         Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
                         if cache::insert_plugin(
-                            &CacheItem::new(
+                            &Item::new(
                                 plugin.id,
                                 &plugin.title,
                                 &plugin.description,

@@ -2,8 +2,9 @@ use super::api_connector::APIOperations;
 use super::cache;
 use super::plugin_parser::PluginCompendium;
 use crate::core::io::{APIConnector, PluginParser};
-use crate::core::Config;
+use crate::core::{Config, Plugin};
 use globset::Glob;
+use log::{debug, error};
 use std::fs::metadata;
 use std::path::MAIN_SEPARATOR;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
@@ -20,111 +21,84 @@ impl Synchronizer {
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let folder_plugins = Synchronizer::search_local(plugins_dir).unwrap();
-        let db_plugins = cache::get_plugins(db_file);
 
-        Synchronizer::compare_local_state(
-            &folder_plugins,
-            &db_plugins,
-            plugins_dir,
-            db_file,
-            feed_url,
-        )
-        .await;
+        Synchronizer::compare_local_state(&folder_plugins, plugins_dir, db_file, feed_url).await;
 
         Ok(())
     }
 
     pub async fn compare_local_state(
         local_plugins: &HashMap<String, PluginCompendium>,
-        db_plugins: &HashMap<String, cache::CacheItem>,
         plugins_dir: &str,
         db_file: &str,
         feed_url: &str,
     ) {
         match APIConnector::fetch_plugins(feed_url.to_string()).await {
             Ok(remote_plugins) => {
-                for (key, element) in local_plugins {
-                    if db_plugins.contains_key(key) {
-                        if remote_plugins.contains_key(key) {
-                            let local_plugin = db_plugins.get(key).unwrap();
-                            if local_plugin.latest_version
-                                != remote_plugins.get(key).unwrap().latest_version
-                            {
-                                cache::update_plugin(
-                                    local_plugin.id,
-                                    &remote_plugins.get(key).unwrap().latest_version,
-                                    db_file,
-                                )
-                                .unwrap();
-                            }
-                        }
-                    } else if !&local_plugins
-                        .get(key)
-                        .unwrap()
-                        .plugin_file_location
-                        .is_empty()
-                    {
-                        let information = PluginParser::parse_file(
-                            Path::new(&plugins_dir).join(
-                                &local_plugins
-                                    .get(key)
-                                    .unwrap()
-                                    .plugin_file_location
-                                    .replace("\\", &MAIN_SEPARATOR.to_string()),
-                            ),
-                        );
-
-                        if remote_plugins.contains_key(key) {
-                            let remote_plugin = remote_plugins.get(key).unwrap();
-                            cache::insert_plugin(
-                                &cache::CacheItem::new(
-                                    element.id,
-                                    &information.name,
-                                    &information.description,
-                                    &information.version,
-                                    &remote_plugin.latest_version,
-                                    &remote_plugin.download_url,
-                                ),
-                                db_file,
-                            )
-                            .unwrap();
-                        } else {
-                            cache::insert_plugin(
-                                &cache::CacheItem::new(
-                                    element.id,
-                                    &information.name,
-                                    &information.description,
-                                    &information.version,
-                                    "",
-                                    "",
-                                ),
-                                db_file,
-                            )
-                            .unwrap();
-                        }
-                    } else if remote_plugins.contains_key(key) {
-                        let remote_plugin = remote_plugins.get(key).unwrap();
-                        cache::insert_plugin(
-                            &cache::CacheItem::new(
-                                remote_plugin.plugin_id,
-                                &remote_plugin.title,
-                                &remote_plugin.description,
-                                &remote_plugin.current_version,
-                                &remote_plugin.latest_version,
-                                &remote_plugin.download_url,
-                            ),
-                            db_file,
-                        )
-                        .unwrap();
-                    }
-                }
+                Synchronizer::successful_plugin_retrieval(
+                    local_plugins,
+                    &remote_plugins,
+                    plugins_dir,
+                    db_file,
+                );
             }
-            Err(_) => todo!(),
+            Err(_) => {
+                error!(
+                    "{}",
+                    format!(
+                        "Couldn't fetch plugins with the given feed url: {}",
+                        feed_url
+                    )
+                );
+            }
         };
+    }
 
-        for (key, element) in db_plugins {
-            if !local_plugins.contains_key(key) {
-                cache::delete_plugin(element.id, db_file).unwrap();
+    fn successful_plugin_retrieval(
+        local_plugins: &HashMap<String, PluginCompendium>,
+        remote_plugins: &HashMap<String, Plugin>,
+        plugins_dir: &str,
+        db_file: &str,
+    ) {
+        for key in local_plugins.keys() {
+            if remote_plugins.contains_key(key) {
+                let remote_plugin = remote_plugins.get(key).unwrap();
+                if local_plugins.contains_key(&remote_plugin.title) {
+                    let local_plugin = local_plugins.get(&remote_plugin.title).unwrap();
+                    cache::insert_plugin(
+                        &cache::Item::new(
+                            remote_plugin.plugin_id,
+                            &remote_plugin.title,
+                            &remote_plugin.description,
+                            &local_plugin.version,
+                            &remote_plugin.latest_version,
+                            &remote_plugin.download_url,
+                        ),
+                        db_file,
+                    )
+                    .unwrap();
+                    debug!(
+                        "{}",
+                        format!("Cached remote plugin {}", &remote_plugin.title)
+                    );
+                } else {
+                    cache::insert_plugin(
+                        &cache::Item::new(
+                            remote_plugin.plugin_id,
+                            &remote_plugin.title,
+                            &remote_plugin.description,
+                            &remote_plugin.current_version,
+                            &remote_plugin.latest_version,
+                            &remote_plugin.download_url,
+                        ),
+                        db_file,
+                    )
+                    .unwrap();
+                    debug!(
+                        "{}",
+                        format!("Cached remote plugin {}", &remote_plugin.title)
+                    );
+                }
             }
         }
     }
@@ -134,6 +108,7 @@ impl Synchronizer {
     ) -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugincompendium")?.compile_matcher();
+        let secondary_glob = Glob::new(".plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&plugins_dir))? {
             let direcorty_path = Path::new(&plugins_dir).join(entry.unwrap().path());
@@ -145,8 +120,23 @@ impl Synchronizer {
                     if !path.to_str().unwrap().to_lowercase().contains("loader")
                         && glob.is_match(&path)
                     {
+                        debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
                         let xml_content = PluginParser::parse_compendium_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
+                    } else if !path.to_str().unwrap().to_lowercase().contains("loader")
+                        && !path.to_str().unwrap().to_lowercase().contains("demo")
+                        && secondary_glob.is_match(&path)
+                    {
+                        debug!("{}", format!("Found .plugin file at {:?}", &path));
+                        let xml_content = PluginParser::parse_file(&path);
+                        local_plugins.insert(
+                            xml_content.name.clone(),
+                            PluginCompendium::new(
+                                &format!("{} (unmaintained)", &xml_content.name),
+                                &xml_content.version,
+                                &xml_content.author,
+                            ),
+                        );
                     }
                 }
             }

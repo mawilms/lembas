@@ -375,7 +375,7 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    let cache_item = cache::CacheItem::new(
+                    let cache_item = cache::Item::new(
                         plugin.id,
                         &plugin.title,
                         &plugin.description,
