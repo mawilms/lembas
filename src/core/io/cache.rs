@@ -2,7 +2,7 @@ use rusqlite::{params, Connection, Statement};
 use std::{collections::HashMap, error::Error};
 
 #[derive(Debug, Clone)]
-pub struct CacheItem {
+pub struct Item {
     pub id: i32,
     pub title: String,
     pub description: String,
@@ -11,7 +11,7 @@ pub struct CacheItem {
     pub download_url: String,
 }
 
-impl CacheItem {
+impl Item {
     pub fn new(
         id: i32,
         title: &str,
@@ -20,7 +20,7 @@ impl CacheItem {
         latest_version: &str,
         download_url: &str,
     ) -> Self {
-        CacheItem {
+        Item {
             id,
             title: title.to_string(),
             description: description.to_string(),
@@ -50,12 +50,12 @@ pub fn create_cache_db(db_file: &str) {
     .unwrap();
 }
 
-pub fn insert_plugin(cache_item: &CacheItem, db_file: &str) -> Result<(), Box<dyn Error>> {
+pub fn insert_plugin(cache_item: &Item, db_file: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_file)?;
 
     conn.execute(
         "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, download_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, download_url=?6;",
-    params![cache_item.id, cache_item.title, cache_item.description, cache_item.latest_version, cache_item.latest_version, cache_item.download_url])?;
+    params![cache_item.id, cache_item.title, cache_item.description, cache_item.current_version, cache_item.latest_version, cache_item.download_url])?;
 
     Ok(())
 }
@@ -75,7 +75,7 @@ pub fn delete_plugin(plugin_id: i32, db_file: &str) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<CacheItem> {
+fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Item> {
     let mut all_plugins = Vec::new();
 
     let empty_params = params![];
@@ -88,7 +88,7 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<CacheItem> {
 
     let plugin_iter = stmt
         .query_map(query_params, |row| {
-            Ok(CacheItem {
+            Ok(Item {
                 id: row.get(0).unwrap(),
                 title: row.get(1).unwrap(),
                 description: row.get(2).unwrap(),
@@ -105,7 +105,7 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<CacheItem> {
     all_plugins
 }
 
-pub fn get_plugins(db_file: &str) -> HashMap<String, CacheItem> {
+pub fn get_plugins(db_file: &str) -> HashMap<String, Item> {
     let mut plugins = HashMap::new();
 
     let conn = Connection::open(db_file).unwrap();
