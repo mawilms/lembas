@@ -3,27 +3,17 @@ pub mod catalog;
 pub mod configuration;
 pub mod plugins;
 
-use std::env;
-use std::path::PathBuf;
-
 use super::views::plugins::PluginMessage;
-use crate::core::io::cache::create_cache_db;
 use crate::core::io::Synchronizer;
-use crate::core::Config;
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
-use dirs::cache_dir;
-use dirs::data_dir;
-use dirs::home_dir;
 use iced::{
     button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
     Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone)]
 pub enum View {
@@ -47,7 +37,6 @@ pub enum Lembas {
 
 #[derive(Debug, Clone)]
 pub struct State {
-    config: Config,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -76,15 +65,14 @@ pub enum Message {
     ConfigAction(ConfigMessage),
 }
 
-impl State {
-    pub fn new(config: &Config) -> Self {
+impl Default for State {
+    fn default() -> Self {
         Self {
-            config: config.clone(),
             view: View::default(),
-            plugins_view: PluginsView::new(config.clone()),
-            catalog_view: CatalogView::new(config.clone()),
+            plugins_view: PluginsView::default(),
+            catalog_view: CatalogView::default(),
             about_view: AboutView::default(),
-            config_view: ConfigView::new(config),
+            config_view: ConfigView::default(),
             input_value: "".to_string(),
             plugins_btn: button::State::default(),
             catalog_btn: button::State::default(),
@@ -107,14 +95,14 @@ impl Application for Lembas {
     }
 
     fn title(&self) -> String {
-        format!("Lembas {}", VERSION)
+        String::from("Lembas")
     }
 
     fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match self {
             Lembas::Loading => {
-                if let Message::Loaded(state) = message {
-                    *self = Lembas::Loaded(state);
+                if let Message::Loaded(_state) = message {
+                    *self = Lembas::Loaded(State { ..State::default() });
                 }
                 Command::none()
             }
@@ -158,7 +146,6 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
-                config: _,
                 view,
                 plugins_view,
                 catalog_view,
@@ -205,6 +192,7 @@ impl Application for Lembas {
 
                 match view {
                     View::Plugins => {
+                        //plugins_view.update(PluginMessage::LoadPlugins);
                         let main_container = plugins_view.view().map(Message::PluginAction);
                         Column::new()
                             .width(Length::Fill)
@@ -267,27 +255,10 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        let paths = Paths {
-            plugins: home_dir()
-                .expect("Couldn't find your home directory")
-                .join("Documents")
-                .join("The Lord of the Rings Online")
-                .join("Plugins"),
-            settings: data_dir().unwrap().join("lembas"),
-            cache: cache_dir().unwrap().join("lembas"),
-        };
-        let config = Config::new(paths);
+        Synchronizer::create_plugins_db();
+        Synchronizer::synchronize_application().await.unwrap();
 
-        create_cache_db(&config.db_file);
-        Synchronizer::synchronize_application(
-            &config.plugins_dir,
-            &config.db_file,
-            &config.application_settings.feed_url,
-        )
-        .await
-        .unwrap();
-
-        State::new(&config)
+        State::default()
     }
 }
 
@@ -304,10 +275,4 @@ fn loading_data<'a>() -> Element<'a, Message> {
     .center_x()
     .style(style::Content)
     .into()
-}
-
-pub struct Paths {
-    pub plugins: PathBuf,
-    pub settings: PathBuf,
-    pub cache: PathBuf,
 }
