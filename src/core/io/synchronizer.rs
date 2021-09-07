@@ -134,6 +134,7 @@ impl Synchronizer {
     ) -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let glob = Glob::new("*.plugincompendium")?.compile_matcher();
+        let secondary_glob = Glob::new("*.plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&plugins_dir))? {
             let direcorty_path = Path::new(&plugins_dir).join(entry.unwrap().path());
@@ -143,6 +144,7 @@ impl Synchronizer {
                 for file in directory? {
                     let path = file?.path();
                     if !path.to_str().unwrap().to_lowercase().contains("loader")
+                        && !path.to_str().unwrap().to_lowercase().contains("demo")
                         && glob.is_match(&path)
                     {
                         let xml_content = PluginParser::parse_compendium_file(&path);
