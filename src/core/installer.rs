@@ -5,6 +5,7 @@ use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
+use log::debug;
 use std::{error::Error, fs::File};
 use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
@@ -33,12 +34,14 @@ impl Installer {
         let cache_path = Path::new(cache_dir)
             .join(&format!("{}_{}", plugin_id, plugin_title))
             .join("plugin.zip");
-        match File::create(cache_path) {
+        match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
                 let content = response.bytes()?;
                 file.write_all(&content)?;
-                let mut zip_archive = zip::ZipArchive::new(file)?;
+
+                let bla = File::open(&cache_path).unwrap();
+                let mut zip_archive = zip::ZipArchive::new(bla).unwrap();
 
                 zip::ZipArchive::extract(&mut zip_archive, Path::new(&tmp_file_path))?;
 
@@ -62,6 +65,7 @@ impl Installer {
     pub fn delete(name: &str, files: &[String], plugins_dir: &str) -> Result<(), Box<dyn Error>> {
         for file in files {
             let path = Path::new(&plugins_dir).join(name).join(file);
+
             let md = metadata(&path).unwrap();
             if md.is_dir() {
                 fs::remove_dir_all(&path)?;
@@ -88,6 +92,7 @@ impl Installer {
 
         if !Path::new(&plugins_dir).join(&folder_name).exists() {
             fs::create_dir_all(Path::new(&plugins_dir).join(&folder_name)).unwrap();
+            debug!("Created not existing plugin folder {}", &folder_name);
         }
 
         for file in tmp_folder {

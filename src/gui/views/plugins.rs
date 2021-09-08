@@ -393,43 +393,34 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                if let Ok(install_information) = Installer::download(
+                if Installer::download(
                     plugin.id,
                     &plugin.title,
                     &plugin.download_url,
                     &self.plugins_dir,
                     &self.cache_dir,
                     self.backup_enabled,
-                ) {
-                    if Installer::delete(
-                        &install_information.0,
-                        &install_information.1,
-                        &self.plugins_dir,
+                )
+                .is_ok()
+                {
+                    Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                    if cache::insert_plugin(
+                        &Item::new(
+                            plugin.id,
+                            &plugin.title,
+                            &plugin.description,
+                            &plugin.latest_version,
+                            &plugin.latest_version,
+                            &plugin.download_url,
+                        ),
+                        &self.db_file,
                     )
                     .is_ok()
                     {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                        if cache::insert_plugin(
-                            &Item::new(
-                                plugin.id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.download_url,
-                            ),
-                            &self.db_file,
-                        )
-                        .is_ok()
-                        {
-                            self.status = "Updated".to_string();
-                            (Event::Synchronize, Command::none())
-                        } else {
-                            self.status = "Update failed".to_string();
-                            (Event::Nothing, Command::none())
-                        }
+                        self.status = "Updated".to_string();
+                        (Event::Synchronize, Command::none())
                     } else {
-                        self.status = "Installation failed".to_string();
+                        self.status = "Update failed".to_string();
                         (Event::Nothing, Command::none())
                     }
                 } else {
