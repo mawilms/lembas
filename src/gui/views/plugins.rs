@@ -78,7 +78,6 @@ impl Plugins {
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.plugins_dir,
             &config.db_file,
             &config.application_settings.feed_url,
         )
@@ -94,11 +93,10 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Item> =
-                            cache::get_plugins(&state.config.db_file)
-                                .values()
-                                .cloned()
-                                .collect();
+                        let mut all_plugins: Vec<Item> = cache::get_plugins(&state.config.db_file)
+                            .values()
+                            .cloned()
+                            .collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -137,11 +135,10 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<Item> =
-                        cache::get_plugins(&state.config.db_file)
-                            .values()
-                            .cloned()
-                            .collect();
+                    let installed_plugins: Vec<Item> = cache::get_plugins(&state.config.db_file)
+                        .values()
+                        .cloned()
+                        .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
                             plugin.id,
@@ -181,11 +178,10 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Item> =
-                            cache::get_plugins(&state.config.db_file)
-                                .values()
-                                .cloned()
-                                .collect();
+                        let mut all_plugins: Vec<Item> = cache::get_plugins(&state.config.db_file)
+                            .values()
+                            .cloned()
+                            .collect();
                         all_plugins
                             .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                         for plugin in all_plugins {
@@ -555,26 +551,31 @@ impl PluginRow {
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(if self.latest_version == self.current_version {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new(".")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::TransparentButton::Enabled)
-                                .width(Length::FillPortion(2))
-                            } else {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new("Update")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::PrimaryButton::Enabled)
-                                .on_press(RowMessage::UpdatePressed(plugin))
-                                .width(Length::FillPortion(2))
-                            }),
+                            .push(
+                                if self.latest_version != self.current_version
+                                    && !self.latest_version.is_empty()
+                                    && !self.current_version.is_empty()
+                                {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new("Update")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::PrimaryButton::Enabled)
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .width(Length::FillPortion(2))
+                                } else {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new(".")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::TransparentButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                                },
+                            ),
                     )
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),

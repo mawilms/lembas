@@ -1,3 +1,4 @@
+use log::debug;
 use rusqlite::{params, Connection, Statement};
 use std::{collections::HashMap, error::Error};
 
@@ -37,8 +38,8 @@ pub fn create_cache_db(db_file: &str) {
         "
             CREATE TABLE IF NOT EXISTS plugin (
                 id INTEGER PRIMARY KEY,
-                plugin_id INTEGER UNIQUE,
-                title TEXT,
+                plugin_id INTEGER,
+                title TEXT UNIQUE,
                 description TEXT,
                 current_version TEXT,
                 latest_version TEXT,
@@ -54,7 +55,7 @@ pub fn insert_plugin(cache_item: &Item, db_file: &str) -> Result<(), Box<dyn Err
     let conn = Connection::open(db_file)?;
 
     conn.execute(
-        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, download_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, download_url=?6;",
+        "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, download_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (title) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, download_url=?6;",
     params![cache_item.id, cache_item.title, cache_item.description, cache_item.current_version, cache_item.latest_version, cache_item.download_url])?;
 
     Ok(())
@@ -114,6 +115,7 @@ pub fn get_plugins(db_file: &str) -> HashMap<String, Item> {
         .unwrap();
 
     for element in execute_stmt(&mut stmt, "") {
+        debug!("{}", format!("Item retrieved from db: {}", &element.title));
         plugins.insert(element.title.clone(), element);
     }
     plugins

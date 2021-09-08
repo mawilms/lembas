@@ -21,7 +21,7 @@ impl APIOperations for APIConnector {
                     let xml_content = FeedUrlParser::parse_response(&content);
                     for ui in xml_content.Ui {
                         plugins.insert(
-                            ui.UIName.clone(),
+                            ui.UIName.clone().to_lowercase().replace(" ", ""),
                             Plugin::new(
                                 ui.UID,
                                 &ui.UIName,
