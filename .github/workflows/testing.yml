@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install ubuntu deps
+        run: sudo apt install gcc-multilib
       - name: Switch to nightly
         run: rustup default nightly
       - name: Add clippy
