@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install ubuntu deps
-        run: sudo apt install gcc-multilib
+        run: sudo apt install -y gcc-multilib libxkbcommon-dev
       - name: Switch to nightly
         run: rustup default nightly
       - name: Add clippy
