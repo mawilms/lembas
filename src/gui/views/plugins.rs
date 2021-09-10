@@ -78,7 +78,6 @@ impl Plugins {
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.plugins_dir,
             &config.db_file,
             &config.application_settings.feed_url,
         )

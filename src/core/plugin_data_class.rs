@@ -1,11 +1,11 @@
 pub struct PluginDataClass {
-    name: String,
-    author: String,
-    version: String,
-    id: Option<i32>,
-    description: Option<String>,
-    download_url: Option<String>,
-    info_url: Option<String>,
+    pub name: String,
+    pub author: String,
+    pub version: String,
+    pub id: Option<i32>,
+    pub description: Option<String>,
+    pub download_url: Option<String>,
+    pub info_url: Option<String>,
 }
 
 impl PluginDataClass {
@@ -49,9 +49,9 @@ mod tests {
     fn base_class() {
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
 
-        assert_eq!(data_class.name, String::from("Hello World"));
-        assert_eq!(data_class.author, String::from("Marius"));
-        assert_eq!(data_class.version, String::from("0.1.0"));
+        assert_eq!(data_class.name, "Hello World");
+        assert_eq!(data_class.author, "Marius");
+        assert_eq!(data_class.version, "0.1.0");
     }
 
     #[test]
@@ -60,9 +60,9 @@ mod tests {
             .with_id(1)
             .build();
 
-        assert_eq!(data_class.name, String::from("Hello World"));
-        assert_eq!(data_class.author, String::from("Marius"));
-        assert_eq!(data_class.version, String::from("0.1.0"));
+        assert_eq!(data_class.name, "Hello World");
+        assert_eq!(data_class.author, "Marius");
+        assert_eq!(data_class.version, "0.1.0");
         assert_eq!(data_class.id, Some(1));
         assert_eq!(
             data_class.info_url,
@@ -84,9 +84,9 @@ mod tests {
             .with_description("This is an example")
             .build();
 
-        assert_eq!(data_class.name, String::from("Hello World"));
-        assert_eq!(data_class.author, String::from("Marius"));
-        assert_eq!(data_class.version, String::from("0.1.0"));
+        assert_eq!(data_class.name, "Hello World");
+        assert_eq!(data_class.author, "Marius");
+        assert_eq!(data_class.version, "0.1.0");
         assert_eq!(
             data_class.description,
             Some(String::from("This is an example"))

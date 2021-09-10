@@ -75,6 +75,20 @@ pub fn delete_plugin(plugin_id: i32, db_file: &str) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
+pub fn get_plugins(db_file: &str) -> HashMap<String, Item> {
+    let mut plugins = HashMap::new();
+
+    let conn = Connection::open(db_file).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT plugin_id, title, description, current_version, latest_version, download_url FROM plugin ORDER BY title;")
+        .unwrap();
+
+    for element in execute_stmt(&mut stmt, "") {
+        plugins.insert(element.title.clone(), element);
+    }
+    plugins
+}
+
 fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Item> {
     let mut all_plugins = Vec::new();
 
@@ -105,19 +119,92 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Item> {
     all_plugins
 }
 
-pub fn get_plugins(db_file: &str) -> HashMap<String, Item> {
-    let mut plugins = HashMap::new();
-
-    let conn = Connection::open(db_file).unwrap();
-    let mut stmt = conn
-        .prepare("SELECT plugin_id, title, description, current_version, latest_version, download_url FROM plugin ORDER BY title;")
-        .unwrap();
-
-    for element in execute_stmt(&mut stmt, "") {
-        plugins.insert(element.title.clone(), element);
-    }
-    plugins
-}
-
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::{create_cache_db, delete_plugin, get_plugins, insert_plugin, update_plugin, Item};
+    use std::{
+        env,
+        fs::{create_dir_all, remove_dir_all},
+        path::PathBuf,
+    };
+    use uuid::Uuid;
+
+    type TemporaryPaths = (PathBuf, String);
+
+    fn setup() -> TemporaryPaths {
+        let uuid = Uuid::new_v4().to_string();
+        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let db_path = test_dir.join("db.sqlite3");
+
+        create_dir_all(&test_dir).unwrap();
+        create_cache_db(db_path.clone().to_str().unwrap());
+
+        (test_dir, db_path.to_str().unwrap().to_string())
+    }
+
+    fn setup_with_items() -> TemporaryPaths {
+        let uuid = Uuid::new_v4().to_string();
+        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let db_path = test_dir.join("db.sqlite3");
+
+        create_dir_all(&test_dir).expect("Error while running test setup");
+        create_cache_db(
+            db_path
+                .clone()
+                .to_str()
+                .expect("Error while running test setup"),
+        );
+
+        let item = Item::new(1, "TitanBars", "Lorem ipsum", "1.0", "1.1", "example.com");
+        insert_plugin(&item, &db_path.to_str().unwrap()).expect("Error while running test setup");
+        let item = Item::new(2, "PetStable", "Lorem ipsum", "1.1", "1.1", "example.com");
+        insert_plugin(&item, &db_path.to_str().unwrap()).expect("Error while running test setup");
+
+        (test_dir, db_path.to_str().unwrap().to_string())
+    }
+
+    fn teardown(test_dir: PathBuf) {
+        remove_dir_all(test_dir).expect("Error while running test teardown");
+    }
+
+    #[test]
+    fn test_insert_plugin() {
+        let (test_dir, db_path) = setup();
+
+        let item = Item::new(1, "TitanBars", "Lorem ipsum", "1.0", "1.1", "example.com");
+        insert_plugin(&item, &db_path).unwrap();
+
+        teardown(test_dir);
+    }
+
+    #[test]
+    fn test_update_plugin() {
+        let (test_dir, db_path) = setup_with_items();
+
+        update_plugin(1, "1.1", &db_path).unwrap();
+
+        teardown(test_dir);
+    }
+
+    #[test]
+    fn test_delete_plugin() {
+        let (test_dir, db_path) = setup_with_items();
+
+        delete_plugin(1, &db_path).unwrap();
+
+        teardown(test_dir);
+    }
+
+    #[test]
+    fn test_get_plugins() {
+        let (test_dir, db_path) = setup_with_items();
+
+        let plugins = get_plugins(&db_path);
+
+        assert_eq!(plugins.keys().len(), 2);
+        assert!(plugins.contains_key("TitanBars"));
+        assert!(plugins.contains_key("PetStable"));
+
+        teardown(test_dir);
+    }
+}

@@ -1917,8 +1917,9 @@ dependencies = [
  "serde-xml-rs",
  "serde_json",
  "tokio",
+ "uuid",
  "webbrowser",
- "winapi 0.2.8",
+ "winapi 0.3.9",
  "zip",
 ]
 
@@ -3476,6 +3477,15 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom",
 ]
 
 [[package]]
