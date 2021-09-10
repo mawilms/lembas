@@ -1,0 +1,465 @@
+To add a faction:
+	- Add faciotn name in 'functionsCtr.lua' file in the "LoadPlayerReputation" function.
+	- Add new faction integer into the "FactionOrder" array in 'main.lua' at line 20.
+	- Change "maxfaction" value to reflect the new total of factions in 'main.lua' at line 22.
+
+
+To add a new control:
+	- Add 'en','fr','de' text
+	- Add control in 'menu.lua'
+	- Add control in 'functions.lua', in 'functionsCtr.lua', 'functionsMenuControl.lua, & in 'functionsMenu.lua'
+	- Add control in 'settings.lua'
+	- Add control in 'frmOptions.lua'
+	- Add control in 'background.lua'
+	- Add control shell command in 'main.lua'
+	- Add control file in control directory
+
+
+TitanBar workaround:
+	- Unloader (In functionMenu.lua: line 290)
+	- Reloader (In functionMenu.lua: line 299)
+	- ItemUnEquippedTimer (In frmMain.lua: line 191) & (In functionsCtr.lua: line 74)
+	- BIItemRemovedTimer (In BagInfosWindow.lua: line 127)
+	- ItemRemovedTimer (In frmMain.lua: line 175) & (In functionsCtr.lua: line 57)
+	- ImportCtr (In frmMain.lua: line 168 to 172)
+	- OneTimer (In frmMain.lua: line 205 to 251)
+
+
+TitanBar Known Issues/Limitations:
+	- Player Location (Player location is not accessible in API. It's currently based on chat channel, so it will only work if any one of those channel is active: 'Trade', 'Regional', 'RP', 'OOC' or 'LFF'.)
+	- Equipment score (Score based on item Quality & Toughness)
+	- Equipment durability (Item min & max durability are not accessible in API. It's currently based on item wear state.)
+	- Server Time is based on user defined GMT.
+	- TitanBar set to bottom. It will be over UI element because UI element can't be moved in-game.
+	- TitanBar auto always hide not working when exiting TitanBar menu. (when not selecting anything)
+	- Auto sizing label & control is not quite perfect, some time as lot of space.
+	- Icon are always in front (Turbine stretch issue), so moving other control over each other is not recommended.
+	- Turbine points not updating when user spend some points in the lotro store. (Turbine points not available in API and no text in chat when spending)
+	- Turbine.Gameplay.LocalPlayer.GetEquipment() not working properly again. (Turbine API issue)
+
+
+TitanBar Future Enhancements:
+	Add Mail notification when API permit it.
+	Add Server connection when API permit it.
+	Add item stats in vault, shared storage and bagpack when API permit it.
+	Add Travel location when API permit it. (how many travel rations you have)
+	Add Hunter's camp location when API permit it.
+	Add Trader location when API premit it.
+	Add milestone location when API permit it.
+	Add mount list when API permit it.
+	Add Monster play money when API permit it.
+	Add kinship members and friends when API permit it.
+	Add other medallion (of Dol Guldur / of Lothlrien / of Moria )
+	Add an alarm function (Message will pop at certain time to remind user of something)
+	Add House chest when API permit it.
+
+	Try to change the game time update to a eventHandler (if possible)
+	Broadcast control infos to selected chat channel (Meaby later if needed)
+	
+
+Requested features:
+	by Amethadan:
+		Q: I love the Ability to see my whole income of Money per Char and Day and the Complete Money i have on Account. Is it posible to do this for the other Things as Siegel, Medailon and Splitter too?
+		A: Meaby in the future!
+
+	by ocKyal:
+		Q. Is there anyway for you to add Housing Chests to the storage modules?
+		A. Sure, when available in API.
+
+	by Thaodan:
+		Q. Woud it possible to add a functions that displays online kinship members and friends on a tooltip that is display when mouse if over the entry in titanbar?
+		A. Sure, when available in API.
+
+	by MrsAngelID:
+		Q. The ability to track other wallet items based on user selection (ie medallions of the north men etc.)
+		A. Sure, need name in wallet API, i don't have that medallion.
+
+	by DaemonSambe:
+		Q. Have you considered individual fontsize options? I know i'd like it to set coin and inventory larger than the other pieces.
+		A. Meaby in the future!
+
+	by daimon:
+		Q. How about /played ? I guess it would only work if the player would type it to get the info. Would still be pretty cool to get total played on all alts pretty easily
+		A. I will not add this feature because I dont consider this info usefull!
+
+	by spider_007:
+		Q. If it's possible, could you add something, or make something that kinda does the same thing as the emote plugin, but a little more user-friendly?
+		A. Meaby in the future!
+
+	by DaemonSambe:
+		Q. So, i think you could do more with the reputation control. It would be good to get the functionality we get in WoW faction plugins;
+			Use the window box to display all the reps, without having to track a specific rep.
+			Then use the bar display to track the recently updated rep, with session changes.
+			So, if i just got 700 rep with Iron Garrison Miners, change the bar display to track IGMiners, with the value, and the session change total. Considering the limited space on the bar display, using shortened names values would be good; ie. IG Miners 7.3k/35k +2.8k. The window display could use the same treatment to save space. I don't know if you can do text colors, but that would be useful for setting the rep levels.
+			Also, with the current version it seems that the hover display on the icon is dodgy. I can't always get it to display without pixel perfect alignment on the icon; seems to be the lack of text making it difficult.
+		A. I will not add this feature because I love it the way it his right now.
+
+
+Bug reported:
+	by: 
+
+
+TitanBar change log:
+	Major.Minor.Revision
+	--------------------
+	Major: Major modification to the plugin
+	Minor : Added a new functionality to the plugin
+	Revision: Added a small functionality (SAdd)(Adding an existing ability somewhere else)
+			  bug fix, changes, correction, update or tweak of codes
+
+
+	v1.24.45  (2014/05/19)
+	- SAdd: Added Bag of coins currency. Thx Heridan!
+	- SAdd: Added "The Eorlingas" & "The Helmingas" Factions. Thx Heridan!
+
+	v1.24.44  (2013/08/20)
+	- SAdd: Added 2 new factions in the reputation control database. Thx Mandraval!
+
+	v1.24.43c1 (2012/04/27) My bad!
+	- Cor: Repositioning function now save control position properly. Thx Schief!
+
+	v1.24.43c (2012/04/20) My bad!
+	- Cor: Repositioning function now work properly.
+	- Cor: Now work properly in Monster Play.
+
+	v1.24.43 (2013/04/16)
+	- Cor: Repositioning function now work properly. Thx Pineleaf!
+	- Rev: Removed useless settings and some old code.
+
+	v1.24.42 (2013/04/11)
+	- Fix: Reputation tracker now work properly. Thx DaBear78!
+
+	v1.24.41 (2013/04/07)
+	- Add: Small ability to change Turbine Points from 'Wallet' window.
+	- Fix: Settings window was still opened after control being unloaded.
+	- Fix: Currency control will show in double when using it's shell command while control is already in the 'Wallet' tooltip window.
+	- Fix: Some control was still capturing data after being unloaded.
+	- Fix: 'Wallet' control shell command. Forgot to activate it, my bad!
+	- Fix: Border of Tooltip windows will not change when changing lotro theme. Using local resources for now :(
+	- Fix: The position of the combobox dropdown menu in the "Reputation" & "More Options" window.
+
+	v1.24.40 (2013/03/09)
+	- Fix: Broken graphics with update 10. Thx wmrojer!
+	- Fix: The position of the combobox dropdown menu in the "Wallet" window.
+	- Fix: Money currency will be saved only when in pve.
+
+	v1.24.39 (2013/02/04)
+	- Fix: Money info are only saved to disk when unloading TitanBar, to prevent some lag when looting. Thx wmrojer!
+	- Fix: 'Backpack infos' window now get current player items properly if bags are filled from last to first. Thx Wicky!
+
+	v1.24.38 (2013/02/02)
+	- Add: Search capability in the 'Backpack Infos', 'Vault', 'Shared Storage' & 'Track Items' window. Thx scarlim!
+	- Add: Option to select ALL your character in the 'Backpack Infos' & 'Vault' window. Thx scarlim!
+	- Add: Converted player rating to %. Red label are not correct for me, please provide more accurate formulas. Thx DaBear78!
+	- Tweak the location filtering code a bit.
+
+	v1.23.37c (2013/01/15)
+	- Cor: Error when deleting the last atl in the backpack or vault window.
+	- Cor: Add missing XP from lvl 76 to 85. Thx Geko!
+
+	v1.23.37 (2012/11/28)
+	- Add: Can now delete backpack & vault info of your alt. Thx Donna!
+	- Cor: DE name of 2 faction was changed in update 8.1. Thx DaBear78!
+
+	v1.22.37c (2012/10/25)
+	- Cor: Timer now running properly, my bad.
+
+	v1.22.37 (2012/10/24)
+	- Add: RoR factions & crafting guild rank. Thx DaBear78!
+	- Fix: Somes items are not showing properly in SharedStorage, Vault, track items and backpack window. Thx DaBear78!
+	- Fix: "Backpack Infos" control now load/unload properly. Thx Mawane!
+	- Change: Disabled "Equipment Infos" & "Durability Infos" because the GetEquipment() is not working properly. (Turbine API issue)
+
+	v1.22.36c (2012/09/05)
+	- Fix: "Bag infos" window now get current player items properly if bags are filled from last to first. Thx Wicky!
+
+	v1.22.36 (2012/08/31)
+	- Fix: Wallet icon now load if it was selected in the menu.
+	- Fix: Wallet window now show only usefull currency in monster play.
+	- Fix: currency option in wallet window now reflect real state of control. (When unloading a control, option was still showing "On TitanBar")
+	- Fix: "Bag infos" window now get current player items properly.
+
+	v1.22.35c2 (2012/08/16)
+	- Fix: BagInfo window not closing, my bad!
+	- Fix: Combobox class error, my bad!
+	- Fix: Destiny Points control was moving if screen size change. Thank you Geko!
+
+	v1.22.35c (2012/08/12)
+	- Fix: Put back option to show free slot in the bags control, my bad!
+
+	v1.22.35 (2012/08/11)
+	- Fix: Comboxbox items was duplicated if same faction was set again.
+	- Fix: Some Tooltip was not swapping side if out of screen.
+	- Change: Wallet currency are now in a control called "Wallet". Wallet currency can now be on TitanBar or in this control tooltip.
+
+	v1.22.34 (2012/07/11)
+	- Fix: Session play character will not be saved anymore in the Vault, Shared Storage & Bags function. Thx DaBear78!
+	- Fix: Day & Night control is now available in monster play.
+	- Fix: Some word-wrapping issue in 'Day&Night control' when using german language. Thx Kaische!
+	- Fix: Character name in the 'Money Infos' control are now sorted alphabetically.
+	- Change: Icon of 'Track Items' control.
+	- Change: Your alt vault are now always available.
+	- Change: Items infos are now available in 'Bag Infos' & 'Track Items' control only for the character you are playing with.
+	- Add: Rputation tracking ability. Thx Uthboth! (Need the 'Advancement' channel to be active!)
+	- Add: Turbine Points tracker. Thx Kaische! (Need the 'Advancement' channel to be active!)(Need to re-enter Turbine Points when spending points in store because i'm unable to track spending, no text in chat)
+	- Add: XP tracker. (Track your current level not your overall progress)(It's in the 'Player Infos' control. Will track automatically after the first mob kill)
+
+	v1.21.33 (2012/06/22)
+	- Fix: Will automatically change width if screen width change.
+	- Fix: Typo error in the Shared Storage file name. My bad (Need to re-open shared storage to create the new save file)
+
+	v1.21.32 (2012/06/21)
+	- Cor: 'DE' correction made by DaBear78!, thx!
+	- Change: Vault & Shared Storage now show icon & name of your items. (Need to re-open your vault & shared storage to get item name)
+	- Change: Items tracking was removed from 'Backpack infos' control. It's now a new control named 'Track Items'. (Disabled by default)
+	- Add: Option to show/hide session statistics in 'Money Infos' control
+	- Add: Option to show/hide today statistics in 'Money Infos' control
+	- Add: 'Backpack infos' control now show your backpack and your alt backpack. Thx DaBear78! (Need to log in your alt to get the info)
+	- Add: 'Vault control' now show your vault and your alt vault. Thx DaBear78!
+	- Add: Total (Earned - Spent) in the 'Money Infos' tooltip. Thx DaBear78!
+	- Fix: Vault & Shared Storage now update themselves properly. Thx DaBear78!
+	- Fix: Shared Storage is now really shared with all your alt on same server. Thx DaBear78!
+
+	v1.20.31 (2012/06/14)
+	- Change: Tooltip skin to use in-game skin.
+	- Change: Delete icon to use in-game image.
+	- Add: Ability to show in-game day & night time. Thx DooDah!
+
+	v1.19.30 (2012/05/26)
+	- Add: Vault ability.
+	- Add: Shared Storage ability.
+	- Fix: Change to 'ItemInfo' function.
+	- Fix: Error when closing window & pressing 'esc' to close them.
+
+	v1.18.29 (2012/05/24)
+	- Tweak: Auto size function code.
+	- Fix: Both time will not show if option "Show server time" is uncheck when option "Both time" is check.
+	- Fix: Player location will not change to "Enter a city!" when creating a profile.
+	- Fix: Now show message if no stackable item was found in bag & auto height up to 10 items.
+	- Fix: Daily earned/spent of all your character will be keep even if TitanBar is reloaded. It will only be deleted if day as change.
+	- Cor: 'EN' & 'FR' correction.
+
+	v1.18.28 (2012/05/22)
+	- Fix: Player location now work properly in 'DE'.
+	- Fix: Durability control now show % properly if no items was equipped.
+	- Add: Ability to show gold earned/spent since login for all your characters. Thx kwiat_w!
+	- Tweak: 'Back color' window code.
+	- Fix: Now show message if no item in tracking list was found in bag.
+	- Fix: Item quantity in tracking list now show properly.
+	- Cor: 'DE' correction made by DaBear78!, thx!
+
+	v1.17.27 (2012/05/17)
+	- Fix: Option to apply color to all control in the 'Set Back Color' window will now be save.
+	- Change: Item durability & name in the tooltip will change color depending of it's wear state.
+	- Add: Infamy/Renown control. Thx Thaodan! (Need the 'Advancement' channel to be active!)
+
+	v1.16.26 (2012/05/12)
+	- Fix: Player coins not save properly when displaying player money and total money & added a message if no wallet info was found.
+	- Fix: Tooltip now hide when moving is control.
+
+	v1.16.25 (2012/05/10)
+	- Change: The way items will be shown in the 'durability tooltip'
+	- Add: Ability to show player money and total money at the same time. Thx bravejohn!
+	- Fix: Error when closing window & pressing 'esc' to close them.
+
+	v1.15.24 (2012/05/10)
+	- Fix: 'items tracking' & 'money tooltip' now show properly if TitanBar is set at bottom. Thx Wicky71!
+
+	v1.15.23 (2012/05/09)
+	- Fix: Locale shell command now work properly.
+	- Add: Ability to show either free or used slots infos & max slots. Thx kwiat_w!
+
+	v1.14.22 (2012/05/06)
+	- Add: The % on icon when not showing item name in the durability tooltip. Thx DaBear78!
+	- Tweak: The way tootip are created.
+
+	v1.14.21c (2012/05/05)
+	- Fix: Tracking list now save data properly, my bad :p Thx DaBear78!
+
+	v1.14.21 (2012/05/04)
+	- Add: If tracking an item that as a quantity of 10 or less the quantity & item name will be in red. Thx Wicky71!
+	- Fix: Durability % was not updating if Equipment control was not active. Thx DaBear78!
+	- Add: The ability to customize the durability tooltip output. Thx DaBear78!
+	- Cor: 'DE' correction made by DaBear78!, thx!
+	- Fix: Durability text split onto 2 lines when using verdana12+ font. Thx DaBear78!
+	- Fix: Deleting character coinage in the money infos window now work properly. Thx DaBear78!
+	- Fix: Money control now handle up to 9 digits gold amount. Thx Cutholen!
+	- Fix: Item tracking window was not loading properly in 'DE'. Thx DaBear78!
+	- Fix: Profile will only load if in the correct language format.
+
+	v1.13.20 (2012/04/28)
+	- Cor: 'DE' correction made by DaBear78!, thx!
+	- Change: Durability tooltip will show only damaged items. Thx Thaodan!
+	- Fix: Back color flicking when clicking an item in the item tracking window.
+
+	v1.13.19 (2012/04/27)
+	- Fix: Forgot "Mitigations" & "Resistances" title in the player infos tooltip, my bad!
+	- Add: Custom item tracking. Thx MrsAngelID!
+
+	v1.12.18 (2012/04/25)
+	- Fix: In 12h format midnight was showing "0:00am" instead of "12:00am". Thx MrsAngelID!
+	- Fix: Control was shaking when moving. That's because of the change made to the way of changing icon size.
+	- Change: Durability infos window is now a ToolTip.
+	- Change: Equipment infos window is now a ToolTip.
+	- Change: Money infos control ToolTip will now show wallet(Coins) content.
+	- Add: Player stats has a ToolTip. Thx MrsAngelID!
+	- Fix: Money control apperance. (not visible because all coins was in 1 control, now it's 3 control side by side)
+	- Fix: Tooltip not showing properly when TitanBar is dock at bottom of screen.
+	- Fix: 'math.round' not working properly for some user, workaround added to get the same result. Thx Sol!
+	- Add: shell command "/titanbar pw" to print current player currency to chat box, to get the name of currency I don't have. :P
+	- Tweak: Background window code.
+	- Add: Option to hide/show your character coinage to all your character.
+
+	v1.11.17 (2012/04/21)
+	- Change: The way to re-size the icon.
+	- Remove: Some useless resources files.
+	- Add: Durability icon will change color depending of your equipment durability. (New icon)
+	- Add: Ability to set TitanBar at bottom of screen. Not recommended since UI element can't be move. Thx st5555!
+
+	v1.11.16 (2012/04/17)
+	- Fix: Removed "Shard", "Skirmish Mark" & "Medallion" from menu when in Monster Play, only showing "Commendation".
+	- Fix: Bag icon some time not showing.
+	- Fix: "Time" control was not keeping is height when changing GMT value when TitanBar height change.
+	- Fix: "Auto hide" function was not working properly when hide in "Only in combat".
+	- Change: Loading timer now query equipment API every 3 secs up from every second. (Try to eat less fps)
+
+	v1.11.15 (2012/04/12)
+	- Tweak: Control code. (remove 2 unnecessary function in each control)
+	- Change: Remove icon size in text.
+	- Cor: 'FR' correction.
+	- Fix: Drop Down box does not show the right icon size if the user change the language.
+	- Fix: Control text & icon showing properly when TitanBar is less then 30 px height.
+
+	v1.11.14 (2012/04/09)
+	- Add: Ability to change TitanBar height. Thx Firedancer!
+	- Add: Ability to change TitanBar font & font size with in-game available font. Thx Firedancer!
+	- Add: Ability to change icon size. Thx Firedancer!
+	- Add: Ability to view 'real', 'server' or both time. Thx WhisQ! (Server time based on user defined GMT)
+	- Add: Ability to hide in combat, always hide or disabled.
+	- Add: Bag icon will change color depending of bag capacity.
+	- Fix: Some Monster Play menu bug.
+	- Cor: 'FR', 'EN' & 'DE' correction.
+	- Fix: Durability infos was not updating properly, my bad! Thx DaBear78!
+	- Fix: All window will remember its position. (Forgot Background & Shell commands)
+
+	v1.10.13 (2012/04/05)
+	- Add: Ability to remove specific character wallet infos from 'wallet window'. Thx DaBear78!
+	- Add: ability to save settings in a profile to be used with all your characters. Thx DaBear78!
+	- Fix: Session play wallet will not be saved anymore. Thx DaBear78!
+	- Fix: In 'Wallet window' sometime show a "0" in front of coin quantity. Ex. "07" rather "7". Thx DaBear78!
+	- Fix: Long character name was broken into 2 lines in the 'Wallet window'. Thx DaBear78!
+	- Fix: Control was getting out of bound when dragging.
+	- Fix: Control was going behind other control.
+	- Fix: Control will be replaced if screen width has changed. (Only when loaded/reloaded)
+	- Fix: Right side bubble was off.
+	- Cor: 'DE' correction made by DaBear78!, thx!
+	- Cor: 'FR' & 'EN' correction
+	- Fix: All window will remember its position.
+
+	v1.9.12 (2012/03/24)
+	- Fix: Equipment info not avail when using in-game plugin manager. Thx DaBear78!
+	- Fix: Wallet currency not working in Germain client. Thx DaBear78!
+	- Fix: Player location will be saved.
+
+	v1.9.11 (2012/03/23)
+	- Fix: Minor bug when using TitanBar in Monster Play.
+	- Fix: 'Seal' control icon resource.
+	- Fix: 'Commendation' control that was not updating because of is name been 'Commodation'. My bad :P Thx to Ela & his kinmate!
+
+	v1.9.10 (2012/03/22)
+	- Fix: Working again properly in Monsters play.
+	- Fix: Missing 'DE' tooltip text for the 'Seal' control. Thx DaBear78!
+
+	v1.9.9c3(2012/03/21)
+	- Add: TitanBar will hide when in "UI reposition mode". Thx Plinius!
+	- Add: 'Seal' control.
+	- Add: Commendation control.
+	- Fix: Third attempt to Load TitanBar & update properly newly added control when using in-game Plugin Manager.
+	- Cor: 'DE' correction made by Wicky, thx!
+
+	v1.8.9c2(2012/03/17)
+	- Add: 'Medallion' control.
+	- Fix: Second attempt to fix TitanBar to load if using in-game Plugin Manager.
+
+	v1.7.9c (2012/03/17)
+	- Fix: Newly added currency prevented TitanBar to load if using in-game Plugin Manager. My bad :p
+
+	v1.7.9 (2012/03/16)
+	- Add: Added ability to move any controls. Thx Plinius!
+	- Add: 'Shard' control.
+	- Add: 'Skirmish Mark' control.
+	- Add: Left click once to open the option window of a control, left click again to close it.
+	- Fix: Now working properly in monster play, some control are not available in monster play.
+	- Fix: Alpha color that was not persistent when changing alpha value and clicking multiple color.
+
+	v1.6.8 (2012/03/11)
+	- Add: Added ability to set clock to 12h or 24h format. Thx Kalex!
+	- Fix: 'DE' correction made by Wicky, thx!
+
+	v1.5.6 (2012/02/29) (Should be v1.5.7)
+	- Add: Added ability of displaying the character's current money or all your characters. Thx aens!
+	- Tweak: Load settings code.
+
+	v1.4.6 (2012/02/25)
+	- Cor: 'DE' correction made by Wicky, thx!
+	- Fix: 'Wallet' window calculation and placement made by Wicky, thx!
+	- Fix: 'Wallet' window crashing lotro. Thx diskape!.
+
+	v1.4.5c2 (2012/02/22)
+	- Fix: again "The data load event handler must be specified and a valid function." bug.
+
+	v1.4.5c (2012/02/22)
+	- Fix: "The data load event handler must be specified and a valid function." bug.
+
+	v1.4.5 (2012/02/22)
+	- Add: Added ability to keep track of the total money between all of your characters. Thx aens!
+	- Fix: 'Equipement infos' & 'Durability' was not updating properly, my bad :P
+	- Tweak: Code of 'Durability' control, 'Equipment Infos' window & 'Durability Infos' window.
+
+	v1.3.4c (2012/02/21)
+	- Fix: 'Durability' control that was freezing the client when any item was damaged of repaired. My bad!
+
+	v1.3.4 (2012/02/20)
+	- Fix: Settings was not saving 'Durability' control visibility when no settings was found.
+	- Fix: The 'Reset all control & TitanBar back color' that was not working properly.
+	- Change: 'Save' button in the 'Set Back Color' window is now always enable. (In case you forgot to save your selected color in the first place)
+	- Fix: TitanBar timer that was eating 4 FPS (For me), it's now back to normal.
+	- Tweak: Code of all control.
+
+	v1.3.3 (2012/02/18)
+	- Add: 'Player Location' control & his shell commands "/titanbar pl".
+	- Add: 'Durability' control & his shell commands "/titanbar di".
+	- Add: shell commands "/titanbar sc".
+	- Add: ability to reload one or all control. (From Control menu)
+	- Fix: Align right ToolTip bubble with cursor.
+	- Change: Move class file into "Class" directory.
+	- Fix: 'DE' correction made by Wicky, thx!
+	- Fix: Now showing special character in 'fr' language.
+	- Tweak: Code of some functions.
+
+	v1.2.2 (2012/02/15)
+	- Add: 'Equipement' control & his shell commands "/titanbar ei".
+	- Fix: TitanBar will not be 'Always on top'.
+	- Add: 'Rune-Keeper' & 'Warden' icon resourece until I found the in-game hex code for those class.
+	- Fix: The 'bag' control was not updating properly when an item was removed.
+	- Fix: The 'Set Back color' window text now showing in user selected language.
+	- Fix: Shell command now use user selected language.
+
+	v1.1.1 (2012/02/12)
+	- Add: Compatible .pluginCompendium file for LotrOnion support (http://www.lotrointerface.com/downloads/info668-LotROnionMMOUIPlugin.html)
+	- Add: Ability to apply TitanBar back color to one or all control. (From Control menu)
+	- Add: Ability to reset back color of one, all control or all control & TitanBar. (From Control menu)
+	- Add: Ability to apply a control back color to all control, all control & TitanBar or TitanBar. (From Control menu)
+	- Add: Ability to unload one or all control. (From Control menu)
+	- Add: Ability to reset back color of TitanBar or TitanBar & all control. (From TitanBar menu)
+	- Add: Shell commands "/titanbar mi" & "/titanbar dp".
+	- Add: Shell commands window.
+	- Add: 'Wallet' & 'Destiny Point' control.
+	- Change: Control variable in menu from local to global.
+	- Fix: Text in the 'Set Back color' window was not reflecting user selected language.
+	- Fix: 'Set Back color' window will hide if 'F12' key is press.
+	- Fix: 'Set Back color' window will unload if 'Esc' key is press.
+	- Move: All control files into "Control" directory.
+
+	v1.0.0 (2012/02/11)
+	- Initial release

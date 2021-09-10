@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Plugin>
+  <Information>
+	<Name>CraftTimer</Name>
+	<Author>Atheisto (based on David Down's EventTimer)</Author>
+	<Version>1.0</Version>
+	<Image>Atheisto/CraftTimer/clock.tga</Image>
+	<Description>Timer for cooldown on crafted relics and guild items.</Description>
+	<website>http://www.formdutchtilldawn.nl</website>
+  </Information>
+  <Package>Atheisto.CraftTimer.CT_Main</Package>
+  <Configuration Apartment="Atheisto"/>
+</Plugin>

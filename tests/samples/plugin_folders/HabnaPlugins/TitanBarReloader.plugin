@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<Plugin>
+	<Information>
+		<Name>TitanBar Reloader</Name>
+		<Author>by Habna</Author>
+		<Version>v1.0.0</Version>
+    <Image>HabnaPlugins/TitanBar/Resources/x.tga</Image>
+		<Description>This plugin is used internally by TitanBar and should NOT be loaded by user or plugin manager</Description>
+	</Information>
+	<Package>HabnaPlugins.TitanBar.reloader</Package>
+	<Configuration Apartment="TitanBarReloader" />
+</Plugin>

@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Plugin>
+	<Information>
+		<Name>TitanBar</Name>
+		<Author>by Habna</Author>
+		<Version>v1.24.45</Version>
+    <Image>HabnaPlugins/TitanBar/Resources/icon.tga</Image>
+    <Description>This plugin will show various infos on a bar at the top or bottom of your screen. Each infos are called "control". They can be moved anywhere on the bar. You can also change the back color, font and the icon size and height of TitanBar.
+TitanBar support all three official language. ('FR', 'EN', 'DE')
+TitanBar can auto hide, hide when entering combat or be always visible. (Default is always visible)(See more options to change this feature)
+It's also include a profile feature.
+
+TitanBar menu is accessed with a right click on TitanBar.
+Control menu is accessed with a right click on any control.
+
+Somes control are not visible by default, right click on TitanBar to get the menu where you can show other control.
+
+Available control:
+-Player infos and Location
+-Equipment score and durability**
+-Money (Keep track of the total money between all of your characters, tracking current money earned and spent per session per day)
+-Backpack infos (Track all of your characters backpack)
+-Local and game time (12h / 24h format are supported)
+-Faction reputation points*
+-Experience points*
+-Turbine Points*
+-Destiny Points***
+-Shards***
+-Skirmish marks***
+-Medallions***
+-Seals***
+-Commendations***
+-Infamy/renown points*
+-Track Items
+-In-game day/night time
+-Vault (Track all of your characters Vault)
+-Shared Storage and Bag of coins (Track all of your characters Shared Storage)
+-Wallet
+
+*: Information are not available in the API so it's currently based on advancement chat channel, so it will only work if this channel is active.
+**: Not working because the GetEquipment() is not working properly. (Turbine API issue)
+***: On TitanBar or as a ToolTip in 'Wallet' control.
+    </Description>
+	</Information>
+	<Package>HabnaPlugins.TitanBar.Main</Package>
+	<Configuration Apartment="TitanBar" />
+</Plugin>

@@ -32,11 +32,7 @@ impl Synchronizer {
     ) {
         match APIConnector::fetch_plugins(feed_url.to_string()).await {
             Ok(remote_plugins) => {
-                Synchronizer::successful_plugin_retrieval(
-                    local_plugins,
-                    &remote_plugins,
-                    db_file,
-                );
+                Synchronizer::successful_plugin_retrieval(local_plugins, &remote_plugins, db_file);
             }
             Err(_) => {
                 error!(
@@ -131,5 +127,99 @@ impl Synchronizer {
         }
 
         Ok(local_plugins)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Synchronizer;
+    use crate::core::PluginDataClass;
+    use fs_extra::dir::{copy, CopyOptions};
+    use std::{
+        collections::HashMap,
+        env,
+        fs::{create_dir_all, read_dir, remove_dir_all},
+        path::{Path, PathBuf},
+    };
+    use uuid::Uuid;
+
+    type PluginPaths = (PathBuf, String);
+
+    fn setup() -> PathBuf {
+        // Create plugins directory and move items from the samples to this directory to test functionality
+        let uuid = Uuid::new_v4().to_string();
+        let plugins_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let samples_path = Path::new("tests/samples/plugin_folders");
+        let samples_content = read_dir(samples_path).unwrap();
+
+        create_dir_all(&plugins_dir).unwrap();
+        let options = CopyOptions::new();
+
+        for element in samples_content {
+            copy(element.unwrap().path(), &plugins_dir, &options)
+                .expect("Error while running setup method");
+        }
+
+        plugins_dir
+    }
+
+    fn teardown(test_dir: PathBuf) {
+        remove_dir_all(test_dir).expect("Error while running teardown method");
+    }
+
+    fn create_expected_result() -> HashMap<String, PluginDataClass> {
+        let mut expected_result = HashMap::new();
+        expected_result.insert(
+            String::from("CraftTimer"),
+            PluginDataClass::new(
+                "CraftTimer",
+                "Atheisto (based on David Down's EventTimer)",
+                "1.0",
+            )
+            .with_description("Timer for cooldown on crafted relics and guild items.")
+            .build(),
+        );
+        expected_result.insert(
+            String::from("TitanBar"),
+            PluginDataClass::new("TitanBar", "by Habna", "v1.24.45")
+                .with_id(692)
+                .build(),
+        );
+        expected_result.insert(
+            String::from("Animalerie"),
+            PluginDataClass::new("Animalerie", "Homeopatix", "1.24")
+                .with_id(1108)
+                .build(),
+        );
+        expected_result.insert(
+            String::from("BurglarHelper"),
+            PluginDataClass::new("BurglarHelper", "Homeopatix", "1.04")
+                .with_id(1128)
+                .build(),
+        );
+        expected_result.insert(
+            String::from("Voyage"),
+            PluginDataClass::new("Voyage", "Homeopatix", "3.13")
+                .with_id(1125)
+                .build(),
+        );
+        expected_result
+    }
+
+    #[test]
+    fn search_local_plugins() {
+        // TItan bars description missing. TODO
+        let test_dir = setup();
+        let mut expected_result = create_expected_result();
+
+        let local_plugins = Synchronizer::search_local(&test_dir.to_str().unwrap()).unwrap();
+
+        assert!(local_plugins.contains_key("CraftTimer"));
+        assert!(local_plugins.contains_key("TitanBar"));
+        assert!(local_plugins.contains_key("Animalerie"));
+        assert!(local_plugins.contains_key("BurglarHelper"));
+        assert!(local_plugins.contains_key("Voyage"));
+
+        teardown(test_dir);
     }
 }

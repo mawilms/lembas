@@ -55,18 +55,3 @@ impl APIOperations for APIConnector {
 pub enum APIError {
     FetchError,
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::core::io::{api_connector::APIOperations, APIConnector};
-
-    // #[tokio::test]
-    // async fn fetch_plugins() {
-    //     let result = APIConnector::fetch_plugins(
-    //         "https://api.lotrointerface.com/fav/plugincompendium.xml".to_string(),
-    //     )
-    //     .await;
-    //     assert!(result.is_ok());
-    //     assert!(!result.unwrap().is_empty())
-    // }
-}
