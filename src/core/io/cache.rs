@@ -137,7 +137,7 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.clone().to_str().unwrap());
+        create_cache_db(db_path.to_str().unwrap());
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }
@@ -148,17 +148,12 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).expect("Error while running test setup");
-        create_cache_db(
-            db_path
-                .clone()
-                .to_str()
-                .expect("Error while running test setup"),
-        );
+        create_cache_db(db_path.to_str().expect("Error while running test setup"));
 
         let item = Item::new(1, "TitanBars", "Lorem ipsum", "1.0", "1.1", "example.com");
-        insert_plugin(&item, &db_path.to_str().unwrap()).expect("Error while running test setup");
+        insert_plugin(&item, db_path.to_str().unwrap()).expect("Error while running test setup");
         let item = Item::new(2, "PetStable", "Lorem ipsum", "1.1", "1.1", "example.com");
-        insert_plugin(&item, &db_path.to_str().unwrap()).expect("Error while running test setup");
+        insert_plugin(&item, db_path.to_str().unwrap()).expect("Error while running test setup");
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }

@@ -2,7 +2,7 @@ use super::api_connector::APIOperations;
 use super::cache;
 use crate::core::io::{APIConnector, PluginParser};
 use crate::core::{Config, Plugin, PluginDataClass};
-use globset::Glob;
+use globset::{Glob, GlobMatcher};
 use log::{debug, error};
 use std::fs::metadata;
 use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
@@ -98,7 +98,7 @@ impl Synchronizer {
         plugins_dir: &str,
     ) -> Result<HashMap<String, PluginDataClass>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let glob = Glob::new("*.plugincompendium")?.compile_matcher();
+        let primary_glob = Glob::new("*.plugincompendium")?.compile_matcher();
         let secondary_glob = Glob::new(".plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&plugins_dir))? {
@@ -108,25 +108,33 @@ impl Synchronizer {
 
                 for file in directory? {
                     let path = file?.path();
-                    if !path.to_str().unwrap().to_lowercase().contains("loader")
-                        && glob.is_match(&path)
-                    {
-                        debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
+
+                    if Synchronizer::is_plugin_compendium_file(&path, &primary_glob) {
                         let xml_content = PluginParser::parse_compendium_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
-                    } else if !path.to_str().unwrap().to_lowercase().contains("loader")
-                        && !path.to_str().unwrap().to_lowercase().contains("demo")
-                        && secondary_glob.is_match(&path)
-                    {
-                        debug!("{}", format!("Found .plugin file at {:?}", &path));
+
+                        debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
+                    } else if Synchronizer::is_plugin_file(&path, &secondary_glob) {
                         let xml_content = PluginParser::parse_file(&path);
                         local_plugins.insert(xml_content.name.clone(), xml_content);
+
+                        debug!("{}", format!("Found .plugin file at {:?}", &path));
                     }
                 }
             }
         }
 
         Ok(local_plugins)
+    }
+
+    fn is_plugin_compendium_file(path: &Path, glob: &GlobMatcher) -> bool {
+        !path.to_str().unwrap().to_lowercase().contains("loader") && glob.is_match(&path)
+    }
+
+    fn is_plugin_file(path: &Path, glob: &GlobMatcher) -> bool {
+        !path.to_str().unwrap().to_lowercase().contains("loader")
+            && !path.to_str().unwrap().to_lowercase().contains("demo")
+            && glob.is_match(&path)
     }
 }
 
@@ -135,6 +143,7 @@ mod tests {
     use super::Synchronizer;
     use crate::core::PluginDataClass;
     use fs_extra::dir::{copy, CopyOptions};
+    use globset::Glob;
     use std::{
         collections::HashMap,
         env,
@@ -142,8 +151,6 @@ mod tests {
         path::{Path, PathBuf},
     };
     use uuid::Uuid;
-
-    type PluginPaths = (PathBuf, String);
 
     fn setup() -> PathBuf {
         // Create plugins directory and move items from the samples to this directory to test functionality
@@ -163,7 +170,7 @@ mod tests {
         plugins_dir
     }
 
-    fn teardown(test_dir: PathBuf) {
+    fn teardown(test_dir: &Path) {
         remove_dir_all(test_dir).expect("Error while running teardown method");
     }
 
@@ -207,12 +214,42 @@ mod tests {
     }
 
     #[test]
+    fn check_if_compendium_file_exists_positive() {
+        let test_dir = setup();
+        let plugin_dir = test_dir
+            .join("HabnaPlugins")
+            .join("TitanBar.plugincompendium");
+        let glob = Glob::new("*.plugincompendium").unwrap().compile_matcher();
+
+        let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
+
+        assert!(is_existing);
+
+        teardown(&test_dir);
+    }
+
+    #[test]
+    fn check_if_compendium_file_exists_negative() {
+        let test_dir = setup();
+        let plugin_dir = test_dir
+            .join("HabnaPlugins")
+            .join("TitanBar.plugincompendium");
+        let glob = Glob::new("*.plugin").unwrap().compile_matcher();
+
+        let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
+
+        assert!(!is_existing);
+
+        teardown(&test_dir);
+    }
+
+    #[test]
     fn search_local_plugins() {
         // TItan bars description missing. TODO
         let test_dir = setup();
-        let mut expected_result = create_expected_result();
+        //let mut expected_result = create_expected_result();
 
-        let local_plugins = Synchronizer::search_local(&test_dir.to_str().unwrap()).unwrap();
+        let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
         assert!(local_plugins.contains_key("CraftTimer"));
         assert!(local_plugins.contains_key("TitanBar"));
@@ -220,6 +257,6 @@ mod tests {
         assert!(local_plugins.contains_key("BurglarHelper"));
         assert!(local_plugins.contains_key("Voyage"));
 
-        teardown(test_dir);
+        teardown(&test_dir);
     }
 }
