@@ -55,3 +55,13 @@ impl APIOperations for APIConnector {
 pub enum APIError {
     FetchError,
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_plugin_retrieving() {
+        // TODO: Implement here a test with httpmock to test the xml api
+        
+        assert_eq!(1 + 1, 2);
+    }
+}

@@ -169,6 +169,8 @@ mod tests {
 
     #[test]
     fn compendium_parsing_without_description() {
+        // TODO: Add functionality to parse the description of a .plugin file if the .plugincompendium file doesn't contain one and a description is existing in .plugin
+
         let plugin = PluginParser::parse_compendium_file(
             "tests/samples/xml_files/TitanBar.plugincompendium",
         );
