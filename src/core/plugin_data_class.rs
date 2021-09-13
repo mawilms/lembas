@@ -1,9 +1,11 @@
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
 };
 
-#[derive(Debug)]
+pub type PluginCollection = HashMap<u64, PluginDataClass>;
+
+#[derive(Debug, Clone)]
 pub struct PluginDataClass {
     pub name: String,
     pub author: String,
@@ -12,6 +14,10 @@ pub struct PluginDataClass {
     pub description: Option<String>,
     pub download_url: Option<String>,
     pub info_url: Option<String>,
+    pub category: Option<String>,
+    pub latest_version: Option<String>,
+    pub downloads: Option<i32>,
+    pub archive_name: Option<String>,
 }
 
 impl PluginDataClass {
@@ -24,6 +30,10 @@ impl PluginDataClass {
             description: None,
             download_url: None,
             info_url: None,
+            category: None,
+            latest_version: None,
+            downloads: None,
+            archive_name: None,
         }
     }
 
@@ -34,6 +44,21 @@ impl PluginDataClass {
 
     pub fn with_description(mut self, description: &str) -> Self {
         self.description = Some(description.to_string());
+        self
+    }
+
+    pub fn with_remote_information(
+        mut self,
+        category: &str,
+        latest_version: &str,
+        downloads: i32,
+        archive_name: &str,
+    ) -> Self {
+        self.category = Some(category.to_string());
+        self.latest_version = Some(latest_version.to_string());
+        self.downloads = Some(downloads);
+        self.archive_name = Some(archive_name.to_string());
+
         self
     }
 
@@ -74,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn check_hash_positive() {
+    fn calculate_hash_positive() {
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
         let hash = PluginDataClass::calculate_hash(&data_class);
 
@@ -82,7 +107,15 @@ mod tests {
     }
 
     #[test]
-    fn check_hash_negative() {
+    fn calculate_hash_special_letters() {
+        let data_class = PluginDataClass::new("Hello World", "by Mariu's", "0.1.0").build();
+        let hash = PluginDataClass::calculate_hash(&data_class);
+
+        assert_eq!(9_784_537_093_464_970_106, hash);
+    }
+
+    #[test]
+    fn calculate_hash_negative() {
         let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
         let data_class_two = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
 
@@ -129,5 +162,25 @@ mod tests {
             data_class.description,
             Some(String::from("This is an example"))
         );
+    }
+
+    #[test]
+    fn with_remote_information() {
+        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_description("This is an example")
+            .with_remote_information("Skills", "0.2.0", 500, "hello.zip")
+            .build();
+
+        assert_eq!(data_class.name, "Hello World");
+        assert_eq!(data_class.author, "Marius");
+        assert_eq!(data_class.version, "0.1.0");
+        assert_eq!(
+            data_class.description,
+            Some(String::from("This is an example"))
+        );
+        assert_eq!(data_class.category, Some(String::from("Skills")));
+        assert_eq!(data_class.latest_version, Some(String::from("0.2.0")));
+        assert_eq!(data_class.downloads, Some(500));
+        assert_eq!(data_class.archive_name, Some(String::from("hello.zip")));
     }
 }

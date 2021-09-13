@@ -5,14 +5,13 @@ use crate::core::{
     },
     Config,
 };
-use crate::core::{Installer, Plugin};
+use crate::core::{Installer, PluginCollection};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
 };
 use log::debug;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Catalog {
@@ -46,7 +45,7 @@ pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
     LoadPlugins,
-    LoadedPlugins(Result<HashMap<String, Plugin>, crate::gui::views::catalog::APIError>),
+    LoadedPlugins(Result<PluginCollection, crate::gui::views::catalog::APIError>),
     RetryPressed,
 }
 
@@ -85,24 +84,24 @@ impl Catalog {
                         let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
-                                plugin.plugin_id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.description.unwrap(),
+                                &plugin.category.unwrap(),
                             )
-                            .with_versions("", &plugin.latest_version)
+                            .with_versions("", plugin.latest_version.as_ref().unwrap())
                             .with_information(
-                                &plugin.download_url,
+                                &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin.title) {
+                            match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
                                     plugin_row.current_version = value.current_version.clone();
-                                    if value.current_version == plugin.latest_version {
+                                    if value.current_version == plugin.latest_version.unwrap() {
                                         plugin_row.status = String::from("Installed");
                                     } else {
                                         plugin_row.status = String::from("Update");
@@ -140,24 +139,24 @@ impl Catalog {
                         let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
-                                plugin.plugin_id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.description.unwrap(),
+                                &plugin.category.unwrap(),
                             )
-                            .with_versions("", &plugin.latest_version)
+                            .with_versions("", plugin.latest_version.as_ref().unwrap())
                             .with_information(
-                                &plugin.download_url,
+                                &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
                                 &state.config.db_file,
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin.title) {
+                            match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
                                     plugin_row.current_version = value.current_version.clone();
-                                    if value.current_version == plugin.latest_version {
+                                    if value.current_version == plugin.latest_version.unwrap() {
                                         plugin_row.status = String::from("Installed");
                                     } else {
                                         plugin_row.status = String::from("Update");

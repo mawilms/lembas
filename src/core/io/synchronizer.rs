@@ -1,7 +1,7 @@
 use super::api_connector::APIOperations;
 use super::cache;
 use crate::core::io::{APIConnector, PluginParser};
-use crate::core::{Config, Plugin, PluginDataClass};
+use crate::core::{Config, PluginCollection, PluginDataClass};
 use globset::{Glob, GlobMatcher};
 use log::{debug, error};
 use std::fs::metadata;
@@ -26,7 +26,7 @@ impl Synchronizer {
     }
 
     pub async fn compare_local_state(
-        local_plugins: &HashMap<String, PluginDataClass>,
+        local_plugins: &PluginCollection,
         db_file: &str,
         feed_url: &str,
     ) {
@@ -47,56 +47,56 @@ impl Synchronizer {
     }
 
     fn successful_plugin_retrieval(
-        local_plugins: &HashMap<String, PluginDataClass>,
-        remote_plugins: &HashMap<String, Plugin>,
+        local_plugins: &PluginCollection,
+        remote_plugins: &PluginCollection,
         db_file: &str,
     ) {
         for key in local_plugins.keys() {
             if remote_plugins.contains_key(key) {
                 let remote_plugin = remote_plugins.get(key).unwrap();
-                if local_plugins.contains_key(&remote_plugin.title) {
-                    let local_plugin = local_plugins.get(&remote_plugin.title).unwrap();
+                if local_plugins.contains_key(&PluginDataClass::calculate_hash(&remote_plugin)) {
+                    let local_plugin = local_plugins
+                        .get(&PluginDataClass::calculate_hash(&remote_plugin))
+                        .unwrap();
                     cache::insert_plugin(
                         &cache::Item::new(
-                            remote_plugin.plugin_id,
-                            &remote_plugin.title,
-                            &remote_plugin.description,
+                            remote_plugin.id.unwrap(),
+                            &remote_plugin.name,
+                            remote_plugin.description.as_ref().unwrap(),
                             &local_plugin.version,
-                            &remote_plugin.latest_version,
-                            &remote_plugin.download_url,
+                            remote_plugin.latest_version.as_ref().unwrap(),
+                            remote_plugin.download_url.as_ref().unwrap(),
                         ),
                         db_file,
                     )
                     .unwrap();
                     debug!(
                         "{}",
-                        format!("Cached remote plugin {}", &remote_plugin.title)
+                        format!("Cached remote plugin {}", &remote_plugin.name)
                     );
                 } else {
                     cache::insert_plugin(
                         &cache::Item::new(
-                            remote_plugin.plugin_id,
-                            &remote_plugin.title,
-                            &remote_plugin.description,
-                            &remote_plugin.current_version,
-                            &remote_plugin.latest_version,
-                            &remote_plugin.download_url,
+                            remote_plugin.id.unwrap(),
+                            &remote_plugin.name,
+                            remote_plugin.description.as_ref().unwrap(),
+                            &remote_plugin.version,
+                            remote_plugin.latest_version.as_ref().unwrap(),
+                            remote_plugin.download_url.as_ref().unwrap(),
                         ),
                         db_file,
                     )
                     .unwrap();
                     debug!(
                         "{}",
-                        format!("Cached remote plugin {}", &remote_plugin.title)
+                        format!("Cached remote plugin {}", &remote_plugin.name)
                     );
                 }
             }
         }
     }
 
-    pub fn search_local(
-        plugins_dir: &str,
-    ) -> Result<HashMap<String, PluginDataClass>, Box<dyn Error>> {
+    pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let primary_glob = Glob::new("*.plugincompendium")?.compile_matcher();
         let secondary_glob = Glob::new("*.plugin")?.compile_matcher();
@@ -111,12 +111,14 @@ impl Synchronizer {
 
                     if Synchronizer::is_plugin_compendium_file(&path, &primary_glob) {
                         let xml_content = PluginParser::parse_compendium_file(&path);
-                        local_plugins.insert(xml_content.name.clone(), xml_content);
+                        local_plugins
+                            .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
 
                         debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
                     } else if Synchronizer::is_plugin_file(&path, &secondary_glob) {
                         let xml_content = PluginParser::parse_file(&path);
-                        local_plugins.insert(xml_content.name.clone(), xml_content);
+                        local_plugins
+                            .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
 
                         debug!("{}", format!("Found .plugin file at {:?}", &path));
                     }
@@ -255,7 +257,9 @@ mod tests {
 
         let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
-        assert!(local_plugins.contains_key("CraftTimer"));
+        assert_eq!(local_plugins.len(), 5);
+
+        //assert!(local_plugins.contains_key("CraftTimer"));
 
         //assert_eq!(local_plugins, expected_result);
 
