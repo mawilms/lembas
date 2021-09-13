@@ -1,4 +1,9 @@
-#[derive(Debug, PartialEq, Eq)]
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
+
+#[derive(Debug)]
 pub struct PluginDataClass {
     pub name: String,
     pub author: String,
@@ -40,6 +45,19 @@ impl PluginDataClass {
         }
         self
     }
+
+    pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        t.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl Hash for PluginDataClass {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.author.hash(state);
+    }
 }
 
 #[cfg(test)]
@@ -53,6 +71,25 @@ mod tests {
         assert_eq!(data_class.name, "Hello World");
         assert_eq!(data_class.author, "Marius");
         assert_eq!(data_class.version, "0.1.0");
+    }
+
+    #[test]
+    fn check_hash_positive() {
+        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
+        let hash = PluginDataClass::calculate_hash(&data_class);
+
+        assert_eq!(17_418_645_804_149_917_555, hash);
+    }
+
+    #[test]
+    fn check_hash_negative() {
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
+        let data_class_two = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
+
+        assert_eq!(
+            PluginDataClass::calculate_hash(&data_class_one),
+            PluginDataClass::calculate_hash(&data_class_two)
+        );
     }
 
     #[test]
