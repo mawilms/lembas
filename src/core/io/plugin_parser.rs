@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use serde_xml_rs::from_reader;
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use crate::core::PluginDataClass;
 
@@ -12,13 +15,23 @@ impl PluginParser {
     where
         P: AsRef<Path>,
     {
-        let file = File::open(path).unwrap();
+        let file = File::open(&path).unwrap();
 
         let content: PluginCompendiumContent = from_reader(file).unwrap();
 
-        PluginDataClass::new(&content.name, &content.author, &content.version)
-            .with_id(content.id)
-            .build()
+        let data_class = PluginDataClass::new(&content.name, &content.author, &content.version)
+            .with_id(content.id);
+
+        if content.description.is_some() {
+            data_class
+                .with_description(&content.description.unwrap())
+                .build()
+        } else {
+            //let plugin_content = PluginParser::parse_file(&path);
+
+            data_class
+                .build()
+        }
     }
 
     pub fn parse_file<P>(path: P) -> PluginDataClass
@@ -46,6 +59,7 @@ pub struct PluginCompendiumContent {
     pub name: String,
     pub version: String,
     pub author: String,
+    pub description: Option<String>,
     pub info_url: String,
     pub download_url: String,
     #[serde(default)]
@@ -151,6 +165,29 @@ mod tests {
         assert_eq!(plugin.name, "LOTRO Compendium");
         assert_eq!(plugin.version, "1.8.0-beta");
         assert_eq!(plugin.id, Some(526));
+    }
+
+    #[test]
+    fn compendium_parsing_without_description() {
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/TitanBar.plugincompendium",
+        );
+
+        assert_eq!(plugin.name, "TitanBar");
+        // assert_eq!(
+        //     plugin.description,
+        //     Some(String::from("This is the TitanBar plugin"))
+        // );
+    }
+
+    #[test]
+    fn compendium_parsing_with_description() {
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/Animalerie.plugincompendium",
+        );
+
+        assert_eq!(plugin.name, "Animalerie");
+        assert_eq!(plugin.description, Some(String::from("Hello World")));
     }
 
     #[test]

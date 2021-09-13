@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq, Eq)]
 pub struct PluginDataClass {
     pub name: String,
     pub author: String,

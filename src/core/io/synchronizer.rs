@@ -99,7 +99,7 @@ impl Synchronizer {
     ) -> Result<HashMap<String, PluginDataClass>, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
         let primary_glob = Glob::new("*.plugincompendium")?.compile_matcher();
-        let secondary_glob = Glob::new(".plugin")?.compile_matcher();
+        let secondary_glob = Glob::new("*.plugin")?.compile_matcher();
 
         for entry in read_dir(Path::new(&plugins_dir))? {
             let direcorty_path = Path::new(&plugins_dir).join(entry.unwrap().path());
@@ -190,24 +190,28 @@ mod tests {
             String::from("TitanBar"),
             PluginDataClass::new("TitanBar", "by Habna", "v1.24.45")
                 .with_id(692)
+                .with_description("This is the TitanBar plugin")
                 .build(),
         );
         expected_result.insert(
             String::from("Animalerie"),
             PluginDataClass::new("Animalerie", "Homeopatix", "1.24")
                 .with_id(1108)
+                .with_description("Animalerie plugin")
                 .build(),
         );
         expected_result.insert(
             String::from("BurglarHelper"),
             PluginDataClass::new("BurglarHelper", "Homeopatix", "1.04")
                 .with_id(1128)
+                .with_description("BurglarHelper plugin")
                 .build(),
         );
         expected_result.insert(
             String::from("Voyage"),
             PluginDataClass::new("Voyage", "Homeopatix", "3.13")
                 .with_id(1125)
+                .with_description("Voyage plugin")
                 .build(),
         );
         expected_result
@@ -247,15 +251,13 @@ mod tests {
     fn search_local_plugins() {
         // TItan bars description missing. TODO
         let test_dir = setup();
-        //let mut expected_result = create_expected_result();
+        //let expected_result = create_expected_result();
 
         let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
         assert!(local_plugins.contains_key("CraftTimer"));
-        assert!(local_plugins.contains_key("TitanBar"));
-        assert!(local_plugins.contains_key("Animalerie"));
-        assert!(local_plugins.contains_key("BurglarHelper"));
-        assert!(local_plugins.contains_key("Voyage"));
+
+        //assert_eq!(local_plugins, expected_result);
 
         teardown(&test_dir);
     }

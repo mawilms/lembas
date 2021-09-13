@@ -1,58 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Id>1125</Id>
   <Name>Voyage</Name>
   <Version>3.13</Version>
   <Author>Homeopatix</Author>
- <Description>
-DESCRIPTION (Francais)
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-Voyage est un petit plugin pour avoir un acces rapide a vos cometence de voyage
-Vous pouvez deplacer les raccourci pour les organiser comme vous le desirer
-Clique droite sur l'icone pour ouvrir la fenetre d'options
-
-DESCRIPTION (English)
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-Voyage is a small plugin to have quick access to your travel skills
-You can move the shortcuts to organize them as you want
-Right click on the icon to open the options window
-
-DESCRIPTION (Deutsche)  
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-Voyage ist ein kleines Plugin, mit dem Sie schnell auf Ihre Reisefahigkeiten zugreifen konnen
-Sie konnen die Verknupfungen verschieben, um sie nach Ihren Wunschen zu organisieren
-Klicken Sie mit der rechten Maustaste auf das Symbol, um das Optionsfenster zu offnen
-
-LIST OF ALL COMMANDS
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-
-(French)
-Raccourci disponible
-/Voy show -- montre la fenetre
-/Voy hide -- cache la fenetre
-/Voy clear -- effacer toutes les entrees
-/Voy default -- Reinitialize tous les raccourcia
-/Voy options -- affiche la fenetre d'option
-/Voy lock pour verrouiller ou deverrouiller les icones
-
-(English)
-Shortcut available
-/Voy show - show the window
-/Voy hide - hide the window
-/Voy clear - clear all entries
-/Voy default -- reset all shortcuts
-/Voy options -- display the options panel
-/Voy lock to lock or unlock the icons
-
-(Deutsche)
-Verknupfung verfugbar
-/Voy show - zeige das Fenster
-/Voy Hide - Verstecke das Fenster
-/Voy clear - Alle Eintrage loschen
-/Voy default -- Setzen Sie alle Verknupfungen zuruck
-/Voy options -- Zeigen Sie das Optionsfeld an
-/Voy lock um die Symbole zu sperren oder zu entsperren
-</Description>
+  <Description>Voyage plugin
+  </Description>
   <InfoUrl>http://www.lotrointerface.com/downloads/info1125</InfoUrl>
   <DownloadUrl>http://www.lotrointerface.com/downloads/download1125</DownloadUrl>
   <Descriptors>

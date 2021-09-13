@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>692</Id>
+  <Name>TitanBar</Name>
+  <Version>v1.24.45</Version>
+  <Author>by Habna</Author>
+  <InfoUrl>http://www.lotrointerface.com/downloads/info692</InfoUrl>
+  <DownloadUrl>http://www.lotrointerface.com/downloads/download692</DownloadUrl>
+  <Descriptors>
+    <descriptor>HabnaPlugins.TitanBar.plugin</descriptor>
+  </Descriptors>
+  <Dependencies />
+</PluginConfig>
