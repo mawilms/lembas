@@ -3,7 +3,7 @@ use crate::core::{
         api_connector::{APIError, APIOperations},
         cache, APIConnector,
     },
-    Config,
+    Config, PluginDataClass,
 };
 use crate::core::{Installer, PluginCollection};
 use crate::gui::style;
@@ -83,9 +83,12 @@ impl Catalog {
                         let mut plugins = Vec::new();
                         let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
+                            let plugin_hash = PluginDataClass::calculate_hash(&plugin);
+
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
                                 &plugin.name,
+                                &plugin.author,
                                 &plugin.description.unwrap(),
                                 &plugin.category.unwrap(),
                             )
@@ -98,10 +101,10 @@ impl Catalog {
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin.name) {
+                            match installed_plugins.get(&plugin_hash) {
                                 Some(value) => {
-                                    plugin_row.current_version = value.current_version.clone();
-                                    if value.current_version == plugin.latest_version.unwrap() {
+                                    plugin_row.current_version = value.version.clone();
+                                    if value.version == plugin.latest_version.unwrap() {
                                         plugin_row.status = String::from("Installed");
                                     } else {
                                         plugin_row.status = String::from("Update");
@@ -138,9 +141,12 @@ impl Catalog {
                         let mut plugins = Vec::new();
                         let installed_plugins = cache::get_plugins(&state.config.db_file);
                         for (_, plugin) in fetched_plugins.unwrap() {
+                            let plugin_hash = PluginDataClass::calculate_hash(&plugin);
+
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
                                 &plugin.name,
+                                &plugin.author,
                                 &plugin.description.unwrap(),
                                 &plugin.category.unwrap(),
                             )
@@ -153,10 +159,10 @@ impl Catalog {
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin.name) {
+                            match installed_plugins.get(&plugin_hash) {
                                 Some(value) => {
-                                    plugin_row.current_version = value.current_version.clone();
-                                    if value.current_version == plugin.latest_version.unwrap() {
+                                    plugin_row.current_version = value.version.clone();
+                                    if value.version == plugin.latest_version.unwrap() {
                                         plugin_row.status = String::from("Installed");
                                     } else {
                                         plugin_row.status = String::from("Update");
@@ -295,6 +301,7 @@ pub struct PluginRow {
     pub id: i32,
     pub title: String,
     pub description: String,
+    pub author: String,
     pub category: String,
     pub current_version: String,
     pub latest_version: String,
@@ -317,10 +324,11 @@ pub enum RowMessage {
 }
 
 impl PluginRow {
-    pub fn new(id: i32, title: &str, description: &str, category: &str) -> Self {
+    pub fn new(id: i32, title: &str, author: &str, description: &str, category: &str) -> Self {
         Self {
             id,
             title: title.to_string(),
+            author: author.to_string(),
             description: description.to_string(),
             category: category.to_string(),
             current_version: String::new(),
@@ -374,15 +382,23 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    let cache_item = cache::Item::new(
-                        plugin.id,
+                    let cache_item = PluginDataClass::new(
                         &plugin.title,
-                        &plugin.description,
+                        &plugin.author,
                         &plugin.current_version,
-                        &plugin.latest_version,
-                        &plugin.download_url,
-                    );
-                    if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
+                    )
+                    .with_id(plugin.id)
+                    .with_description(&plugin.description)
+                    .with_remote_information(&plugin.category, &plugin.latest_version, 0, "")
+                    .build();
+
+                    if cache::insert_plugin(
+                        PluginDataClass::calculate_hash(&cache_item),
+                        &cache_item,
+                        &self.db_file,
+                    )
+                    .is_ok()
+                    {
                         self.status = "Installed".to_string();
                         self.current_version = plugin.latest_version;
                     } else {

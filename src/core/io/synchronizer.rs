@@ -1,5 +1,5 @@
 use super::api_connector::APIOperations;
-use super::cache::{self, insert_plugin, update_plugin};
+use super::cache::{insert_plugin, update_plugin};
 use crate::core::io::{APIConnector, PluginParser};
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use globset::{Glob, GlobMatcher};
@@ -32,7 +32,7 @@ impl Synchronizer {
     ) {
         match APIConnector::fetch_plugins(feed_url.to_string()).await {
             Ok(remote_plugins) => {
-                Synchronizer::successful_plugin_retrieval(local_plugins, &remote_plugins, db_file);
+                Synchronizer::sync_cache(local_plugins, &remote_plugins, db_file);
             }
             Err(_) => {
                 error!(
@@ -68,10 +68,14 @@ impl Synchronizer {
         local_plugin: &PluginDataClass,
         db_path: &str,
     ) {
-        if remote_plugin.latest_version.is_some() && remote_plugin.id.is_some() {
+        if remote_plugin.latest_version.is_some() {
             let latest_version = remote_plugin.latest_version.as_ref().unwrap();
             if latest_version != &local_plugin.version {
-                match update_plugin(remote_plugin.id.unwrap(), latest_version, db_path) {
+                match update_plugin(
+                    PluginDataClass::calculate_hash(&remote_plugin),
+                    latest_version,
+                    db_path,
+                ) {
                     Ok(_) => {
                         debug!("Local plugin {} updated", remote_plugin.name);
                     }
@@ -81,18 +85,11 @@ impl Synchronizer {
                 }
             }
         } else {
-            let item = cache::Item::new(
-                0,
-                &local_plugin.name,
-                local_plugin.description.as_ref().unwrap_or(&String::new()),
-                &local_plugin.version,
-                local_plugin
-                    .latest_version
-                    .as_ref()
-                    .unwrap_or(&String::new()),
-                local_plugin.download_url.as_ref().unwrap_or(&String::new()),
-            );
-            match insert_plugin(&item, db_path) {
+            match insert_plugin(
+                PluginDataClass::calculate_hash(&local_plugin),
+                local_plugin,
+                db_path,
+            ) {
                 Ok(_) => {
                     debug!("Local plugin {} inserted", local_plugin.name);
                 }
@@ -108,89 +105,6 @@ impl Synchronizer {
     /// Checks if local plugin exists in the database. If the local plugin doesn't
     /// exist it gets inserted. Otherwise the plugin gets updated if the versions are different.
     fn sync_unmanaged_plugin() {}
-
-    fn successful_plugin_retrieval(
-        local_plugins: &PluginCollection,
-        remote_plugins: &PluginCollection,
-        db_file: &str,
-    ) {
-        for key in local_plugins.keys() {
-            if remote_plugins.contains_key(key) {
-                let remote_plugin = remote_plugins.get(key).unwrap();
-                if local_plugins.contains_key(&PluginDataClass::calculate_hash(&remote_plugin)) {
-                    let local_plugin = local_plugins
-                        .get(&PluginDataClass::calculate_hash(&remote_plugin))
-                        .unwrap();
-                    cache::insert_plugin(
-                        &cache::Item::new(
-                            remote_plugin.id.unwrap_or(0),
-                            &remote_plugin.name,
-                            remote_plugin.description.as_ref().unwrap_or(&String::new()),
-                            &local_plugin.version,
-                            remote_plugin
-                                .latest_version
-                                .as_ref()
-                                .unwrap_or(&String::new()),
-                            remote_plugin
-                                .download_url
-                                .as_ref()
-                                .unwrap_or(&String::new()),
-                        ),
-                        db_file,
-                    )
-                    .unwrap();
-                    debug!(
-                        "{}",
-                        format!("Cached remote plugin {}", &remote_plugin.name)
-                    );
-                } else {
-                    cache::insert_plugin(
-                        &cache::Item::new(
-                            remote_plugin.id.unwrap_or(0),
-                            &format!("{} (unmanaged)", remote_plugin.name),
-                            remote_plugin.description.as_ref().unwrap_or(&String::new()),
-                            &remote_plugin.version,
-                            remote_plugin
-                                .latest_version
-                                .as_ref()
-                                .unwrap_or(&String::new()),
-                            remote_plugin
-                                .download_url
-                                .as_ref()
-                                .unwrap_or(&String::new()),
-                        ),
-                        db_file,
-                    )
-                    .unwrap();
-                    debug!(
-                        "{}",
-                        format!("Cached remote plugin {}", &remote_plugin.name)
-                    );
-                }
-            } else {
-                let local_plugin = local_plugins.get(key).unwrap();
-                cache::insert_plugin(
-                    &cache::Item::new(
-                        local_plugin.id.unwrap_or(0),
-                        &local_plugin.name,
-                        local_plugin.description.as_ref().unwrap_or(&String::new()),
-                        &local_plugin.version,
-                        local_plugin
-                            .latest_version
-                            .as_ref()
-                            .unwrap_or(&String::new()),
-                        local_plugin.download_url.as_ref().unwrap_or(&String::new()),
-                    ),
-                    db_file,
-                )
-                .unwrap();
-                debug!(
-                    "{}",
-                    format!("Cached unmanaged plugin {}", &local_plugin.name)
-                );
-            }
-        }
-    }
 
     pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
@@ -379,7 +293,7 @@ mod tests {
         let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2");
         remote_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
 
-        Synchronizer::successful_plugin_retrieval(&local_plugins, &remote_plugins, &db_path);
+        Synchronizer::sync_cache(&local_plugins, &remote_plugins, &db_path);
 
         let plugins = get_plugins(&db_path);
 
