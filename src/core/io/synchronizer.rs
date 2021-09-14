@@ -1,5 +1,5 @@
 use super::api_connector::APIOperations;
-use super::cache;
+use super::cache::{self, insert_plugin, update_plugin};
 use crate::core::io::{APIConnector, PluginParser};
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use globset::{Glob, GlobMatcher};
@@ -46,6 +46,69 @@ impl Synchronizer {
         };
     }
 
+    fn sync_cache(
+        local_plugins: &PluginCollection,
+        remote_plugins: &PluginCollection,
+        db_file: &str,
+    ) {
+        for (key, remote_plugin) in remote_plugins {
+            if local_plugins.contains_key(key) {
+                let local_plugin = local_plugins.get(key).unwrap();
+                // Managed plugin
+                Synchronizer::sync_managed_plugin(remote_plugin, local_plugin, db_file);
+            } else {
+                // Unmanaged plugin
+                Synchronizer::sync_unmanaged_plugin()
+            }
+        }
+    }
+
+    fn sync_managed_plugin(
+        remote_plugin: &PluginDataClass,
+        local_plugin: &PluginDataClass,
+        db_path: &str,
+    ) {
+        if remote_plugin.latest_version.is_some() && remote_plugin.id.is_some() {
+            let latest_version = remote_plugin.latest_version.as_ref().unwrap();
+            if latest_version != &local_plugin.version {
+                match update_plugin(remote_plugin.id.unwrap(), latest_version, db_path) {
+                    Ok(_) => {
+                        debug!("Local plugin {} updated", remote_plugin.name);
+                    }
+                    Err(_) => {
+                        debug!("Error while updating local plugin {}", remote_plugin.name);
+                    }
+                }
+            }
+        } else {
+            let item = cache::Item::new(
+                0,
+                &local_plugin.name,
+                local_plugin.description.as_ref().unwrap_or(&String::new()),
+                &local_plugin.version,
+                local_plugin
+                    .latest_version
+                    .as_ref()
+                    .unwrap_or(&String::new()),
+                local_plugin.download_url.as_ref().unwrap_or(&String::new()),
+            );
+            match insert_plugin(&item, db_path) {
+                Ok(_) => {
+                    debug!("Local plugin {} inserted", local_plugin.name);
+                }
+                Err(_) => {
+                    debug!("Error while inserting local plugin {}", local_plugin.name);
+                }
+            }
+        }
+    }
+
+    /// Syncs the states of unmanaged plugins.
+    ///
+    /// Checks if local plugin exists in the database. If the local plugin doesn't
+    /// exist it gets inserted. Otherwise the plugin gets updated if the versions are different.
+    fn sync_unmanaged_plugin() {}
+
     fn successful_plugin_retrieval(
         local_plugins: &PluginCollection,
         remote_plugins: &PluginCollection,
@@ -60,12 +123,18 @@ impl Synchronizer {
                         .unwrap();
                     cache::insert_plugin(
                         &cache::Item::new(
-                            remote_plugin.id.unwrap(),
+                            remote_plugin.id.unwrap_or(0),
                             &remote_plugin.name,
-                            remote_plugin.description.as_ref().unwrap(),
+                            remote_plugin.description.as_ref().unwrap_or(&String::new()),
                             &local_plugin.version,
-                            remote_plugin.latest_version.as_ref().unwrap(),
-                            remote_plugin.download_url.as_ref().unwrap(),
+                            remote_plugin
+                                .latest_version
+                                .as_ref()
+                                .unwrap_or(&String::new()),
+                            remote_plugin
+                                .download_url
+                                .as_ref()
+                                .unwrap_or(&String::new()),
                         ),
                         db_file,
                     )
@@ -77,12 +146,18 @@ impl Synchronizer {
                 } else {
                     cache::insert_plugin(
                         &cache::Item::new(
-                            remote_plugin.id.unwrap(),
-                            &remote_plugin.name,
-                            remote_plugin.description.as_ref().unwrap(),
+                            remote_plugin.id.unwrap_or(0),
+                            &format!("{} (unmanaged)", remote_plugin.name),
+                            remote_plugin.description.as_ref().unwrap_or(&String::new()),
                             &remote_plugin.version,
-                            remote_plugin.latest_version.as_ref().unwrap(),
-                            remote_plugin.download_url.as_ref().unwrap(),
+                            remote_plugin
+                                .latest_version
+                                .as_ref()
+                                .unwrap_or(&String::new()),
+                            remote_plugin
+                                .download_url
+                                .as_ref()
+                                .unwrap_or(&String::new()),
                         ),
                         db_file,
                     )
@@ -92,6 +167,27 @@ impl Synchronizer {
                         format!("Cached remote plugin {}", &remote_plugin.name)
                     );
                 }
+            } else {
+                let local_plugin = local_plugins.get(key).unwrap();
+                cache::insert_plugin(
+                    &cache::Item::new(
+                        local_plugin.id.unwrap_or(0),
+                        &local_plugin.name,
+                        local_plugin.description.as_ref().unwrap_or(&String::new()),
+                        &local_plugin.version,
+                        local_plugin
+                            .latest_version
+                            .as_ref()
+                            .unwrap_or(&String::new()),
+                        local_plugin.download_url.as_ref().unwrap_or(&String::new()),
+                    ),
+                    db_file,
+                )
+                .unwrap();
+                debug!(
+                    "{}",
+                    format!("Cached unmanaged plugin {}", &local_plugin.name)
+                );
             }
         }
     }
@@ -143,7 +239,10 @@ impl Synchronizer {
 #[cfg(test)]
 mod tests {
     use super::Synchronizer;
-    use crate::core::PluginDataClass;
+    use crate::core::{
+        io::cache::{create_cache_db, get_plugins},
+        PluginDataClass,
+    };
     use fs_extra::dir::{copy, CopyOptions};
     use globset::Glob;
     use std::{
@@ -264,5 +363,43 @@ mod tests {
         //assert_eq!(local_plugins, expected_result);
 
         teardown(&test_dir);
+    }
+
+    #[test]
+    fn cache_synching() {
+        let (test_dir, db_path) = setup_db();
+        let mut local_plugins = HashMap::new();
+        let mut remote_plugins = HashMap::new();
+
+        let plugin = PluginDataClass::new("GreenCar", "Marius", "1.0");
+        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.1");
+        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2");
+        remote_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+
+        Synchronizer::successful_plugin_retrieval(&local_plugins, &remote_plugins, &db_path);
+
+        let plugins = get_plugins(&db_path);
+
+        teardown_db(&test_dir);
+    }
+
+    type TemporaryPaths = (PathBuf, String);
+
+    fn setup_db() -> TemporaryPaths {
+        let uuid = Uuid::new_v4().to_string();
+        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let db_path = test_dir.join("db.sqlite3");
+
+        create_dir_all(&test_dir).unwrap();
+        create_cache_db(db_path.to_str().unwrap());
+
+        (test_dir, db_path.to_str().unwrap().to_string())
+    }
+
+    fn teardown_db(test_dir: &PathBuf) {
+        remove_dir_all(test_dir).expect("Error while running test teardown");
     }
 }

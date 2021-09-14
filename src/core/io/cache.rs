@@ -31,8 +31,8 @@ impl Item {
     }
 }
 
-pub fn create_cache_db(db_file: &str) {
-    let conn = Connection::open(db_file).unwrap();
+pub fn create_cache_db(db_path: &str) {
+    let conn = Connection::open(db_path).unwrap();
     conn.execute(
         "
             CREATE TABLE IF NOT EXISTS plugin (
@@ -50,8 +50,8 @@ pub fn create_cache_db(db_file: &str) {
     .unwrap();
 }
 
-pub fn insert_plugin(cache_item: &Item, db_file: &str) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_file)?;
+pub fn insert_plugin(cache_item: &Item, db_path: &str) -> Result<(), Box<dyn Error>> {
+    let conn = Connection::open(db_path)?;
 
     conn.execute(
         "INSERT INTO plugin (plugin_id, title, description, current_version, latest_version, download_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, current_version=?4, latest_version=?5, download_url=?6;",
@@ -60,8 +60,8 @@ pub fn insert_plugin(cache_item: &Item, db_file: &str) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-pub fn update_plugin(plugin_id: i32, version: &str, db_file: &str) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_file)?;
+pub fn update_plugin(plugin_id: i32, version: &str, db_path: &str) -> Result<(), Box<dyn Error>> {
+    let conn = Connection::open(db_path)?;
     conn.execute(
         "UPDATE plugin SET latest_version=?2 WHERE plugin_id=?1;",
         params![plugin_id, version],
@@ -69,16 +69,16 @@ pub fn update_plugin(plugin_id: i32, version: &str, db_file: &str) -> Result<(),
     Ok(())
 }
 
-pub fn delete_plugin(plugin_id: i32, db_file: &str) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_file)?;
+pub fn delete_plugin(plugin_id: i32, db_path: &str) -> Result<(), Box<dyn Error>> {
+    let conn = Connection::open(db_path)?;
     conn.execute("DELETE FROM plugin WHERE plugin_id=?1;", params![plugin_id])?;
     Ok(())
 }
 
-pub fn get_plugins(db_file: &str) -> HashMap<String, Item> {
+pub fn get_plugins(db_path: &str) -> HashMap<String, Item> {
     let mut plugins = HashMap::new();
 
-    let conn = Connection::open(db_file).unwrap();
+    let conn = Connection::open(db_path).unwrap();
     let mut stmt = conn
         .prepare("SELECT plugin_id, title, description, current_version, latest_version, download_url FROM plugin ORDER BY title;")
         .unwrap();
