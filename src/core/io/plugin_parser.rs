@@ -1,9 +1,6 @@
 use serde::Deserialize;
 use serde_xml_rs::from_reader;
-use std::{
-    fs::File,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, path::Path};
 
 use crate::core::PluginDataClass;
 
@@ -29,8 +26,7 @@ impl PluginParser {
         } else {
             //let plugin_content = PluginParser::parse_file(&path);
 
-            data_class
-                .build()
+            data_class.build()
         }
     }
 

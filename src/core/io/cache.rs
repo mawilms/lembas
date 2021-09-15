@@ -8,7 +8,7 @@ pub fn create_cache_db(db_path: &str) {
     conn.execute(
         "
             CREATE TABLE IF NOT EXISTS plugin (
-                id INTEGER PRIMARY KEY,
+                id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 author TEXT NOT NULL,
                 current_version TEXT NOT NULL,
@@ -36,7 +36,7 @@ pub fn insert_plugin(
 
     conn.execute(
         "INSERT INTO plugin (id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12);",
-    params![id as i64, plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
+    params![format!("{}",id), plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
 
     Ok(())
 }
@@ -45,14 +45,40 @@ pub fn update_plugin(id: u64, version: &str, db_path: &str) -> Result<(), Box<dy
     let conn = Connection::open(db_path)?;
     conn.execute(
         "UPDATE plugin SET latest_version=?2 WHERE id=?1;",
-        params![id as i64, version],
+        params![format!("{}",id), version],
     )?;
     Ok(())
 }
 
-pub fn delete_plugin(plugin_id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
+pub fn get_plugin(id: u64, db_path: &str) -> Result<PluginDataClass, rusqlite::Error> {
+    let conn = Connection::open(db_path).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE id=?1;")
+        .unwrap();
+    let mut plugin_iter = stmt
+        .query_map([format!("{}",id)], |row| {
+            Ok(PluginDataClass {
+                name: row.get(1).unwrap(),
+                author: row.get(2).unwrap(),
+                version: row.get(3).unwrap(),
+                id: Some(row.get(4).unwrap()),
+                description: Some(row.get(5).unwrap()),
+                download_url: Some(row.get(6).unwrap()),
+                info_url: Some(row.get(7).unwrap()),
+                category: Some(row.get(8).unwrap()),
+                latest_version: Some(row.get(9).unwrap()),
+                downloads: Some(row.get(10).unwrap()),
+                archive_name: Some(row.get(11).unwrap()),
+            })
+        })
+        .unwrap();
+
+    plugin_iter.next().unwrap()
+}
+
+pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
-    conn.execute("DELETE FROM plugin WHERE id=?1;", params![plugin_id as i64])?;
+    conn.execute("DELETE FROM plugin WHERE id=?1;", params![format!("{}",id)])?;
     Ok(())
 }
 
@@ -109,7 +135,9 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
 mod tests {
     use crate::core::PluginDataClass;
 
-    use super::{create_cache_db, delete_plugin, get_plugins, insert_plugin, update_plugin};
+    use super::{
+        create_cache_db, delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin,
+    };
     use std::{
         env,
         fs::{create_dir_all, remove_dir_all},
@@ -148,7 +176,6 @@ mod tests {
             db_path.to_str().unwrap(),
         )
         .expect("Error while running test setup");
-        println!("{}", PluginDataClass::calculate_hash(&data_class));
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
@@ -161,7 +188,6 @@ mod tests {
             db_path.to_str().unwrap(),
         )
         .expect("Error while running test setup");
-        println!("{}", PluginDataClass::calculate_hash(&data_class));
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }
@@ -184,6 +210,17 @@ mod tests {
             &db_path,
         )
         .unwrap();
+
+        teardown(test_dir);
+    }
+
+    #[test]
+    fn get_one_plugin() {
+        let (test_dir, db_path) = setup_with_items();
+
+        let plugin = get_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
+
+        assert_eq!(plugin.name, "Hello World");
 
         teardown(test_dir);
     }

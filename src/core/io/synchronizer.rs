@@ -313,7 +313,7 @@ mod tests {
         (test_dir, db_path.to_str().unwrap().to_string())
     }
 
-    fn teardown_db(test_dir: &PathBuf) {
+    fn teardown_db(test_dir: &Path) {
         remove_dir_all(test_dir).expect("Error while running test teardown");
     }
 }
