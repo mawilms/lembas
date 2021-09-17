@@ -56,11 +56,10 @@ impl Synchronizer {
                 let local_plugin = local_plugins.get(key).unwrap();
                 // Managed plugin
                 Synchronizer::sync_managed_plugin(remote_plugin, local_plugin, db_file);
-            } else {
-                // Unmanaged plugin
-                Synchronizer::sync_unmanaged_plugin()
             }
         }
+        // Unmanaged plugin
+        //Synchronizer::sync_unmanaged_plugin(&local_plugin);
     }
 
     fn sync_managed_plugin(
@@ -104,7 +103,8 @@ impl Synchronizer {
     ///
     /// Checks if local plugin exists in the database. If the local plugin doesn't
     /// exist it gets inserted. Otherwise the plugin gets updated if the versions are different.
-    fn sync_unmanaged_plugin() {}
+    /// If a db entry exists but no local plugin, the db entry gets deleted.
+    fn sync_unmanaged_plugin(local_plugin: &PluginDataClass) {}
 
     pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
