@@ -37,6 +37,7 @@ async-trait = "^0"
 log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] }
 env_logger = "^0"
 uuid = { version = "^0", features = ["v4"] }
+httpmock = "^0"
 
 [dev-dependencies]
 mockall = "^0"

@@ -1,7 +1,7 @@
 use crate::core::{
     io::{
-        api_connector::{APIError, APIOperations},
-        cache, APIConnector,
+        api_connector::{self, APIError},
+        cache,
     },
     Config, PluginDataClass,
 };
@@ -75,7 +75,9 @@ impl Catalog {
                     .update(msg)
                     .map(move |msg| Message::Catalog(index, msg)),
                 Message::LoadPlugins => Command::perform(
-                    APIConnector::fetch_plugins(state.config.application_settings.feed_url.clone()),
+                    api_connector::fetch_plugins(
+                        state.config.application_settings.feed_url.clone(),
+                    ),
                     Message::LoadedPlugins,
                 ),
                 Message::LoadedPlugins(fetched_plugins) => {
@@ -133,7 +135,9 @@ impl Catalog {
             },
             Catalog::NoInternet(state) => match message {
                 Message::RetryPressed => Command::perform(
-                    APIConnector::fetch_plugins(state.config.application_settings.feed_url.clone()),
+                    api_connector::fetch_plugins(
+                        state.config.application_settings.feed_url.clone(),
+                    ),
                     Message::LoadedPlugins,
                 ),
                 Message::LoadedPlugins(fetched_plugins) => {

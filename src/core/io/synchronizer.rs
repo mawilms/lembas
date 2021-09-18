@@ -1,6 +1,6 @@
-use super::api_connector::APIOperations;
-use super::cache::{insert_plugin, update_plugin};
-use crate::core::io::{APIConnector, PluginParser};
+use super::api_connector;
+use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin};
+use crate::core::io::PluginParser;
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use globset::{Glob, GlobMatcher};
 use log::{debug, error};
@@ -15,24 +15,24 @@ pub struct Synchronizer {
 impl Synchronizer {
     pub async fn synchronize_application(
         plugins_dir: &str,
-        db_file: &str,
+        db_path: &str,
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let folder_plugins = Synchronizer::search_local(plugins_dir).unwrap();
 
-        Synchronizer::compare_local_state(&folder_plugins, db_file, feed_url).await;
+        Synchronizer::compare_local_state(&folder_plugins, db_path, feed_url).await;
 
         Ok(())
     }
 
     pub async fn compare_local_state(
         local_plugins: &PluginCollection,
-        db_file: &str,
+        db_path: &str,
         feed_url: &str,
     ) {
-        match APIConnector::fetch_plugins(feed_url.to_string()).await {
+        match api_connector::fetch_plugins(feed_url.to_string()).await {
             Ok(remote_plugins) => {
-                Synchronizer::sync_cache(local_plugins, &remote_plugins, db_file);
+                Synchronizer::sync_cache(local_plugins, &remote_plugins, db_path);
             }
             Err(_) => {
                 error!(
@@ -49,62 +49,92 @@ impl Synchronizer {
     fn sync_cache(
         local_plugins: &PluginCollection,
         remote_plugins: &PluginCollection,
-        db_file: &str,
-    ) {
-        for (key, remote_plugin) in remote_plugins {
-            if local_plugins.contains_key(key) {
-                let local_plugin = local_plugins.get(key).unwrap();
-                // Managed plugin
-                Synchronizer::sync_managed_plugin(remote_plugin, local_plugin, db_file);
-            }
-        }
-        // Unmanaged plugin
-        //Synchronizer::sync_unmanaged_plugin(&local_plugin);
-    }
-
-    fn sync_managed_plugin(
-        remote_plugin: &PluginDataClass,
-        local_plugin: &PluginDataClass,
         db_path: &str,
     ) {
-        if remote_plugin.latest_version.is_some() {
-            let latest_version = remote_plugin.latest_version.as_ref().unwrap();
-            if latest_version != &local_plugin.version {
-                match update_plugin(
-                    PluginDataClass::calculate_hash(&remote_plugin),
-                    latest_version,
-                    db_path,
-                ) {
-                    Ok(_) => {
-                        debug!("Local plugin {} updated", remote_plugin.name);
+        let db_plugins = get_plugins(db_path);
+        // Managed plugins
+        Synchronizer::update_local_plugins(&remote_plugins, local_plugins, db_path);
+
+        // Unmanaged plugins
+        Synchronizer::check_existing_plugins(&local_plugins, &db_plugins, db_path);
+        Synchronizer::delete_not_existing_local_plugins(&local_plugins, &db_plugins, db_path);
+    }
+
+    fn update_local_plugins(
+        remote_plugins: &HashMap<u64, PluginDataClass>,
+        local_plugins: &HashMap<u64, PluginDataClass>,
+        db_path: &str,
+    ) {
+        for (key, remote_plugin) in remote_plugins {
+            if local_plugins.contains_key(&key) {
+                let local_plugin = local_plugins.get(&key).unwrap();
+
+                if remote_plugin.latest_version.is_some() {
+                    let latest_version = remote_plugin.latest_version.as_ref().unwrap();
+                    if latest_version != &local_plugin.version {
+                        match update_plugin(
+                            PluginDataClass::calculate_hash(&remote_plugin),
+                            latest_version,
+                            db_path,
+                        ) {
+                            Ok(_) => {
+                                debug!("Local plugin {} updated", remote_plugin.name);
+                            }
+                            Err(_) => {
+                                debug!("Error while updating local plugin {}", remote_plugin.name);
+                            }
+                        }
                     }
-                    Err(_) => {
-                        debug!("Error while updating local plugin {}", remote_plugin.name);
+                } else {
+                    match insert_plugin(
+                        PluginDataClass::calculate_hash(&local_plugin),
+                        local_plugin,
+                        db_path,
+                    ) {
+                        Ok(_) => {
+                            debug!("Local plugin {} inserted", local_plugin.name);
+                        }
+                        Err(_) => {
+                            debug!("Error while inserting local plugin {}", local_plugin.name);
+                        }
                     }
-                }
-            }
-        } else {
-            match insert_plugin(
-                PluginDataClass::calculate_hash(&local_plugin),
-                local_plugin,
-                db_path,
-            ) {
-                Ok(_) => {
-                    debug!("Local plugin {} inserted", local_plugin.name);
-                }
-                Err(_) => {
-                    debug!("Error while inserting local plugin {}", local_plugin.name);
                 }
             }
         }
     }
 
-    /// Syncs the states of unmanaged plugins.
-    ///
-    /// Checks if local plugin exists in the database. If the local plugin doesn't
-    /// exist it gets inserted. Otherwise the plugin gets updated if the versions are different.
-    /// If a db entry exists but no local plugin, the db entry gets deleted.
-    fn sync_unmanaged_plugin(local_plugin: &PluginDataClass) {}
+    /// Checks if local plugins exist in the database. If they exist and their versions are different,
+    /// the versions are updated. If they don't exist the missing plugin is inserted.
+    fn check_existing_plugins(
+        local_plugins: &HashMap<u64, PluginDataClass>,
+        db_plugins: &HashMap<u64, PluginDataClass>,
+        db_path: &str,
+    ) {
+        for (hash, local_plugin) in local_plugins {
+            if let Some(db_plugin) = get_plugin(*hash, db_path) {
+                if &db_plugin.version != &local_plugin.version {
+                    // TODO: Sorting? Highest version gets inserted
+                    update_plugin(*hash, &local_plugin.version, db_path);
+                }
+            } else {
+                insert_plugin(*hash, &local_plugin, db_path);
+            }
+        }
+    }
+
+    /// Checks if the database contains plugins that are not existing anymore in the local plugins folder
+    /// If a plugin doesn't exist in the plugin folder but in the database, the database entry gets deleted.
+    fn delete_not_existing_local_plugins(
+        local_plugins: &HashMap<u64, PluginDataClass>,
+        db_plugins: &HashMap<u64, PluginDataClass>,
+        db_path: &str,
+    ) {
+        for (hash, _) in db_plugins {
+            if !local_plugins.contains_key(hash) {
+                delete_plugin(*hash, db_path);
+            }
+        }
+    }
 
     pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
@@ -154,7 +184,7 @@ impl Synchronizer {
 mod tests {
     use super::Synchronizer;
     use crate::core::{
-        io::cache::{create_cache_db, get_plugins},
+        io::cache::{create_cache_db, get_plugins, insert_plugin},
         PluginDataClass,
     };
     use fs_extra::dir::{copy, CopyOptions};
@@ -300,6 +330,26 @@ mod tests {
         teardown_db(&test_dir);
     }
 
+    #[test]
+    fn update_latest_versions() {
+        assert_eq!(1, 1);
+    }
+
+    #[test]
+    fn update_local_plugin() {
+        assert_eq!(1, 1);
+    }
+
+    #[test]
+    fn insert_not_existing_local_plugin() {
+        assert_eq!(1, 1);
+    }
+
+    #[test]
+    fn delete_not_existing_plugin_from_db() {
+        assert_eq!(1, 1);
+    }
+
     type TemporaryPaths = (PathBuf, String);
 
     fn setup_db() -> TemporaryPaths {
@@ -309,6 +359,29 @@ mod tests {
 
         create_dir_all(&test_dir).unwrap();
         create_cache_db(db_path.to_str().unwrap());
+
+        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_id(1)
+            .with_description("Lorem ipsum")
+            .build();
+        insert_plugin(
+            PluginDataClass::calculate_hash(&data_class),
+            &data_class,
+            db_path.to_str().unwrap(),
+        )
+        .expect("Error while running test setup");
+
+        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+            .with_id(2)
+            .with_description("Lorem ipsum")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        insert_plugin(
+            PluginDataClass::calculate_hash(&data_class),
+            &data_class,
+            db_path.to_str().unwrap(),
+        )
+        .expect("Error while running test setup");
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }

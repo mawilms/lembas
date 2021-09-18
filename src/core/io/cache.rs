@@ -45,18 +45,18 @@ pub fn update_plugin(id: u64, version: &str, db_path: &str) -> Result<(), Box<dy
     let conn = Connection::open(db_path)?;
     conn.execute(
         "UPDATE plugin SET latest_version=?2 WHERE id=?1;",
-        params![format!("{}",id), version],
+        params![format!("{}", id), version],
     )?;
     Ok(())
 }
 
-pub fn get_plugin(id: u64, db_path: &str) -> Result<PluginDataClass, rusqlite::Error> {
+pub fn get_plugin(id: u64, db_path: &str) -> Option<PluginDataClass> {
     let conn = Connection::open(db_path).unwrap();
     let mut stmt = conn
         .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE id=?1;")
         .unwrap();
     let mut plugin_iter = stmt
-        .query_map([format!("{}",id)], |row| {
+        .query_map([format!("{}", id)], |row| {
             Ok(PluginDataClass {
                 name: row.get(1).unwrap(),
                 author: row.get(2).unwrap(),
@@ -73,12 +73,15 @@ pub fn get_plugin(id: u64, db_path: &str) -> Result<PluginDataClass, rusqlite::E
         })
         .unwrap();
 
-    plugin_iter.next().unwrap()
+    plugin_iter.next().transpose().unwrap()
 }
 
 pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
-    conn.execute("DELETE FROM plugin WHERE id=?1;", params![format!("{}",id)])?;
+    conn.execute(
+        "DELETE FROM plugin WHERE id=?1;",
+        params![format!("{}", id)],
+    )?;
     Ok(())
 }
 
