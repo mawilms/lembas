@@ -337,16 +337,46 @@ mod tests {
 
     #[test]
     fn update_local_plugin() {
-        assert_eq!(1, 1);
+        let (test_dir, db_path) = setup_db();
+
+        let mut remote_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1").build();
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one.clone(),
+        );
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_two),
+            data_class_two,
+        );
+
+        let mut local_plugins = HashMap::new();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+        local_plugins.insert(PluginDataClass::calculate_hash(&data_class), data_class);
+        local_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_two),
+            data_class_two,
+        );
+
+        Synchronizer::update_local_plugins(&remote_plugins, &local_plugins, &db_path);
+
+        let plugins = get_plugins(&db_path);
+
+        teardown_db(&test_dir);
     }
 
     #[test]
     fn insert_not_existing_local_plugin() {
+        // Synchronizer::check_existing_plugins();
+
         assert_eq!(1, 1);
     }
 
     #[test]
     fn delete_not_existing_plugin_from_db() {
+        // Synchronizer::delete_not_existing_local_plugins();
+
         assert_eq!(1, 1);
     }
 
