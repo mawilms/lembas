@@ -1,6 +1,5 @@
 use super::FeedUrlParser;
 use crate::core::{PluginCollection, PluginDataClass};
-use async_trait::async_trait;
 use log::debug;
 use std::collections::HashMap;
 
@@ -11,16 +10,17 @@ pub async fn fetch_plugins(url: String) -> Result<PluginCollection, APIError> {
                 let mut plugins: PluginCollection = HashMap::new();
                 let xml_content = FeedUrlParser::parse_response(&content);
                 for ui in xml_content.Ui {
-                    let data_class = PluginDataClass::new(&ui.UIName, &ui.UIAuthorName, "")
-                        .with_id(ui.UID)
-                        .with_description(&ui.UIDescription)
-                        .with_remote_information(
-                            &ui.UICategory,
-                            &ui.UIVersion,
-                            ui.UIDownloads,
-                            &ui.UIFileURL,
-                        )
-                        .build();
+                    let data_class =
+                        PluginDataClass::new(&ui.UIName, &ui.UIAuthorName, &ui.UIVersion)
+                            .with_id(ui.UID)
+                            .with_description(&ui.UIDescription)
+                            .with_remote_information(
+                                &ui.UICategory,
+                                &ui.UIVersion,
+                                ui.UIDownloads,
+                                &ui.UIFileURL,
+                            )
+                            .build();
 
                     plugins.insert(PluginDataClass::calculate_hash(&data_class), data_class);
                 }

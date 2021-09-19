@@ -431,7 +431,7 @@ impl PluginRow {
                         .build();
 
                         if cache::insert_plugin(
-                            PluginDataClass::calculate_hash(&cache_item),
+                            &PluginDataClass::calculate_hash(&cache_item),
                             &cache_item,
                             &self.db_file,
                         )
@@ -466,7 +466,7 @@ impl PluginRow {
                         &install_information.1,
                         &self.plugins_dir,
                     ) {
-                        if cache::delete_plugin(plugin.id as u64, &self.db_file).is_ok() {
+                        if cache::delete_plugin(&(plugin.id as u64), &self.db_file).is_ok() {
                             // TODO Hier noch die richtige ID verwenden
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
