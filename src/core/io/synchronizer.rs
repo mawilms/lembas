@@ -1,6 +1,7 @@
 use super::api_connector;
 use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin};
-use crate::core::io::PluginParser;
+use crate::core::parsers::compendium_parser::parse_compendium_file;
+use crate::core::parsers::plugin_parser::parse_plugin_file;
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use globset::{Glob, GlobMatcher};
 use log::{debug, error};
@@ -133,13 +134,13 @@ impl Synchronizer {
                     let path = file?.path();
 
                     if Synchronizer::is_plugin_compendium_file(&path, &primary_glob) {
-                        let xml_content = PluginParser::parse_compendium_file(&path);
+                        let xml_content = parse_compendium_file(&path);
                         local_plugins
                             .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
 
                         debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
                     } else if Synchronizer::is_plugin_file(&path, &secondary_glob) {
-                        let xml_content = PluginParser::parse_file(&path);
+                        let xml_content = parse_plugin_file(&path);
                         local_plugins
                             .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
 
@@ -350,7 +351,6 @@ mod tests {
 
     //     teardown_db(&test_dir);
     // }
-
     #[test]
     fn insert_not_existing_local_plugin() {
         // Synchronizer::check_existing_plugins();

@@ -1,6 +1,7 @@
 pub mod config;
 pub mod installer;
 pub mod io;
+pub mod parsers;
 pub mod plugin_data_class;
 
 pub use config::Config;
