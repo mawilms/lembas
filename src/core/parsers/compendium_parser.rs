@@ -60,18 +60,42 @@ pub fn parse_compendium_file(path: &Path) -> PluginDataClass {
     }
 }
 
+/// Returns true if the string contains more or equal backslashes than dots
+///
+/// # Examples
+///
+/// ```
+/// let result = is_backslash_separator("Lunarwater\\Waypoint.plugin");
+/// assert!(result);
+/// ```
 fn is_backslash_separator(descriptor: &str) -> bool {
     let dots = descriptor.matches('.').count();
     let backslashes = descriptor.matches('\\').count();
     backslashes >= dots
 }
 
+/// Returns true if the string contains more dots than backslashes
+///
+/// # Examples
+///
+/// ```
+/// let result = is_dot_separator("HabnaPlugins.TitanBar.plugin");
+/// assert!(result);
+/// ```
 fn is_dot_separator(descriptor: &str) -> bool {
     let dots = descriptor.matches('.').count();
     let backslashes = descriptor.matches('\\').count();
     backslashes < dots
 }
 
+/// Used to check if there is a corresponding `.plugin` file next to the initial `.plugincompendium` file.
+///
+/// Usually the plugin folder contains a `.plugincompendium` and `.plugin` file. The first one is our most important one.
+/// The `.plugin` file is used to get a plugin description if non is given. For example the following path could be given:
+///
+/// # Arguments
+///
+/// * `descriptor` - Holds the path to the `.plugin` file that is found in the `.plugincompendium` file
 fn build_plugin_path(plugin_folder_path: &Path, file_path: &str, separator: char) -> PathBuf {
     let splitted_path: Vec<&str> = file_path.split(separator).collect();
     let splited_path_length = splitted_path.len();
@@ -103,15 +127,15 @@ struct PluginCompendiumContent {
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
 struct PluginCompendium {
-    pub id: i32,
-    pub name: String,
-    pub version: String,
-    pub author: String,
-    pub description: Option<String>,
-    pub info_url: String,
-    pub download_url: String,
-    pub plugin_file_location: String,
-    pub dependencies: Vec<String>,
+    id: i32,
+    name: String,
+    version: String,
+    author: String,
+    description: Option<String>,
+    info_url: String,
+    download_url: String,
+    plugin_file_location: String,
+    dependencies: Vec<String>,
 }
 
 impl PluginCompendiumContent {
@@ -153,15 +177,15 @@ impl PluginCompendiumContent {
 }
 
 #[derive(Default, Deserialize, Debug, PartialEq, Hash, Eq)]
-pub struct Descriptors {
+struct Descriptors {
     #[serde(default)]
-    pub descriptor: Vec<String>,
+    descriptor: Vec<String>,
 }
 
 #[derive(Default, Deserialize, Debug, PartialEq, Hash, Eq)]
-pub struct Dependencies {
+struct Dependencies {
     #[serde(default)]
-    pub dependency: Vec<String>,
+    dependency: Vec<String>,
 }
 
 #[cfg(test)]
