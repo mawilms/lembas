@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<Plugin>
+<Information>
+<Name>AltWallet</Name>
+<Author>Bunny</Author>
+<Version>1.0.6</Version>
+<Description><![CDATA[
+The AltWallet is exactly that, what the name is suggest. A plugin to help you managing your alts' wallet. It is working with your monster player character, too.
+This plugin is extremly useful with Premium wallet! Can show the character bound items, the money (each one and summa), and the account bound items as well. 
+And it can run an alt-wide search for any wallet item!
+
+For moving the desktop icon, hold the Ctrl key and drag it with mouse or use the options.
+
+For storing the character information you must login with each one and load the AltWallet plugin.
+
+ON CHAT: /altwallet [command]
+COMMANDS:
+show|on - show the wallet
+hide|off - hide the wallet
+setup|options - show the options window
+refresh - refresh your wallet
+any other or no command - show help
+
+For updates please visit: http://lotro.bunny.hu/altwallet.html
+or: http://www.lotrointerface.com/downloads/info904
+]]></Description>
+<Image>Bunny/AltWallet/resource/altwallet.tga</Image>
+</Information>
+<Package>Bunny.AltWallet.Main</Package>
+</Plugin>

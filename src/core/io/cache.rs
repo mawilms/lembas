@@ -28,14 +28,14 @@ pub fn create_cache_db(db_path: &str) {
 }
 
 pub fn insert_plugin(
-    id: &u64,
+    id: u64,
     plugin: &PluginDataClass,
     db_path: &str,
 ) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
 
     conn.execute(
-        "INSERT INTO plugin (id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12);",
+        "INSERT INTO plugin (id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12) ON CONFLICT (id) DO UPDATE SET id=?1, name=?2, author=?3, current_version=?4, plugin_id=?5, description=?6, download_url=?7, info_url=?8, category=?9, latest_version=?10, downloads=?11, archive_name=?12;",
     params![format!("{}",id), plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
 
     Ok(())
@@ -50,7 +50,7 @@ pub fn update_plugin(id: u64, version: &str, db_path: &str) -> Result<(), Box<dy
     Ok(())
 }
 
-pub fn get_plugin(id: &u64, db_path: &str) -> Option<PluginDataClass> {
+pub fn get_plugin(id: u64, db_path: &str) -> Option<PluginDataClass> {
     let conn = Connection::open(db_path).unwrap();
     let mut stmt = conn
         .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE id=?1;")
@@ -76,7 +76,7 @@ pub fn get_plugin(id: &u64, db_path: &str) -> Option<PluginDataClass> {
     plugin_iter.next().transpose().unwrap()
 }
 
-pub fn delete_plugin(id: &u64, db_path: &str) -> Result<(), Box<dyn Error>> {
+pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     conn.execute(
         "DELETE FROM plugin WHERE id=?1;",
@@ -174,7 +174,7 @@ mod tests {
             .with_description("Lorem ipsum")
             .build();
         insert_plugin(
-            &PluginDataClass::calculate_hash(&data_class),
+            PluginDataClass::calculate_hash(&data_class),
             &data_class,
             db_path.to_str().unwrap(),
         )
@@ -186,7 +186,7 @@ mod tests {
             .with_remote_information("", "1.1", 0, "")
             .build();
         insert_plugin(
-            &PluginDataClass::calculate_hash(&data_class),
+            PluginDataClass::calculate_hash(&data_class),
             &data_class,
             db_path.to_str().unwrap(),
         )
@@ -208,7 +208,7 @@ mod tests {
             .with_description("Lorem ipsum")
             .build();
         insert_plugin(
-            &PluginDataClass::calculate_hash(&data_class),
+            PluginDataClass::calculate_hash(&data_class),
             &data_class,
             &db_path,
         )
@@ -221,7 +221,7 @@ mod tests {
     fn get_one_plugin() {
         let (test_dir, db_path) = setup_with_items();
 
-        let plugin = get_plugin(&17_418_645_804_149_917_555, &db_path).unwrap();
+        let plugin = get_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
 
         assert_eq!(plugin.name, "Hello World");
 
@@ -241,7 +241,7 @@ mod tests {
     fn test_delete_plugin() {
         let (test_dir, db_path) = setup_with_items();
 
-        delete_plugin(&17_418_645_804_149_917_555, &db_path).unwrap();
+        delete_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
 
         teardown(test_dir);
     }

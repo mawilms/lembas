@@ -431,7 +431,7 @@ impl PluginRow {
                         .build();
 
                         if cache::insert_plugin(
-                            &PluginDataClass::calculate_hash(&cache_item),
+                            PluginDataClass::calculate_hash(&cache_item),
                             &cache_item,
                             &self.db_file,
                         )
@@ -466,7 +466,7 @@ impl PluginRow {
                         &install_information.1,
                         &self.plugins_dir,
                     ) {
-                        if cache::delete_plugin(&(plugin.id as u64), &self.db_file).is_ok() {
+                        if cache::delete_plugin(plugin.id as u64, &self.db_file).is_ok() {
                             // TODO Hier noch die richtige ID verwenden
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
@@ -567,26 +567,30 @@ impl PluginRow {
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(if self.latest_version == self.current_version {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new(".")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::TransparentButton::Enabled)
-                                .width(Length::FillPortion(2))
-                            } else {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new("Update")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::PrimaryButton::Enabled)
-                                .on_press(RowMessage::UpdatePressed(plugin))
-                                .width(Length::FillPortion(2))
-                            }),
+                            .push(
+                                if self.latest_version == self.current_version
+                                    || self.latest_version.is_empty()
+                                {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new(".")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::TransparentButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                                } else {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new("Update")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::PrimaryButton::Enabled)
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .width(Length::FillPortion(2))
+                                },
+                            ),
                     )
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),

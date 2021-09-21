@@ -397,7 +397,7 @@ impl PluginRow {
                     .build();
 
                     if cache::insert_plugin(
-                        &PluginDataClass::calculate_hash(&cache_item),
+                        PluginDataClass::calculate_hash(&cache_item),
                         &cache_item,
                         &self.db_file,
                     )
