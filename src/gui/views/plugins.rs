@@ -1,6 +1,6 @@
-use crate::core::io::cache::{self, Item};
+use crate::core::io::cache::{self};
 use crate::core::io::Synchronizer;
-use crate::core::{Config, Installer};
+use crate::core::{Config, Installer, PluginDataClass};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -15,20 +15,21 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<Item> = cache::get_plugins(&config.db_file)
+        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.db_file)
             .values()
             .cloned()
             .collect();
-        installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+        installed_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
             plugins.push(PluginRow::new(
-                plugin.id,
-                &plugin.title,
-                &plugin.description,
-                &plugin.current_version,
-                &plugin.latest_version,
-                &plugin.download_url,
+                plugin.id.unwrap(),
+                &plugin.name,
+                &plugin.author,
+                &plugin.description.unwrap(),
+                &plugin.version,
+                &plugin.latest_version.unwrap(),
+                &plugin.download_url.unwrap(),
                 config.application_settings.backup_enabled,
                 &config.plugins_dir,
                 &config.cache_dir,
@@ -78,7 +79,6 @@ impl Plugins {
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.plugins_dir,
             &config.db_file,
             &config.application_settings.feed_url,
         )
@@ -94,21 +94,22 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Item> =
+                        let mut all_plugins: Vec<PluginDataClass> =
                             cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
                                 .collect();
                         all_plugins
-                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.download_url,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.author,
+                                &plugin.description.unwrap(),
+                                &plugin.version,
+                                &plugin.latest_version.unwrap(),
+                                &plugin.download_url.unwrap(),
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
@@ -137,19 +138,20 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<Item> =
+                    let installed_plugins: Vec<PluginDataClass> =
                         cache::get_plugins(&state.config.db_file)
                             .values()
                             .cloned()
                             .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
-                            plugin.id,
-                            &plugin.title,
-                            &plugin.description,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                            &plugin.download_url,
+                            plugin.id.unwrap(),
+                            &plugin.name,
+                            &plugin.author,
+                            &plugin.description.unwrap(),
+                            &plugin.version,
+                            &plugin.latest_version.unwrap(),
+                            &plugin.download_url.unwrap(),
                             state.config.application_settings.backup_enabled,
                             &state.config.plugins_dir,
                             &state.config.cache_dir,
@@ -181,21 +183,22 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<Item> =
+                        let mut all_plugins: Vec<PluginDataClass> =
                             cache::get_plugins(&state.config.db_file)
                                 .values()
                                 .cloned()
                                 .collect();
                         all_plugins
-                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.download_url,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.author,
+                                &plugin.description.unwrap(),
+                                &plugin.version,
+                                &plugin.latest_version.unwrap(),
+                                &plugin.download_url.unwrap(),
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
@@ -299,6 +302,7 @@ impl Plugins {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
+    pub author: String,
     pub description: String,
     #[serde(default)]
     pub current_version: String,
@@ -340,6 +344,7 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
+        author: &str,
         description: &str,
         current_version: &str,
         latest_version: &str,
@@ -353,6 +358,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                author: author.to_string(),
                 description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
@@ -372,6 +378,7 @@ impl PluginRow {
             Self {
                 id,
                 title: title.to_string(),
+                author: author.to_string(),
                 description: description.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
@@ -413,15 +420,19 @@ impl PluginRow {
                     .is_ok()
                     {
                         Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                        let cache_item = PluginDataClass::new(
+                            &plugin.title,
+                            &plugin.author,
+                            &plugin.current_version,
+                        )
+                        .with_id(plugin.id)
+                        .with_description(&plugin.description)
+                        .with_remote_information("", &plugin.latest_version, 0, "")
+                        .build();
+
                         if cache::insert_plugin(
-                            &Item::new(
-                                plugin.id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.download_url,
-                            ),
+                            PluginDataClass::calculate_hash(&cache_item),
+                            &cache_item,
                             &self.db_file,
                         )
                         .is_ok()
@@ -455,7 +466,8 @@ impl PluginRow {
                         &install_information.1,
                         &self.plugins_dir,
                     ) {
-                        if cache::delete_plugin(plugin.id, &self.db_file).is_ok() {
+                        if cache::delete_plugin(plugin.id as u64, &self.db_file).is_ok() {
+                            // TODO Hier noch die richtige ID verwenden
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -555,26 +567,30 @@ impl PluginRow {
                             .push(Text::new(&self.title).width(Length::FillPortion(6)))
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(if self.latest_version == self.current_version {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new(".")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::TransparentButton::Enabled)
-                                .width(Length::FillPortion(2))
-                            } else {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new("Update")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::PrimaryButton::Enabled)
-                                .on_press(RowMessage::UpdatePressed(plugin))
-                                .width(Length::FillPortion(2))
-                            }),
+                            .push(
+                                if self.latest_version == self.current_version
+                                    || self.latest_version.is_empty()
+                                {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new(".")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::TransparentButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                                } else {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new("Update")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::PrimaryButton::Enabled)
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .width(Length::FillPortion(2))
+                                },
+                            ),
                     )
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),

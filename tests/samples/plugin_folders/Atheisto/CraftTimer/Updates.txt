@@ -1,0 +1,6 @@
+Version updates of CraftTimer plugin.
+
+2013-03-29: 1.0   - Going live
+2013-03-25: 0.3   - Added legendaries, display time as #d ##:## instead of hours, bux fix.
+2013-03-23: 0.2   - Bug fix.
+2013-03-23: 0.1   - Basic functionality.

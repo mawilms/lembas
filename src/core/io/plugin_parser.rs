@@ -2,28 +2,49 @@ use serde::Deserialize;
 use serde_xml_rs::from_reader;
 use std::{fs::File, path::Path};
 
+use crate::core::PluginDataClass;
+
 #[derive(Debug, Default)]
 pub struct PluginParser {}
 
 impl PluginParser {
-    pub fn parse_compendium_file<P>(path: P) -> PluginCompendium
+    pub fn parse_compendium_file<P>(path: P) -> PluginDataClass
     where
         P: AsRef<Path>,
     {
-        let file = File::open(path).unwrap();
+        let file = File::open(&path).unwrap();
 
         let content: PluginCompendiumContent = from_reader(file).unwrap();
-        content.purge_descriptors()
+
+        let data_class = PluginDataClass::new(&content.name, &content.author, &content.version)
+            .with_id(content.id);
+
+        if content.description.is_some() {
+            data_class
+                .with_description(&content.description.unwrap())
+                .build()
+        } else {
+            //let plugin_content = PluginParser::parse_file(&path);
+
+            data_class.build()
+        }
     }
 
-    pub fn parse_file<P>(path: P) -> Information
+    pub fn parse_file<P>(path: P) -> PluginDataClass
     where
         P: AsRef<Path>,
     {
         let file = File::open(path).unwrap();
 
         let content: Plugin = from_reader(file).unwrap();
-        content.information
+
+        PluginDataClass::new(
+            &content.information.name,
+            &content.information.author,
+            &content.information.version,
+        )
+        .with_description(&content.information.description)
+        .build()
     }
 }
 
@@ -34,6 +55,7 @@ pub struct PluginCompendiumContent {
     pub name: String,
     pub version: String,
     pub author: String,
+    pub description: Option<String>,
     pub info_url: String,
     pub download_url: String,
     #[serde(default)]
@@ -54,23 +76,8 @@ pub struct PluginCompendium {
     pub dependencies: Vec<String>,
 }
 
-impl PluginCompendium {
-    pub fn new(name: &str, version: &str, author: &str) -> Self {
-        Self {
-            id: 0,
-            name: name.to_string(),
-            version: version.to_string(),
-            author: author.to_string(),
-            info_url: String::new(),
-            download_url: String::new(),
-            plugin_file_location: String::new(),
-            dependencies: vec![],
-        }
-    }
-}
-
 impl PluginCompendiumContent {
-    pub fn purge_descriptors(&self) -> PluginCompendium {
+    pub fn _purge_descriptors(&self) -> PluginCompendium {
         let purged_descriptors: Vec<String> = self
             .descriptors
             .descriptor
@@ -143,8 +150,7 @@ mod tests {
             "tests/samples/xml_files/Waypoint.plugincompendium",
         );
         assert_eq!(plugin.name, "Waypoint");
-        assert_eq!(plugin.plugin_file_location, "Lunarwater\\Waypoint.plugin");
-        assert_eq!(plugin.dependencies.len(), 0);
+        assert_eq!(plugin.version, "1.9");
     }
 
     #[test]
@@ -153,8 +159,33 @@ mod tests {
             "tests/samples/xml_files/Compendium.plugincompendium",
         );
         assert_eq!(plugin.name, "LOTRO Compendium");
-        assert_eq!(plugin.plugin_file_location, "Compendium\\Compendium.plugin");
-        assert_eq!(plugin.dependencies, vec!["640"]);
+        assert_eq!(plugin.version, "1.8.0-beta");
+        assert_eq!(plugin.id, Some(526));
+    }
+
+    #[test]
+    fn compendium_parsing_without_description() {
+        // TODO: Add functionality to parse the description of a .plugin file if the .plugincompendium file doesn't contain one and a description is existing in .plugin
+
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/TitanBar.plugincompendium",
+        );
+
+        assert_eq!(plugin.name, "TitanBar");
+        // assert_eq!(
+        //     plugin.description,
+        //     Some(String::from("This is the TitanBar plugin"))
+        // );
+    }
+
+    #[test]
+    fn compendium_parsing_with_description() {
+        let plugin = PluginParser::parse_compendium_file(
+            "tests/samples/xml_files/Animalerie.plugincompendium",
+        );
+
+        assert_eq!(plugin.name, "Animalerie");
+        assert_eq!(plugin.description, Some(String::from("Hello World")));
     }
 
     #[test]

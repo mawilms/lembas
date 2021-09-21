@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Plugin>
+	<Information>
+		<Name>TitanBar</Name>
+		<Author>by Habna</Author>
+		<Version>v1.24.45</Version>
+    <Image>HabnaPlugins/TitanBar/Resources/icon.tga</Image>
+    <Description>This is the TitanBar plugin
+    </Description>
+	</Information>
+	<Package>HabnaPlugins.TitanBar.Main</Package>
+	<Configuration Apartment="TitanBar" />
+</Plugin>

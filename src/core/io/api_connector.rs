@@ -1,52 +1,39 @@
 use super::FeedUrlParser;
-use crate::core::Plugin;
-use async_trait::async_trait;
+use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
 use std::collections::HashMap;
 
-#[async_trait]
-pub trait APIOperations {
-    async fn fetch_plugins(url: String) -> Result<HashMap<String, Plugin>, APIError>;
-}
-
-pub struct APIConnector {}
-
-#[async_trait]
-impl APIOperations for APIConnector {
-    async fn fetch_plugins(url: String) -> Result<HashMap<String, Plugin>, APIError> {
-        match reqwest::get(url).await {
-            Ok(response) => match response.text().await {
-                Ok(content) => {
-                    let mut plugins: HashMap<String, Plugin> = HashMap::new();
-                    let xml_content = FeedUrlParser::parse_response(&content);
-                    for ui in xml_content.Ui {
-                        plugins.insert(
-                            ui.UIName.clone(),
-                            Plugin::new(
-                                ui.UID,
-                                &ui.UIName,
+pub async fn fetch_plugins(url: String) -> Result<PluginCollection, APIError> {
+    match reqwest::get(url).await {
+        Ok(response) => match response.text().await {
+            Ok(content) => {
+                let mut plugins: PluginCollection = HashMap::new();
+                let xml_content = FeedUrlParser::parse_response(&content);
+                for ui in xml_content.Ui {
+                    let data_class =
+                        PluginDataClass::new(&ui.UIName, &ui.UIAuthorName, &ui.UIVersion)
+                            .with_id(ui.UID)
+                            .with_description(&ui.UIDescription)
+                            .with_remote_information(
                                 &ui.UICategory,
-                                "",
                                 &ui.UIVersion,
-                                &ui.UIAuthorName,
                                 ui.UIDownloads,
-                                &ui.UIDescription,
-                                &ui.UIFile,
                                 &ui.UIFileURL,
-                            ),
-                        );
-                    }
-                    Ok(plugins)
+                            )
+                            .build();
+
+                    plugins.insert(PluginDataClass::calculate_hash(&data_class), data_class);
                 }
-                Err(err) => {
-                    debug!("{}", err);
-                    Err(APIError::FetchError)
-                }
-            },
+                Ok(plugins)
+            }
             Err(err) => {
                 debug!("{}", err);
                 Err(APIError::FetchError)
             }
+        },
+        Err(err) => {
+            debug!("{}", err);
+            Err(APIError::FetchError)
         }
     }
 }
@@ -58,15 +45,11 @@ pub enum APIError {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::io::{api_connector::APIOperations, APIConnector};
 
-    // #[tokio::test]
-    // async fn fetch_plugins() {
-    //     let result = APIConnector::fetch_plugins(
-    //         "https://api.lotrointerface.com/fav/plugincompendium.xml".to_string(),
-    //     )
-    //     .await;
-    //     assert!(result.is_ok());
-    //     assert!(!result.unwrap().is_empty())
-    // }
+    #[test]
+    fn test_plugin_retrieving() {
+        // TODO: Implement here a test with httpmock to test the xml api
+
+        assert_eq!(1 + 1, 2);
+    }
 }
