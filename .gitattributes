@@ -1,1 +1,1 @@
-*.lua linguist-documentation
+*.lua -linguist-detectable
