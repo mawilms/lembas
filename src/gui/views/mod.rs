@@ -278,10 +278,10 @@ impl Lembas {
         };
         let config = Config::new(paths);
 
-        create_cache_db(&config.db_file);
+        create_cache_db(&config.db_file_path);
         Synchronizer::synchronize_application(
             &config.plugins_dir,
-            &config.db_file,
+            &config.db_file_path,
             &config.application_settings.feed_url,
         )
         .await

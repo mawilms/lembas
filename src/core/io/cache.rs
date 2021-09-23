@@ -1,10 +1,12 @@
+use crate::core::{PluginCollection, PluginDataClass};
+use log::debug;
 use rusqlite::{params, Connection, Statement};
 use std::{collections::HashMap, error::Error};
 
-use crate::core::{PluginCollection, PluginDataClass};
-
-pub fn create_cache_db(db_path: &str) {
-    let conn = Connection::open(db_path).unwrap();
+pub fn create_cache_db(db_path: &str) -> Result<(), rusqlite::Error> {
+    let conn = Connection::open(db_path)
+        .map_err(|_| debug!("Error while opening SQLite database"))
+        .unwrap();
     conn.execute(
         "
             CREATE TABLE IF NOT EXISTS plugin (
@@ -23,8 +25,9 @@ pub fn create_cache_db(db_path: &str) {
             );
     ",
         [],
-    )
-    .unwrap();
+    )?;
+
+    Ok(())
 }
 
 pub fn insert_plugin(
@@ -50,30 +53,28 @@ pub fn update_plugin(id: u64, version: &str, db_path: &str) -> Result<(), Box<dy
     Ok(())
 }
 
-pub fn get_plugin(id: u64, db_path: &str) -> Option<PluginDataClass> {
-    let conn = Connection::open(db_path).unwrap();
+pub fn get_plugin(id: u64, db_path: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+    let conn = Connection::open(db_path)?;
     let mut stmt = conn
         .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE id=?1;")
         .unwrap();
-    let mut plugin_iter = stmt
-        .query_map([format!("{}", id)], |row| {
-            Ok(PluginDataClass {
-                name: row.get(1).unwrap(),
-                author: row.get(2).unwrap(),
-                version: row.get(3).unwrap(),
-                id: Some(row.get(4).unwrap()),
-                description: Some(row.get(5).unwrap()),
-                download_url: Some(row.get(6).unwrap()),
-                info_url: Some(row.get(7).unwrap()),
-                category: Some(row.get(8).unwrap()),
-                latest_version: Some(row.get(9).unwrap()),
-                downloads: Some(row.get(10).unwrap()),
-                archive_name: Some(row.get(11).unwrap()),
-            })
+    let mut plugin_iter = stmt.query_map([format!("{}", id)], |row| {
+        Ok(PluginDataClass {
+            name: row.get(1).unwrap(),
+            author: row.get(2).unwrap(),
+            version: row.get(3).unwrap(),
+            id: Some(row.get(4).unwrap()),
+            description: Some(row.get(5).unwrap()),
+            download_url: Some(row.get(6).unwrap()),
+            info_url: Some(row.get(7).unwrap()),
+            category: Some(row.get(8).unwrap()),
+            latest_version: Some(row.get(9).unwrap()),
+            downloads: Some(row.get(10).unwrap()),
+            archive_name: Some(row.get(11).unwrap()),
         })
-        .unwrap();
+    })?;
 
-    plugin_iter.next().transpose().unwrap()
+    Ok(plugin_iter.next().transpose()?)
 }
 
 pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
@@ -82,6 +83,7 @@ pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
         "DELETE FROM plugin WHERE id=?1;",
         params![format!("{}", id)],
     )?;
+
     Ok(())
 }
 
@@ -96,6 +98,7 @@ pub fn get_plugins(db_path: &str) -> PluginCollection {
     for element in execute_stmt(&mut stmt, "") {
         plugins.insert(PluginDataClass::calculate_hash(&element), element);
     }
+
     plugins
 }
 
@@ -131,16 +134,14 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
     for plugin in plugin_iter {
         all_plugins.push(plugin.unwrap());
     }
+
     all_plugins
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::core::PluginDataClass;
-
-    use super::{
-        create_cache_db, delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin,
-    };
     use std::{
         env,
         fs::{create_dir_all, remove_dir_all},
@@ -156,7 +157,7 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap());
+        create_cache_db(db_path.to_str().unwrap()).unwrap();
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }
@@ -167,7 +168,7 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).expect("Error while running test setup");
-        create_cache_db(db_path.to_str().expect("Error while running test setup"));
+        create_cache_db(db_path.to_str().expect("Error while running test setup")).unwrap();
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)
@@ -199,63 +200,73 @@ mod tests {
         remove_dir_all(test_dir).expect("Error while running test teardown");
     }
 
-    #[test]
-    fn test_insert_plugin() {
-        let (test_dir, db_path) = setup();
+    mod insert_tests {
+        use super::*;
 
-        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
-            .with_id(1)
-            .with_description("Lorem ipsum")
-            .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            &db_path,
-        )
-        .unwrap();
+        #[test]
+        fn test_insert_plugin() {
+            let (test_dir, db_path) = setup();
 
-        teardown(test_dir);
+            let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+                .with_id(1)
+                .with_description("Lorem ipsum")
+                .build();
+            insert_plugin(
+                PluginDataClass::calculate_hash(&data_class),
+                &data_class,
+                &db_path,
+            )
+            .unwrap();
+
+            teardown(test_dir);
+        }
+
+        #[test]
+        fn test_update_plugin() {
+            let (test_dir, db_path) = setup_with_items();
+
+            update_plugin(17_418_645_804_149_917_555, "1.1", &db_path).unwrap();
+
+            teardown(test_dir);
+        }
+
+        #[test]
+        fn test_delete_plugin() {
+            let (test_dir, db_path) = setup_with_items();
+
+            delete_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
+
+            teardown(test_dir);
+        }
     }
 
-    #[test]
-    fn get_one_plugin() {
-        let (test_dir, db_path) = setup_with_items();
+    mod plugin_retrieval {
+        use super::*;
 
-        let plugin = get_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
+        #[test]
+        fn get_one_plugin() {
+            let (test_dir, db_path) = setup_with_items();
 
-        assert_eq!(plugin.name, "Hello World");
+            let plugin = get_plugin(17_418_645_804_149_917_555, &db_path)
+                .unwrap()
+                .unwrap();
 
-        teardown(test_dir);
-    }
+            assert_eq!(plugin.name, "Hello World");
 
-    #[test]
-    fn test_update_plugin() {
-        let (test_dir, db_path) = setup_with_items();
+            teardown(test_dir);
+        }
 
-        update_plugin(17_418_645_804_149_917_555, "1.1", &db_path).unwrap();
+        #[test]
+        fn test_get_plugins() {
+            let (test_dir, db_path) = setup_with_items();
 
-        teardown(test_dir);
-    }
+            let plugins = get_plugins(&db_path);
 
-    #[test]
-    fn test_delete_plugin() {
-        let (test_dir, db_path) = setup_with_items();
+            assert_eq!(plugins.keys().len(), 2);
+            assert!(plugins.contains_key(&17_418_645_804_149_917_555));
+            assert!(plugins.contains_key(&12_652_764_195_116_899_398));
 
-        delete_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
-
-        teardown(test_dir);
-    }
-
-    #[test]
-    fn test_get_plugins() {
-        let (test_dir, db_path) = setup_with_items();
-
-        let plugins = get_plugins(&db_path);
-
-        assert_eq!(plugins.keys().len(), 2);
-        assert!(plugins.contains_key(&17_418_645_804_149_917_555));
-        assert!(plugins.contains_key(&12_652_764_195_116_899_398));
-
-        teardown(test_dir);
+            teardown(test_dir);
+        }
     }
 }

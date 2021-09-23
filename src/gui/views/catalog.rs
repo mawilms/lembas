@@ -83,7 +83,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.db_file);
+                        let installed_plugins = cache::get_plugins(&state.config.db_file_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let plugin_hash = PluginDataClass::calculate_hash(&plugin);
 
@@ -99,7 +99,7 @@ impl Catalog {
                                 &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
-                                &state.config.db_file,
+                                &state.config.db_file_path,
                                 state.config.application_settings.backup_enabled,
                             );
 
@@ -143,7 +143,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.db_file);
+                        let installed_plugins = cache::get_plugins(&state.config.db_file_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let plugin_hash = PluginDataClass::calculate_hash(&plugin);
 
@@ -159,7 +159,7 @@ impl Catalog {
                                 &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
-                                &state.config.db_file,
+                                &state.config.db_file_path,
                                 state.config.application_settings.backup_enabled,
                             );
 
