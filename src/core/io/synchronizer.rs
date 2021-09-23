@@ -57,7 +57,9 @@ impl Synchronizer {
         Synchronizer::update_local_plugins(remote_plugins, local_plugins, db_path);
 
         // Unmanaged plugins
-        Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path);
+        Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path)
+            .map_err(|_| debug!("Error while synchronizing local and db plugins"))
+            .unwrap();
         Synchronizer::delete_not_existing_local_plugins(local_plugins, &db_plugins, db_path);
     }
 
@@ -90,20 +92,22 @@ impl Synchronizer {
         remote_plugins: &HashMap<u64, PluginDataClass>,
         local_plugins: &HashMap<u64, PluginDataClass>,
         db_path: &str,
-    ) {
+    ) -> Result<(), Box<dyn Error>> {
         for (hash, local_plugin) in local_plugins {
             if !remote_plugins.contains_key(hash) {
                 let mut local_plugin = local_plugin.clone();
                 local_plugin.name = format!("{} (Unmanaged)", local_plugin.name);
-                insert_plugin(*hash, &local_plugin, db_path).unwrap();
-            } else if let Some(db_plugin) = get_plugin(*hash, db_path) {
+                insert_plugin(*hash, &local_plugin, db_path)?;
+            } else if let Some(db_plugin) = get_plugin(*hash, db_path)? {
                 if db_plugin.version == local_plugin.version {
-                    insert_plugin(*hash, &db_plugin, db_path).unwrap();
+                    insert_plugin(*hash, &db_plugin, db_path)?;
                 } else {
-                    update_plugin(*hash, &local_plugin.version, db_path).unwrap();
+                    update_plugin(*hash, &local_plugin.version, db_path)?;
                 }
             }
         }
+
+        Ok(())
     }
 
     /// Checks if the database contains plugins that are not existing anymore in the local plugins folder
@@ -351,6 +355,7 @@ mod tests {
 
     //     teardown_db(&test_dir);
     // }
+    
     #[test]
     fn insert_not_existing_local_plugin() {
         // Synchronizer::check_existing_plugins();
@@ -373,7 +378,7 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap());
+        create_cache_db(db_path.to_str().unwrap()).unwrap();
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)

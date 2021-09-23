@@ -15,7 +15,7 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.db_file)
+        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.db_file_path)
             .values()
             .cloned()
             .collect();
@@ -33,7 +33,7 @@ impl Plugins {
                 config.application_settings.backup_enabled,
                 &config.plugins_dir,
                 &config.cache_dir,
-                &config.db_file,
+                &config.db_file_path,
             ));
         }
 
@@ -79,7 +79,7 @@ impl Plugins {
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.db_file,
+            &config.db_file_path,
             &config.application_settings.feed_url,
         )
         .await;
@@ -95,7 +95,7 @@ impl Plugins {
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.db_file)
+                            cache::get_plugins(&state.config.db_file_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -113,7 +113,7 @@ impl Plugins {
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
-                                &state.config.db_file,
+                                &state.config.db_file_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -139,7 +139,7 @@ impl Plugins {
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins: Vec<PluginDataClass> =
-                        cache::get_plugins(&state.config.db_file)
+                        cache::get_plugins(&state.config.db_file_path)
                             .values()
                             .cloned()
                             .collect();
@@ -155,7 +155,7 @@ impl Plugins {
                             state.config.application_settings.backup_enabled,
                             &state.config.plugins_dir,
                             &state.config.cache_dir,
-                            &state.config.db_file,
+                            &state.config.db_file_path,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -184,7 +184,7 @@ impl Plugins {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.db_file)
+                            cache::get_plugins(&state.config.db_file_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -202,7 +202,7 @@ impl Plugins {
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
-                                &state.config.db_file,
+                                &state.config.db_file_path,
                             ));
                         }
                         state.plugins = plugins;

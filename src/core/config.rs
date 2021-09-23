@@ -11,7 +11,7 @@ use crate::gui::views::Paths;
 pub struct Config {
     pub settings: String,
     pub plugins_dir: String,
-    pub db_file: String,
+    pub db_file_path: String,
     pub cache_dir: String,
     pub application_settings: SettingsFile,
 }
@@ -47,7 +47,7 @@ impl Config {
         Self {
             settings: paths.settings.into_os_string().into_string().unwrap(),
             plugins_dir: paths.plugins.into_os_string().into_string().unwrap(),
-            db_file: path.into_os_string().into_string().unwrap(),
+            db_file_path: path.into_os_string().into_string().unwrap(),
             cache_dir: paths.cache.into_os_string().into_string().unwrap(),
             application_settings: initial_settings,
         }
