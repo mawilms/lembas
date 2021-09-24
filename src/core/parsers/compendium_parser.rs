@@ -1,3 +1,7 @@
+//! This module is used to parse `.plugincompendium files`. These compendium files are xml files that contain
+//! information about the specific plugin that gets installed. Not every information is in the compendium file.
+//! Often there is a second file which has the `.plugin` extension which contains the rest.
+use super::plugin_parser::parse_plugin_file;
 use crate::core::PluginDataClass;
 use serde::Deserialize;
 use serde_xml_rs::from_reader;
@@ -6,13 +10,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use super::plugin_parser::parse_plugin_file;
-
 pub fn parse_compendium_file(path: &Path) -> PluginDataClass {
     let file = File::open(&path).unwrap();
 
     let content: PluginCompendiumContent = from_reader(file).unwrap();
-    let compendium_content = content._purge_descriptors();
+    let compendium_content = content._purge_descriptors(path);
 
     if compendium_content.description.is_some() {
         PluginDataClass::new(
@@ -60,7 +62,7 @@ pub fn parse_compendium_file(path: &Path) -> PluginDataClass {
     }
 }
 
-/// Returns true if the string contains more or equal backslashes than dots
+/// Returns true if the string contains more or equal backslashes than dots.
 ///
 /// # Examples
 ///
@@ -74,7 +76,7 @@ fn is_backslash_separator(descriptor: &str) -> bool {
     backslashes >= dots
 }
 
-/// Returns true if the string contains more dots than backslashes
+/// Returns true if the string contains more dots than backslashes.
 ///
 /// # Examples
 ///
@@ -86,6 +88,13 @@ fn is_dot_separator(descriptor: &str) -> bool {
     let dots = descriptor.matches('.').count();
     let backslashes = descriptor.matches('\\').count();
     backslashes < dots
+}
+
+/// Returns the compendium file name which is used to extract the correct descriptors from the compendium file.
+fn build_plugin_file_name(path: &Path) -> String {
+    let file_name = path.file_stem().unwrap().to_str().unwrap();
+
+    format!("{}.plugin", file_name)
 }
 
 /// Used to check if there is a corresponding `.plugin` file next to the initial `.plugincompendium` file.
@@ -139,13 +148,15 @@ struct PluginCompendium {
 }
 
 impl PluginCompendiumContent {
-    pub fn _purge_descriptors(&self) -> PluginCompendium {
+    pub fn _purge_descriptors(&self, path: &Path) -> PluginCompendium {
+        let file_name = build_plugin_file_name(path);
+
         let purged_descriptors: Vec<String> = self
             .descriptors
             .descriptor
             .clone()
             .into_iter()
-            .filter(|element| !element.contains("loader") && element.contains(".plugin"))
+            .filter(|element| element.contains(&file_name))
             .collect();
 
         if purged_descriptors.is_empty() {
@@ -196,16 +207,31 @@ mod tests {
     fn extract_plugin_descriptor() {
         let file = File::open(&"tests/samples/xml_files/TitanBar.plugincompendium").unwrap();
         let content: PluginCompendiumContent = from_reader(file).unwrap();
-        let content = content._purge_descriptors();
+        let content = content._purge_descriptors(Path::new(
+            "tests/samples/xml_files/TitanBar.plugincompendium",
+        ));
 
         assert_eq!(content.plugin_file_location, "HabnaPlugins.TitanBar.plugin");
+    }
+
+    mod build_file_name_tests {
+        use super::*;
+
+        #[test]
+        fn positive() {
+            let result = build_plugin_file_name(Path::new(
+                "tests/samples/xml_files/TitanBar.plugincompendium",
+            ));
+
+            assert_eq!(result, "TitanBar.plugin");
+        }
     }
 
     mod build_plugin_paths_tests {
         use super::*;
 
         #[test]
-        fn plugin_path_dot() {
+        fn with_dot_separator() {
             let file_path = "HabnaPlugins.TitanBar.plugin";
             let result = build_plugin_path(
                 Path::new("tests/samples/plugin_folders/HabnaPlugins/TitanBar.plugincompendium"),
@@ -219,7 +245,7 @@ mod tests {
         }
 
         #[test]
-        fn plugin_path_backslash() {
+        fn with_backslash_separator() {
             let file_path = "Homeopatix\\Voyage.plugin";
             let result = build_plugin_path(
                 Path::new("tests/samples/plugin_folders/Homeopatix/Voyage.plugincompendium"),

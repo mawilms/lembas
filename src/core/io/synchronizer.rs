@@ -170,7 +170,7 @@ impl Synchronizer {
 
 #[cfg(test)]
 mod tests {
-    use super::Synchronizer;
+    use super::*;
     use crate::core::{
         io::cache::{create_cache_db, get_plugins, insert_plugin},
         PluginDataClass,
@@ -250,52 +250,56 @@ mod tests {
         expected_result
     }
 
-    #[test]
-    fn check_if_compendium_file_exists_positive() {
-        let test_dir = setup();
-        let plugin_dir = test_dir
-            .join("HabnaPlugins")
-            .join("TitanBar.plugincompendium");
-        let glob = Glob::new("*.plugincompendium").unwrap().compile_matcher();
+    mod compendium_file_exist_tests {
+        use super::*;
 
-        let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
+        #[test]
+        fn check_if_compendium_file_exists_positive() {
+            let test_dir = setup();
+            let plugin_dir = test_dir
+                .join("HabnaPlugins")
+                .join("TitanBar.plugincompendium");
+            let glob = Glob::new("*.plugincompendium").unwrap().compile_matcher();
 
-        assert!(is_existing);
+            let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
 
-        teardown(&test_dir);
+            assert!(is_existing);
+
+            teardown(&test_dir);
+        }
+
+        #[test]
+        fn check_if_compendium_file_exists_negative() {
+            let test_dir = setup();
+            let plugin_dir = test_dir
+                .join("HabnaPlugins")
+                .join("TitanBar.plugincompendium");
+            let glob = Glob::new("*.plugin").unwrap().compile_matcher();
+
+            let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
+
+            assert!(!is_existing);
+
+            teardown(&test_dir);
+        }
     }
 
     #[test]
-    fn check_if_compendium_file_exists_negative() {
+    fn search_local_plugins() {
+        // Titan bars description missing. TODO
         let test_dir = setup();
-        let plugin_dir = test_dir
-            .join("HabnaPlugins")
-            .join("TitanBar.plugincompendium");
-        let glob = Glob::new("*.plugin").unwrap().compile_matcher();
+        //let expected_result = create_expected_result();
 
-        let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
+        let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
-        assert!(!is_existing);
+        assert_eq!(local_plugins.len(), 8);
+
+        //assert!(local_plugins.contains_key("CraftTimer"));
+
+        //assert_eq!(local_plugins, expected_result);
 
         teardown(&test_dir);
     }
-
-    #[test]
-    // fn search_local_plugins() {
-    //     // TItan bars description missing. TODO
-    //     let test_dir = setup();
-    //     //let expected_result = create_expected_result();
-
-    //     let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
-
-    //     assert_eq!(local_plugins.len(), 5);
-
-    //     //assert!(local_plugins.contains_key("CraftTimer"));
-
-    //     //assert_eq!(local_plugins, expected_result);
-
-    //     teardown(&test_dir);
-    // }
 
     // #[test]
     // fn cache_synching() {
@@ -355,7 +359,6 @@ mod tests {
 
     //     teardown_db(&test_dir);
     // }
-    
     #[test]
     fn insert_not_existing_local_plugin() {
         // Synchronizer::check_existing_plugins();
