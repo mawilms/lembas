@@ -2331,6 +2331,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "uuid",
+ "walkdir",
  "webbrowser",
  "winapi 0.3.9",
  "zip",

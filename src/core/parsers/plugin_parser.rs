@@ -3,10 +3,9 @@ use serde::Deserialize;
 use serde_xml_rs::from_reader;
 use std::{fs::File, path::Path};
 
-pub fn parse_plugin_file<P>(path: P) -> PluginDataClass
-where
-    P: AsRef<Path>,
-{
+// When .plugin file, check all folders if there is a .compendium file with the same name. If not,
+// return the .plugin content with an unmaintained name
+pub fn parse_plugin_file(path: &Path) -> PluginDataClass {
     let file = File::open(path).unwrap();
 
     let content: Plugin = from_reader(file).unwrap();
@@ -38,11 +37,11 @@ struct Information {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_plugin_file;
+    use super::*;
 
     #[test]
     fn plugin_parsing() {
-        let plugin = parse_plugin_file("tests/samples/xml_files/PreciseCoords.plugin");
+        let plugin = parse_plugin_file(Path::new("tests/samples/xml_files/PreciseCoords.plugin"));
         assert_eq!(plugin.name, "Precise Coords");
     }
 }

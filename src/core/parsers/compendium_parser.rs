@@ -10,55 +10,68 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn parse_compendium_file(path: &Path) -> PluginDataClass {
+pub fn parse_compendium_file(path: &Path) -> (PluginDataClass, Vec<PathBuf>) {
     let file = File::open(&path).unwrap();
 
     let content: PluginCompendiumContent = from_reader(file).unwrap();
-    let compendium_content = content._purge_descriptors(path);
+    let (compendium_content, descriptors) = content._purge_descriptors(path);
+
+    let all_descriptors: Vec<PathBuf> = descriptors
+        .into_iter()
+        .map(|element| build_plugin_path(path, &element))
+        .collect();
 
     if compendium_content.description.is_some() {
-        PluginDataClass::new(
-            &compendium_content.name,
-            &compendium_content.author,
-            &compendium_content.version,
+        (
+            PluginDataClass::new(
+                &compendium_content.name,
+                &compendium_content.author,
+                &compendium_content.version,
+            )
+            .with_id(compendium_content.id)
+            .with_description(&compendium_content.description.unwrap())
+            .build(),
+            all_descriptors,
         )
-        .with_id(compendium_content.id)
-        .with_description(&compendium_content.description.unwrap())
-        .build()
-    } else if !compendium_content.plugin_file_location.is_empty()
-        && is_backslash_separator(&compendium_content.plugin_file_location)
-    {
-        let plugin_path = build_plugin_path(path, &compendium_content.plugin_file_location, '\\');
-        let plugin_content = parse_plugin_file(plugin_path);
-        PluginDataClass::new(
-            &compendium_content.name,
-            &compendium_content.author,
-            &compendium_content.version,
+    } else if compendium_content.plugin_file_location.is_empty() {
+        (
+            PluginDataClass::new(
+                &compendium_content.name,
+                &compendium_content.author,
+                &compendium_content.version,
+            )
+            .with_id(compendium_content.id)
+            .build(),
+            all_descriptors,
         )
-        .with_id(compendium_content.id)
-        .with_description(&plugin_content.description.unwrap())
-        .build()
-    } else if !compendium_content.plugin_file_location.is_empty()
-        && is_dot_separator(&compendium_content.plugin_file_location)
-    {
-        let plugin_path = build_plugin_path(path, &compendium_content.plugin_file_location, '.');
-        let plugin_content = parse_plugin_file(plugin_path);
-        PluginDataClass::new(
-            &compendium_content.name,
-            &compendium_content.author,
-            &compendium_content.version,
-        )
-        .with_id(compendium_content.id)
-        .with_description(&plugin_content.description.unwrap())
-        .build()
     } else {
-        PluginDataClass::new(
-            &compendium_content.name,
-            &compendium_content.author,
-            &compendium_content.version,
-        )
-        .with_id(compendium_content.id)
-        .build()
+        let plugin_path = build_plugin_path(path, &compendium_content.plugin_file_location);
+
+        if plugin_path.exists() {
+            let plugin_content = parse_plugin_file(&plugin_path);
+            (
+                PluginDataClass::new(
+                    &compendium_content.name,
+                    &compendium_content.author,
+                    &compendium_content.version,
+                )
+                .with_id(compendium_content.id)
+                .with_description(&plugin_content.description.unwrap())
+                .build(),
+                all_descriptors,
+            )
+        } else {
+            (
+                PluginDataClass::new(
+                    &compendium_content.name,
+                    &compendium_content.author,
+                    &compendium_content.version,
+                )
+                .with_id(compendium_content.id)
+                .build(),
+                all_descriptors,
+            )
+        }
     }
 }
 
@@ -105,14 +118,16 @@ fn build_plugin_file_name(path: &Path) -> String {
 /// # Arguments
 ///
 /// * `descriptor` - Holds the path to the `.plugin` file that is found in the `.plugincompendium` file
-fn build_plugin_path(plugin_folder_path: &Path, file_path: &str, separator: char) -> PathBuf {
-    let splitted_path: Vec<&str> = file_path.split(separator).collect();
-    let splited_path_length = splitted_path.len();
+fn build_plugin_path(plugin_folder_path: &Path, file_path: &str) -> PathBuf {
     let mut manipulated_path = plugin_folder_path.to_path_buf();
 
-    if separator == '.' {
+    if is_dot_separator(file_path) {
+        let splitted_path: Vec<&str> = file_path.split('.').collect();
+        let splited_path_length = splitted_path.len();
         manipulated_path.set_file_name(splitted_path[splited_path_length - 2..].join("."));
     } else {
+        let splitted_path: Vec<&str> = file_path.split('\\').collect();
+        let splited_path_length = splitted_path.len();
         manipulated_path.set_file_name(splitted_path[splited_path_length - 1]);
     }
     manipulated_path
@@ -148,8 +163,15 @@ struct PluginCompendium {
 }
 
 impl PluginCompendiumContent {
-    pub fn _purge_descriptors(&self, path: &Path) -> PluginCompendium {
+    pub fn _purge_descriptors(&self, path: &Path) -> (PluginCompendium, Vec<String>) {
         let file_name = build_plugin_file_name(path);
+        let other_descriptors: Vec<String> = self
+            .descriptors
+            .descriptor
+            .clone()
+            .into_iter()
+            .filter(|element| !element.contains(&file_name))
+            .collect();
 
         let purged_descriptors: Vec<String> = self
             .descriptors
@@ -160,29 +182,35 @@ impl PluginCompendiumContent {
             .collect();
 
         if purged_descriptors.is_empty() {
-            PluginCompendium {
-                id: self.id,
-                name: self.name.clone(),
-                version: self.version.clone(),
-                author: self.author.clone(),
-                description: self.description.clone(),
-                info_url: self.info_url.clone(),
-                download_url: self.download_url.clone(),
-                plugin_file_location: String::new(),
-                dependencies: self.dependencies.dependency.clone(),
-            }
+            (
+                PluginCompendium {
+                    id: self.id,
+                    name: self.name.clone(),
+                    version: self.version.clone(),
+                    author: self.author.clone(),
+                    description: self.description.clone(),
+                    info_url: self.info_url.clone(),
+                    download_url: self.download_url.clone(),
+                    plugin_file_location: String::new(),
+                    dependencies: self.dependencies.dependency.clone(),
+                },
+                other_descriptors,
+            )
         } else {
-            PluginCompendium {
-                id: self.id,
-                name: self.name.clone(),
-                version: self.version.clone(),
-                author: self.author.clone(),
-                description: self.description.clone(),
-                info_url: self.info_url.clone(),
-                download_url: self.download_url.clone(),
-                plugin_file_location: purged_descriptors[0].clone(),
-                dependencies: self.dependencies.dependency.clone(),
-            }
+            (
+                PluginCompendium {
+                    id: self.id,
+                    name: self.name.clone(),
+                    version: self.version.clone(),
+                    author: self.author.clone(),
+                    description: self.description.clone(),
+                    info_url: self.info_url.clone(),
+                    download_url: self.download_url.clone(),
+                    plugin_file_location: purged_descriptors[0].clone(),
+                    dependencies: self.dependencies.dependency.clone(),
+                },
+                other_descriptors,
+            )
         }
     }
 }
@@ -207,7 +235,7 @@ mod tests {
     fn extract_plugin_descriptor() {
         let file = File::open(&"tests/samples/xml_files/TitanBar.plugincompendium").unwrap();
         let content: PluginCompendiumContent = from_reader(file).unwrap();
-        let content = content._purge_descriptors(Path::new(
+        let (content, _) = content._purge_descriptors(Path::new(
             "tests/samples/xml_files/TitanBar.plugincompendium",
         ));
 
@@ -236,7 +264,6 @@ mod tests {
             let result = build_plugin_path(
                 Path::new("tests/samples/plugin_folders/HabnaPlugins/TitanBar.plugincompendium"),
                 file_path,
-                '.',
             );
             assert_eq!(
                 result,
@@ -250,7 +277,6 @@ mod tests {
             let result = build_plugin_path(
                 Path::new("tests/samples/plugin_folders/Homeopatix/Voyage.plugincompendium"),
                 file_path,
-                '\\',
             );
             assert_eq!(
                 result,
@@ -296,7 +322,7 @@ mod tests {
 
         #[test]
         fn single_descriptor() {
-            let plugin = parse_compendium_file(Path::new(
+            let (plugin, _) = parse_compendium_file(Path::new(
                 "tests/samples/plugin_folders/Homeopatix/Voyage.plugincompendium",
             ));
             assert_eq!(plugin.name, "Voyage");
@@ -305,7 +331,7 @@ mod tests {
 
         #[test]
         fn multiple_descriptors() {
-            let plugin = parse_compendium_file(Path::new(
+            let (plugin, _) = parse_compendium_file(Path::new(
                 "tests/samples/xml_files/Compendium.plugincompendium",
             ));
             assert_eq!(plugin.name, "LOTRO Compendium");
@@ -315,7 +341,7 @@ mod tests {
 
         #[test]
         fn without_description() {
-            let plugin = parse_compendium_file(Path::new(
+            let (plugin, _) = parse_compendium_file(Path::new(
                 "tests/samples/plugin_folders/HabnaPlugins/TitanBar.plugincompendium",
             ));
 
@@ -328,7 +354,7 @@ mod tests {
 
         #[test]
         fn with_description() {
-            let plugin = parse_compendium_file(Path::new(
+            let (plugin, _) = parse_compendium_file(Path::new(
                 "tests/samples/xml_files/Animalerie.plugincompendium",
             ));
 

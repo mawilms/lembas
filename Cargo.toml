@@ -38,6 +38,7 @@ log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] 
 env_logger = "^0"
 uuid = { version = "^0", features = ["v4"] }
 httpmock = "^0"
+walkdir = "^2"
 
 [dev-dependencies]
 mockall = "^0"

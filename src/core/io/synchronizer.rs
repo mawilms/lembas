@@ -1,12 +1,10 @@
 use super::api_connector;
 use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin};
+use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
-use crate::core::parsers::plugin_parser::parse_plugin_file;
 use crate::core::{Config, PluginCollection, PluginDataClass};
-use globset::{Glob, GlobMatcher};
 use log::{debug, error};
-use std::fs::metadata;
-use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
+use std::{collections::HashMap, error::Error, path::Path};
 
 #[derive(Default, Debug, Clone)]
 pub struct Synchronizer {
@@ -126,30 +124,28 @@ impl Synchronizer {
 
     pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let primary_glob = Glob::new("*.plugincompendium")?.compile_matcher();
-        let secondary_glob = Glob::new("*.plugin")?.compile_matcher();
+        let mut all_descriptors = Vec::new();
 
-        for entry in read_dir(Path::new(&plugins_dir))? {
-            let direcorty_path = Path::new(&plugins_dir).join(entry.unwrap().path());
-            if metadata(&direcorty_path).unwrap().is_dir() {
-                let directory = read_dir(&direcorty_path.to_str().unwrap());
+        let compendium_files = collect_all_compendium_files(Path::new(&plugins_dir))?;
+        let mut plugin_files = collect_all_plugin_files(Path::new(&plugins_dir))?;
 
-                for file in directory? {
-                    let path = file?.path();
+        for compendium_file in &compendium_files {
+            let tmp_plugin_name = Synchronizer::build_plugin_file_path(compendium_file);
 
-                    if Synchronizer::is_plugin_compendium_file(&path, &primary_glob) {
-                        let xml_content = parse_compendium_file(&path);
-                        local_plugins
-                            .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
+            if let Some(position) = plugin_files
+                .iter()
+                .position(|element| element.to_str().unwrap().contains(&tmp_plugin_name))
+            {
+                let (compendium_content, descriptors) = parse_compendium_file(compendium_file);
+                local_plugins.insert(
+                    PluginDataClass::calculate_hash(&compendium_content),
+                    compendium_content,
+                );
 
-                        debug!("{}", format!("Found .plugincompendium file at {:?}", &path));
-                    } else if Synchronizer::is_plugin_file(&path, &secondary_glob) {
-                        let xml_content = parse_plugin_file(&path);
-                        local_plugins
-                            .insert(PluginDataClass::calculate_hash(&xml_content), xml_content);
+                plugin_files.remove(position);
 
-                        debug!("{}", format!("Found .plugin file at {:?}", &path));
-                    }
+                for element in descriptors {
+                    all_descriptors.push(element);
                 }
             }
         }
@@ -157,14 +153,10 @@ impl Synchronizer {
         Ok(local_plugins)
     }
 
-    fn is_plugin_compendium_file(path: &Path, glob: &GlobMatcher) -> bool {
-        !path.to_str().unwrap().to_lowercase().contains("loader") && glob.is_match(&path)
-    }
-
-    fn is_plugin_file(path: &Path, glob: &GlobMatcher) -> bool {
-        !path.to_str().unwrap().to_lowercase().contains("loader")
-            && !path.to_str().unwrap().to_lowercase().contains("demo")
-            && glob.is_match(&path)
+    fn build_plugin_file_path(path: &Path) -> String {
+        let mut path = path.to_path_buf();
+        path.set_extension("plugin");
+        path.file_name().unwrap().to_str().unwrap().to_string()
     }
 }
 
@@ -176,7 +168,6 @@ mod tests {
         PluginDataClass,
     };
     use fs_extra::dir::{copy, CopyOptions};
-    use globset::Glob;
     use std::{
         collections::HashMap,
         env,
@@ -250,40 +241,6 @@ mod tests {
         expected_result
     }
 
-    mod compendium_file_exist_tests {
-        use super::*;
-
-        #[test]
-        fn check_if_compendium_file_exists_positive() {
-            let test_dir = setup();
-            let plugin_dir = test_dir
-                .join("HabnaPlugins")
-                .join("TitanBar.plugincompendium");
-            let glob = Glob::new("*.plugincompendium").unwrap().compile_matcher();
-
-            let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
-
-            assert!(is_existing);
-
-            teardown(&test_dir);
-        }
-
-        #[test]
-        fn check_if_compendium_file_exists_negative() {
-            let test_dir = setup();
-            let plugin_dir = test_dir
-                .join("HabnaPlugins")
-                .join("TitanBar.plugincompendium");
-            let glob = Glob::new("*.plugin").unwrap().compile_matcher();
-
-            let is_existing = Synchronizer::is_plugin_compendium_file(&plugin_dir, &glob);
-
-            assert!(!is_existing);
-
-            teardown(&test_dir);
-        }
-    }
-
     #[test]
     fn search_local_plugins() {
         // Titan bars description missing. TODO
@@ -292,7 +249,7 @@ mod tests {
 
         let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
-        assert_eq!(local_plugins.len(), 8);
+        assert_eq!(local_plugins.len(), 6);
 
         //assert!(local_plugins.contains_key("CraftTimer"));
 
@@ -359,6 +316,7 @@ mod tests {
 
     //     teardown_db(&test_dir);
     // }
+
     #[test]
     fn insert_not_existing_local_plugin() {
         // Synchronizer::check_existing_plugins();
@@ -373,43 +331,43 @@ mod tests {
         assert_eq!(1, 1);
     }
 
-    type TemporaryPaths = (PathBuf, String);
+    // type TemporaryPaths = (PathBuf, String);
 
-    fn setup_db() -> TemporaryPaths {
-        let uuid = Uuid::new_v4().to_string();
-        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
-        let db_path = test_dir.join("db.sqlite3");
+    // fn setup_db() -> TemporaryPaths {
+    //     let uuid = Uuid::new_v4().to_string();
+    //     let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+    //     let db_path = test_dir.join("db.sqlite3");
 
-        create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap()).unwrap();
+    //     create_dir_all(&test_dir).unwrap();
+    //     create_cache_db(db_path.to_str().unwrap()).unwrap();
 
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
-            .with_id(1)
-            .with_description("Lorem ipsum")
-            .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+    //     let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+    //         .with_id(1)
+    //         .with_description("Lorem ipsum")
+    //         .build();
+    //     insert_plugin(
+    //         PluginDataClass::calculate_hash(&data_class),
+    //         &data_class,
+    //         db_path.to_str().unwrap(),
+    //     )
+    //     .expect("Error while running test setup");
 
-        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
-            .with_id(2)
-            .with_description("Lorem ipsum")
-            .with_remote_information("", "1.1", 0, "")
-            .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+    //     let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+    //         .with_id(2)
+    //         .with_description("Lorem ipsum")
+    //         .with_remote_information("", "1.1", 0, "")
+    //         .build();
+    //     insert_plugin(
+    //         PluginDataClass::calculate_hash(&data_class),
+    //         &data_class,
+    //         db_path.to_str().unwrap(),
+    //     )
+    //     .expect("Error while running test setup");
 
-        (test_dir, db_path.to_str().unwrap().to_string())
-    }
+    //     (test_dir, db_path.to_str().unwrap().to_string())
+    // }
 
-    fn teardown_db(test_dir: &Path) {
-        remove_dir_all(test_dir).expect("Error while running test teardown");
-    }
+    // fn teardown_db(test_dir: &Path) {
+    //     remove_dir_all(test_dir).expect("Error while running test teardown");
+    // }
 }
