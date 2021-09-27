@@ -10,6 +10,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[derive(Debug, PartialEq, Eq)]
+enum Separator {
+    Dot,
+    Backslash,
+}
+
 pub fn parse_compendium_file(path: &Path) -> (PluginDataClass, Vec<PathBuf>) {
     let file = File::open(&path).unwrap();
 
@@ -75,32 +81,16 @@ pub fn parse_compendium_file(path: &Path) -> (PluginDataClass, Vec<PathBuf>) {
     }
 }
 
-/// Returns true if the string contains more or equal backslashes than dots.
-///
-/// # Examples
-///
-/// ```
-/// let result = is_backslash_separator("Lunarwater\\Waypoint.plugin");
-/// assert!(result);
-/// ```
-fn is_backslash_separator(descriptor: &str) -> bool {
+/// Returns an enum which indicates the separator of the given descriptor based on their
+/// String and Separator char amounts in the descriptor
+fn calculate_separator(descriptor: &str) -> Separator {
     let dots = descriptor.matches('.').count();
     let backslashes = descriptor.matches('\\').count();
-    backslashes >= dots
-}
-
-/// Returns true if the string contains more dots than backslashes.
-///
-/// # Examples
-///
-/// ```
-/// let result = is_dot_separator("HabnaPlugins.TitanBar.plugin");
-/// assert!(result);
-/// ```
-fn is_dot_separator(descriptor: &str) -> bool {
-    let dots = descriptor.matches('.').count();
-    let backslashes = descriptor.matches('\\').count();
-    backslashes < dots
+    if backslashes >= dots {
+        Separator::Backslash
+    } else {
+        Separator::Dot
+    }
 }
 
 /// Returns the compendium file name which is used to extract the correct descriptors from the compendium file.
@@ -121,16 +111,20 @@ fn build_plugin_file_name(path: &Path) -> String {
 fn build_plugin_path(plugin_folder_path: &Path, file_path: &str) -> PathBuf {
     let mut manipulated_path = plugin_folder_path.to_path_buf();
 
-    if is_dot_separator(file_path) {
-        let splitted_path: Vec<&str> = file_path.split('.').collect();
-        let splited_path_length = splitted_path.len();
-        manipulated_path.set_file_name(splitted_path[splited_path_length - 2..].join("."));
-    } else {
-        let splitted_path: Vec<&str> = file_path.split('\\').collect();
-        let splited_path_length = splitted_path.len();
-        manipulated_path.set_file_name(splitted_path[splited_path_length - 1]);
+    match calculate_separator(file_path) {
+        Separator::Dot => {
+            let splitted_path: Vec<&str> = file_path.split('.').collect();
+            let splited_path_length = splitted_path.len();
+            manipulated_path.set_file_name(splitted_path[splited_path_length - 2..].join("."));
+            manipulated_path
+        }
+        Separator::Backslash => {
+            let splitted_path: Vec<&str> = file_path.split('\\').collect();
+            let splited_path_length = splitted_path.len();
+            manipulated_path.set_file_name(splitted_path[splited_path_length - 1]);
+            manipulated_path
+        }
     }
-    manipulated_path
 }
 
 #[derive(Deserialize, Debug, PartialEq, Hash, Eq)]
@@ -285,35 +279,19 @@ mod tests {
         }
     }
 
-    mod backslash_separator_tests {
+    mod calculate_separator_tests {
         use super::*;
 
         #[test]
-        fn positive() {
-            let result = is_backslash_separator("Lunarwater\\Waypoint.plugin");
-            assert!(result);
+        fn backslash() {
+            let result = calculate_separator("Lunarwater\\Waypoint.plugin");
+            assert_eq!(result, Separator::Backslash);
         }
 
         #[test]
-        fn negative() {
-            let result = is_backslash_separator("HabnaPlugins.TitanBar.plugin");
-            assert!(!result);
-        }
-    }
-
-    mod dot_separator_tests {
-        use super::*;
-
-        #[test]
-        fn positive() {
-            let result = is_dot_separator("HabnaPlugins.TitanBar.plugin");
-            assert!(result);
-        }
-
-        #[test]
-        fn negative() {
-            let result = is_dot_separator("Lunarwater\\Waypoint.plugin");
-            assert!(!result);
+        fn dot() {
+            let result = calculate_separator("HabnaPlugins.TitanBar.plugin");
+            assert_eq!(result, Separator::Dot);
         }
     }
 
@@ -337,6 +315,28 @@ mod tests {
             assert_eq!(plugin.name, "LOTRO Compendium");
             assert_eq!(plugin.version, "1.8.0-beta");
             assert_eq!(plugin.id, Some(526));
+        }
+
+        #[test]
+        fn check_descriptors() {
+            let (plugin, descriptors) = parse_compendium_file(Path::new(
+                "tests/samples/plugin_folders/HabnaPlugins/HugeBag.plugincompendium",
+            ));
+
+            assert_eq!(plugin.name, "HugeBag");
+            assert_eq!(descriptors.len(), 3);
+            assert!(descriptors.contains(
+                &Path::new("tests/samples/plugin_folders/HabnaPlugins/HugeBagReloader.plugin")
+                    .to_path_buf()
+            ));
+            assert!(descriptors.contains(
+                &Path::new("tests/samples/plugin_folders/HabnaPlugins/HugeBagUnloader.plugin")
+                    .to_path_buf()
+            ));
+            assert!(descriptors.contains(
+                &Path::new("tests/samples/plugin_folders/HabnaPlugins/HugeBagUtility.plugin")
+                    .to_path_buf()
+            ));
         }
 
         #[test]
