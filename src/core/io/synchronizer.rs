@@ -51,15 +51,15 @@ impl Synchronizer {
         remote_plugins: &PluginCollection,
         db_path: &str,
     ) {
-        let db_plugins = get_plugins(db_path);
         // Managed plugins
         Synchronizer::update_local_plugins(remote_plugins, local_plugins, db_path);
+        let db_plugins = get_plugins(db_path);
 
+        Synchronizer::delete_not_existing_local_plugins(local_plugins, &db_plugins, db_path);
         // Unmanaged plugins
         Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path)
             .map_err(|_| debug!("Error while synchronizing local and db plugins"))
             .unwrap();
-        Synchronizer::delete_not_existing_local_plugins(local_plugins, &db_plugins, db_path);
     }
 
     fn update_local_plugins(
@@ -94,9 +94,7 @@ impl Synchronizer {
     ) -> Result<(), Box<dyn Error>> {
         for (hash, local_plugin) in local_plugins {
             if !remote_plugins.contains_key(hash) {
-                let mut local_plugin = local_plugin.clone();
-                local_plugin.name = format!("{} (Unmanaged)", local_plugin.name);
-                insert_plugin(*hash, &local_plugin, db_path)?;
+                insert_plugin(*hash, local_plugin, db_path)?;
             } else if let Some(db_plugin) = get_plugin(*hash, db_path)? {
                 if db_plugin.version == local_plugin.version {
                     insert_plugin(*hash, &db_plugin, db_path)?;
@@ -201,175 +199,193 @@ mod tests {
         remove_dir_all(test_dir).expect("Error while running teardown method");
     }
 
-    fn _create_expected_result() -> HashMap<String, PluginDataClass> {
-        let mut expected_result = HashMap::new();
-        expected_result.insert(
-            String::from("CraftTimer"),
-            PluginDataClass::new(
-                "CraftTimer",
-                "Atheisto (based on David Down's EventTimer)",
-                "1.0",
-            )
-            .with_description("Timer for cooldown on crafted relics and guild items.")
-            .build(),
-        );
-        expected_result.insert(
-            String::from("TitanBar"),
-            PluginDataClass::new("TitanBar", "by Habna", "v1.24.45")
-                .with_id(692)
-                .with_description("This is the TitanBar plugin")
-                .build(),
-        );
-        expected_result.insert(
-            String::from("Animalerie"),
-            PluginDataClass::new("Animalerie", "Homeopatix", "1.24")
-                .with_id(1108)
-                .with_description("Animalerie plugin")
-                .build(),
-        );
-        expected_result.insert(
-            String::from("BurglarHelper"),
-            PluginDataClass::new("BurglarHelper", "Homeopatix", "1.04")
-                .with_id(1128)
-                .with_description("BurglarHelper plugin")
-                .build(),
-        );
-        expected_result.insert(
-            String::from("Voyage"),
-            PluginDataClass::new("Voyage", "Homeopatix", "3.13")
-                .with_id(1125)
-                .with_description("Voyage plugin")
-                .build(),
-        );
-        expected_result
-    }
-
     #[test]
     fn search_local_plugins() {
         let test_dir = setup();
-        //let expected_result = create_expected_result();
 
         let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
         assert_eq!(local_plugins.len(), 6);
 
-        //assert!(local_plugins.contains_key("CraftTimer"));
-
-        //assert_eq!(local_plugins, expected_result);
-
         teardown(&test_dir);
     }
 
-    // #[test]
-    // fn cache_synching() {
-    //     let (test_dir, db_path) = setup_db();
-    //     let mut local_plugins = HashMap::new();
-    //     let mut remote_plugins = HashMap::new();
+    #[test]
+    fn cache_synching() {
+        let (test_dir, db_path) = setup_db();
+        let mut local_plugins = HashMap::new();
+        let mut remote_plugins = HashMap::new();
 
-    //     let plugin = PluginDataClass::new("GreenCar", "Marius", "1.0");
-    //     local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
-    //     let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.1");
-    //     local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        let plugin = PluginDataClass::new("GreenCar", "Marius", "1.0");
+        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.1");
+        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
 
-    //     let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2");
-    //     remote_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2")
+            .with_remote_information("", "1.2", 0, "");
 
-    //     Synchronizer::sync_cache(&local_plugins, &remote_plugins, &db_path);
+        let remote_plugin_hash = PluginDataClass::calculate_hash(&plugin);
+        remote_plugins.insert(remote_plugin_hash, plugin);
 
-    //     let plugins = get_plugins(&db_path);
+        Synchronizer::sync_cache(&local_plugins, &remote_plugins, &db_path);
 
-    //     teardown_db(&test_dir);
-    // }
+        get_plugins(&db_path);
 
-    // #[test]
-    // fn update_local_plugin() {
-    //     let (test_dir, db_path) = setup_db();
+        assert!(remote_plugins.contains_key(&remote_plugin_hash));
+        assert_eq!(
+            remote_plugins.get(&remote_plugin_hash).unwrap().version,
+            "1.2"
+        );
 
-    //     let mut remote_plugins = HashMap::new();
-    //     let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
-    //     let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1").build();
-    //     remote_plugins.insert(
-    //         PluginDataClass::calculate_hash(&data_class_one),
-    //         data_class_one.clone(),
-    //     );
-    //     remote_plugins.insert(
-    //         PluginDataClass::calculate_hash(&data_class_two),
-    //         data_class_two,
-    //     );
+        teardown_db(&test_dir);
+    }
 
-    //     let mut local_plugins = HashMap::new();
-    //     let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
-    //     let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
-    //     local_plugins.insert(
-    //         PluginDataClass::calculate_hash(&data_class_one),
-    //         data_class_one,
-    //     );
-    //     local_plugins.insert(local_data_class_two_hash, local_data_class_two);
+    #[test]
+    fn update_local_plugin() {
+        let (test_dir, db_path) = setup_db();
 
-    //     Synchronizer::update_local_plugins(&remote_plugins, &local_plugins, &db_path);
+        let mut remote_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one.clone(),
+        );
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_two),
+            data_class_two,
+        );
 
-    //     let plugin = get_plugins(&db_path)
-    //         .get(&local_data_class_two_hash)
-    //         .unwrap()
-    //         .clone();
+        let mut local_plugins = HashMap::new();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
+        local_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one,
+        );
+        local_plugins.insert(local_data_class_two_hash, local_data_class_two);
 
-    //     assert_eq!(plugin.name, "PetStable");
-    //     assert_eq!(plugin.latest_version.unwrap(), "1.1");
+        Synchronizer::update_local_plugins(&remote_plugins, &local_plugins, &db_path);
 
-    //     teardown_db(&test_dir);
-    // }
+        let plugin = get_plugins(&db_path)
+            .get(&local_data_class_two_hash)
+            .unwrap()
+            .clone();
+
+        assert_eq!(plugin.name, "PetStable");
+        assert_eq!(plugin.latest_version.unwrap(), "1.1");
+
+        teardown_db(&test_dir);
+    }
 
     #[test]
     fn insert_not_existing_local_plugin() {
-        // Synchronizer::check_existing_plugins();
+        let (test_dir, db_path) = setup_db();
 
-        assert_eq!(1, 1);
+        let mut remote_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one.clone(),
+        );
+        remote_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_two),
+            data_class_two,
+        );
+
+        let mut local_plugins = HashMap::new();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
+        local_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one,
+        );
+        local_plugins.insert(local_data_class_two_hash, local_data_class_two);
+
+        Synchronizer::check_existing_plugins(&remote_plugins, &local_plugins, &db_path).unwrap();
+
+        let plugin = get_plugins(&db_path)
+            .get(&local_data_class_two_hash)
+            .unwrap()
+            .clone();
+
+        assert_eq!(plugin.name, "PetStable");
+        assert_eq!(plugin.latest_version.unwrap(), "1.1");
+
+        teardown_db(&test_dir);
     }
 
     #[test]
     fn delete_not_existing_plugin_from_db() {
-        // Synchronizer::delete_not_existing_local_plugins();
+        let (test_dir, db_path) = setup_db();
 
-        assert_eq!(1, 1);
+        let mut local_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
+        local_plugins.insert(
+            PluginDataClass::calculate_hash(&data_class_one),
+            data_class_one,
+        );
+
+        let db_plugins = get_plugins(&db_path);
+
+        Synchronizer::delete_not_existing_local_plugins(&local_plugins, &db_plugins, &db_path);
+
+        let plugins = get_plugins(&db_path);
+
+        assert!(!plugins.contains_key(&local_data_class_two_hash));
+        teardown_db(&test_dir);
     }
 
-    // type TemporaryPaths = (PathBuf, String);
+    type TemporaryPaths = (PathBuf, String);
 
-    // fn setup_db() -> TemporaryPaths {
-    //     let uuid = Uuid::new_v4().to_string();
-    //     let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
-    //     let db_path = test_dir.join("db.sqlite3");
+    fn setup_db() -> TemporaryPaths {
+        let uuid = Uuid::new_v4().to_string();
+        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let db_path = test_dir.join("db.sqlite3");
 
-    //     create_dir_all(&test_dir).unwrap();
-    //     create_cache_db(db_path.to_str().unwrap()).unwrap();
+        create_dir_all(&test_dir).unwrap();
+        create_cache_db(db_path.to_str().unwrap()).unwrap();
 
-    //     let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
-    //         .with_id(1)
-    //         .with_description("Lorem ipsum")
-    //         .build();
-    //     insert_plugin(
-    //         PluginDataClass::calculate_hash(&data_class),
-    //         &data_class,
-    //         db_path.to_str().unwrap(),
-    //     )
-    //     .expect("Error while running test setup");
+        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_id(1)
+            .with_description("Lorem ipsum")
+            .build();
+        insert_plugin(
+            PluginDataClass::calculate_hash(&data_class),
+            &data_class,
+            db_path.to_str().unwrap(),
+        )
+        .expect("Error while running test setup");
 
-    //     let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
-    //         .with_id(2)
-    //         .with_description("Lorem ipsum")
-    //         .with_remote_information("", "1.1", 0, "")
-    //         .build();
-    //     insert_plugin(
-    //         PluginDataClass::calculate_hash(&data_class),
-    //         &data_class,
-    //         db_path.to_str().unwrap(),
-    //     )
-    //     .expect("Error while running test setup");
+        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+            .with_id(2)
+            .with_description("Lorem ipsum")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        insert_plugin(
+            PluginDataClass::calculate_hash(&data_class),
+            &data_class,
+            db_path.to_str().unwrap(),
+        )
+        .expect("Error while running test setup");
 
-    //     (test_dir, db_path.to_str().unwrap().to_string())
-    // }
+        (test_dir, db_path.to_str().unwrap().to_string())
+    }
 
-    // fn teardown_db(test_dir: &Path) {
-    //     remove_dir_all(test_dir).expect("Error while running test teardown");
-    // }
+    fn teardown_db(test_dir: &Path) {
+        remove_dir_all(test_dir).expect("Error while running test teardown");
+    }
 }
