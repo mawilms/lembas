@@ -1,11 +1,10 @@
 use super::api_connector;
 use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin};
+use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
-use crate::core::parsers::plugin_parser::parse_plugin_file;
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use log::{debug, error};
-use std::path::PathBuf;
 use std::{collections::HashMap, error::Error, path::Path};
 
 #[derive(Default, Debug, Clone)]
@@ -152,43 +151,9 @@ impl Synchronizer {
             }
         }
 
-        for element in &Synchronizer::filter_plugin_files(&compendium_files, &plugin_files) {
-            let plugin_content = parse_plugin_file(element);
-
-            local_plugins.insert(
-                PluginDataClass::calculate_hash(&plugin_content),
-                plugin_content,
-            );
-        }
+        compare_files(&compendium_files, &plugin_files);
 
         Ok(local_plugins)
-    }
-
-    fn filter_plugin_files(compendium_files: &[PathBuf], plugin_files: &[PathBuf]) -> Vec<PathBuf> {
-        let mut purged_files = Vec::new();
-
-        let plugin_file_names: Vec<(usize, String)> = plugin_files
-            .iter()
-            .enumerate()
-            .map(|(index, element)| {
-                (
-                    index,
-                    element.file_stem().unwrap().to_str().unwrap().to_string(),
-                )
-            })
-            .collect();
-
-        for (index, plugin_file_name) in plugin_file_names {
-            if !compendium_files
-                .iter()
-                .map(|element| element.file_stem().unwrap().to_str().unwrap().to_string())
-                .any(|x| x.contains(&plugin_file_name))
-            {
-                purged_files.push(plugin_files[index].clone());
-            }
-        }
-
-        purged_files
     }
 
     fn build_plugin_file_path(path: &Path) -> String {
@@ -280,36 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn filter_plugin_files_positive() {
-        let compendium_files = vec![
-            Path::new("Bunny/AltWallet/AltWallet.plugincompendium").to_path_buf(),
-            Path::new("HabnaPlugins/HugeBag.plugincompendium").to_path_buf(),
-            Path::new("HabnaPlugins/TitanBar.plugincompendium").to_path_buf(),
-            Path::new("Homeopatix/Animalerie.plugincompendium").to_path_buf(),
-            Path::new("Homeopatix/BurglarHelper.plugincompendium").to_path_buf(),
-            Path::new("Homeopatix/Voyage.plugincompendium").to_path_buf(),
-        ];
-
-        let plugin_files = vec![
-            Path::new("HabnaPlugins/CraftTimer.plugin").to_path_buf(),
-            Path::new("HabnaPlugins/HugeBagReloader.plugin").to_path_buf(),
-            Path::new("HabnaPlugins/HugeBagUnloader.plugin").to_path_buf(),
-            Path::new("HabnaPlugins/HugeBagUtility.plugin").to_path_buf(),
-            Path::new("HabnaPlugins/TitanBarReloader.plugin").to_path_buf(),
-            Path::new("HabnaPlugins/TitanBarUnloader.plugin").to_path_buf(),
-        ];
-
-        let result = Synchronizer::filter_plugin_files(&plugin_files, &compendium_files);
-        assert_eq!(result.len(), 1);
-        assert_eq!(
-            result[0],
-            Path::new("HabnaPlugins/CraftTimer.plugin").to_path_buf()
-        );
-    }
-
-    #[test]
     fn search_local_plugins() {
-        // Titan bars description missing. TODO
         let test_dir = setup();
         //let expected_result = create_expected_result();
 
