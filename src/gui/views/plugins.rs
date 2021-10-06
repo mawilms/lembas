@@ -430,13 +430,7 @@ impl PluginRow {
                         .with_remote_information("", &plugin.latest_version, 0, "")
                         .build();
 
-                        if cache::insert_plugin(
-                            PluginDataClass::calculate_hash(&cache_item),
-                            &cache_item,
-                            &self.db_file,
-                        )
-                        .is_ok()
-                        {
+                        if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                             self.status = "Updated".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -466,8 +460,7 @@ impl PluginRow {
                         &install_information.1,
                         &self.plugins_dir,
                     ) {
-                        if cache::delete_plugin(plugin.id as u64, &self.db_file).is_ok() {
-                            // TODO Hier noch die richtige ID verwenden
+                        if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -538,7 +531,12 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
+                            .push(if self.latest_version.is_empty() {
+                                Text::new(&format!("{} (unmanaged)", self.title))
+                                    .width(Length::FillPortion(6))
+                            } else {
+                                Text::new(&self.title).width(Length::FillPortion(6))
+                            })
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
@@ -564,7 +562,12 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
+                            .push(if self.latest_version.is_empty() {
+                                Text::new(&format!("{} (unmanaged)", self.title))
+                                    .width(Length::FillPortion(6))
+                            } else {
+                                Text::new(&self.title).width(Length::FillPortion(6))
+                            })
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(

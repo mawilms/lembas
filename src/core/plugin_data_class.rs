@@ -1,9 +1,6 @@
-use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
-    hash::{Hash, Hasher},
-};
+use std::collections::HashMap;
 
-pub type PluginCollection = HashMap<u64, PluginDataClass>;
+pub type PluginCollection = HashMap<String, PluginDataClass>;
 
 #[derive(Debug, Clone)]
 pub struct PluginDataClass {
@@ -70,19 +67,6 @@ impl PluginDataClass {
         }
         self
     }
-
-    pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        t.hash(&mut hasher);
-        hasher.finish()
-    }
-}
-
-impl Hash for PluginDataClass {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
-        self.author.hash(state);
-    }
 }
 
 #[cfg(test)]
@@ -96,33 +80,6 @@ mod tests {
         assert_eq!(data_class.name, "Hello World");
         assert_eq!(data_class.author, "Marius");
         assert_eq!(data_class.version, "0.1.0");
-    }
-
-    #[test]
-    fn calculate_hash_positive() {
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
-        let hash = PluginDataClass::calculate_hash(&data_class);
-
-        assert_eq!(17_418_645_804_149_917_555, hash);
-    }
-
-    #[test]
-    fn calculate_hash_special_letters() {
-        let data_class = PluginDataClass::new("Hello World", "by Mariu's", "0.1.0").build();
-        let hash = PluginDataClass::calculate_hash(&data_class);
-
-        assert_eq!(9_784_537_093_464_970_106, hash);
-    }
-
-    #[test]
-    fn calculate_hash_negative() {
-        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
-        let data_class_two = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
-
-        assert_eq!(
-            PluginDataClass::calculate_hash(&data_class_one),
-            PluginDataClass::calculate_hash(&data_class_two)
-        );
     }
 
     #[test]

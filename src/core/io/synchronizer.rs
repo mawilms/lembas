@@ -1,8 +1,9 @@
 use super::api_connector;
-use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin, update_plugin};
+use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin};
 use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
+use crate::core::parsers::plugin_parser::parse_plugin_file;
 use crate::core::{Config, PluginCollection, PluginDataClass};
 use log::{debug, error};
 use std::{collections::HashMap, error::Error, path::Path};
@@ -51,29 +52,24 @@ impl Synchronizer {
         remote_plugins: &PluginCollection,
         db_path: &str,
     ) {
+        let db_plugins = get_plugins(db_path);
         // Managed plugins
         Synchronizer::update_local_plugins(remote_plugins, local_plugins, db_path);
-        let db_plugins = get_plugins(db_path);
+
+        // Unmanaged plugins
+        Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path).unwrap();
 
         Synchronizer::delete_not_existing_local_plugins(local_plugins, &db_plugins, db_path);
-        // Unmanaged plugins
-        Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path)
-            .map_err(|_| debug!("Error while synchronizing local and db plugins"))
-            .unwrap();
     }
 
     fn update_local_plugins(
-        remote_plugins: &HashMap<u64, PluginDataClass>,
-        local_plugins: &HashMap<u64, PluginDataClass>,
+        remote_plugins: &HashMap<String, PluginDataClass>,
+        local_plugins: &HashMap<String, PluginDataClass>,
         db_path: &str,
     ) {
-        for (hash, remote_plugin) in remote_plugins {
-            if local_plugins.contains_key(hash) {
-                match update_plugin(
-                    *hash,
-                    remote_plugin.latest_version.as_ref().unwrap(),
-                    db_path,
-                ) {
+        for (title, remote_plugin) in remote_plugins {
+            if local_plugins.contains_key(title) {
+                match insert_plugin(remote_plugin, db_path) {
                     Ok(_) => {
                         debug!("Local plugin {} updated", remote_plugin.name);
                     }
@@ -88,19 +84,15 @@ impl Synchronizer {
     /// Checks if local plugins exist in the database. If they exist and their versions are different,
     /// the versions are updated. If they don't exist the missing plugin is inserted.
     fn check_existing_plugins(
-        remote_plugins: &HashMap<u64, PluginDataClass>,
-        local_plugins: &HashMap<u64, PluginDataClass>,
+        remote_plugins: &HashMap<String, PluginDataClass>,
+        local_plugins: &HashMap<String, PluginDataClass>,
         db_path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        for (hash, local_plugin) in local_plugins {
-            if !remote_plugins.contains_key(hash) {
-                insert_plugin(*hash, local_plugin, db_path)?;
-            } else if let Some(db_plugin) = get_plugin(*hash, db_path)? {
-                if db_plugin.version == local_plugin.version {
-                    insert_plugin(*hash, &db_plugin, db_path)?;
-                } else {
-                    update_plugin(*hash, &local_plugin.version, db_path)?;
-                }
+        for (title, local_plugin) in local_plugins {
+            if !remote_plugins.contains_key(title) {
+                insert_plugin(local_plugin, db_path)?;
+            } else if let Some(db_plugin) = get_plugin(&local_plugin.name, db_path)? {
+                insert_plugin(&db_plugin, db_path)?;
             }
         }
 
@@ -110,13 +102,13 @@ impl Synchronizer {
     /// Checks if the database contains plugins that are not existing anymore in the local plugins folder
     /// If a plugin doesn't exist in the plugin folder but in the database, the database entry gets deleted.
     fn delete_not_existing_local_plugins(
-        local_plugins: &HashMap<u64, PluginDataClass>,
-        db_plugins: &HashMap<u64, PluginDataClass>,
+        local_plugins: &HashMap<String, PluginDataClass>,
+        db_plugins: &HashMap<String, PluginDataClass>,
         db_path: &str,
     ) {
-        for hash in db_plugins.keys() {
-            if !local_plugins.contains_key(hash) {
-                delete_plugin(*hash, db_path).unwrap();
+        for keys in db_plugins.keys() {
+            if !local_plugins.contains_key(keys) {
+                delete_plugin(keys, db_path).unwrap();
             }
         }
     }
@@ -136,10 +128,7 @@ impl Synchronizer {
                 .position(|element| element.to_str().unwrap().contains(&tmp_plugin_name))
             {
                 let (compendium_content, descriptors) = parse_compendium_file(compendium_file);
-                local_plugins.insert(
-                    PluginDataClass::calculate_hash(&compendium_content),
-                    compendium_content,
-                );
+                local_plugins.insert(compendium_content.name.clone(), compendium_content);
 
                 plugin_files.remove(position);
 
@@ -149,7 +138,11 @@ impl Synchronizer {
             }
         }
 
-        compare_files(&compendium_files, &plugin_files);
+        plugin_files = compare_files(&compendium_files, &plugin_files);
+        for plugin_file_path in plugin_files {
+            let plugin = parse_plugin_file(&plugin_file_path);
+            local_plugins.insert(plugin.name.clone(), plugin);
+        }
 
         Ok(local_plugins)
     }
@@ -205,7 +198,7 @@ mod tests {
 
         let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
 
-        assert_eq!(local_plugins.len(), 6);
+        assert_eq!(local_plugins.len(), 7);
 
         teardown(&test_dir);
     }
@@ -217,23 +210,23 @@ mod tests {
         let mut remote_plugins = HashMap::new();
 
         let plugin = PluginDataClass::new("GreenCar", "Marius", "1.0");
-        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        local_plugins.insert(plugin.name.clone(), plugin);
         let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.1");
-        local_plugins.insert(PluginDataClass::calculate_hash(&plugin), plugin);
+        local_plugins.insert(plugin.name.clone(), plugin);
 
         let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2")
             .with_remote_information("", "1.2", 0, "");
 
-        let remote_plugin_hash = PluginDataClass::calculate_hash(&plugin);
-        remote_plugins.insert(remote_plugin_hash, plugin);
+        let remote_plugin_name = plugin.name.clone();
+        remote_plugins.insert(remote_plugin_name.clone(), plugin);
 
         Synchronizer::sync_cache(&local_plugins, &remote_plugins, &db_path);
 
         get_plugins(&db_path);
 
-        assert!(remote_plugins.contains_key(&remote_plugin_hash));
+        assert!(remote_plugins.contains_key(&remote_plugin_name));
         assert_eq!(
-            remote_plugins.get(&remote_plugin_hash).unwrap().version,
+            remote_plugins.get(&remote_plugin_name).unwrap().version,
             "1.2"
         );
 
@@ -251,28 +244,22 @@ mod tests {
         let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        remote_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_one),
-            data_class_one.clone(),
-        );
-        remote_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_two),
-            data_class_two,
-        );
+        remote_plugins.insert(data_class_one.name.clone(), data_class_one.clone());
+        remote_plugins.insert(data_class_two.name.clone(), data_class_two);
 
         let mut local_plugins = HashMap::new();
         let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
-        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
+
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
         local_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_one),
-            data_class_one,
+            local_data_class_two.name.clone(),
+            local_data_class_two.clone(),
         );
-        local_plugins.insert(local_data_class_two_hash, local_data_class_two);
 
         Synchronizer::update_local_plugins(&remote_plugins, &local_plugins, &db_path);
 
         let plugin = get_plugins(&db_path)
-            .get(&local_data_class_two_hash)
+            .get(&local_data_class_two.name)
             .unwrap()
             .clone();
 
@@ -293,28 +280,22 @@ mod tests {
         let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        remote_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_one),
-            data_class_one.clone(),
-        );
-        remote_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_two),
-            data_class_two,
-        );
+        remote_plugins.insert(data_class_one.name.clone(), data_class_one.clone());
+        remote_plugins.insert(data_class_two.name.clone(), data_class_two);
 
         let mut local_plugins = HashMap::new();
         let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
-        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
+
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
         local_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_one),
-            data_class_one,
+            local_data_class_two.name.clone(),
+            local_data_class_two.clone(),
         );
-        local_plugins.insert(local_data_class_two_hash, local_data_class_two);
 
         Synchronizer::check_existing_plugins(&remote_plugins, &local_plugins, &db_path).unwrap();
 
         let plugin = get_plugins(&db_path)
-            .get(&local_data_class_two_hash)
+            .get(&local_data_class_two.name)
             .unwrap()
             .clone();
 
@@ -333,11 +314,8 @@ mod tests {
             .with_remote_information("", "0.1.0", 0, "")
             .build();
         let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
-        let local_data_class_two_hash = PluginDataClass::calculate_hash(&local_data_class_two);
-        local_plugins.insert(
-            PluginDataClass::calculate_hash(&data_class_one),
-            data_class_one,
-        );
+        let local_data_class_two_hash = local_data_class_two.name;
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
 
         let db_plugins = get_plugins(&db_path);
 
@@ -363,24 +341,16 @@ mod tests {
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }

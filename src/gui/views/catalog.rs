@@ -85,8 +85,6 @@ impl Catalog {
                         let mut plugins = Vec::new();
                         let installed_plugins = cache::get_plugins(&state.config.db_file_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
-                            let plugin_hash = PluginDataClass::calculate_hash(&plugin);
-
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
                                 &plugin.name,
@@ -103,7 +101,7 @@ impl Catalog {
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin_hash) {
+                            match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
                                     plugin_row.current_version = value.version.clone();
                                     if value.version == plugin.latest_version.unwrap() {
@@ -145,8 +143,6 @@ impl Catalog {
                         let mut plugins = Vec::new();
                         let installed_plugins = cache::get_plugins(&state.config.db_file_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
-                            let plugin_hash = PluginDataClass::calculate_hash(&plugin);
-
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
                                 &plugin.name,
@@ -163,7 +159,7 @@ impl Catalog {
                                 state.config.application_settings.backup_enabled,
                             );
 
-                            match installed_plugins.get(&plugin_hash) {
+                            match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
                                     plugin_row.current_version = value.version.clone();
                                     if value.version == plugin.latest_version.unwrap() {
@@ -396,13 +392,7 @@ impl PluginRow {
                     .with_remote_information(&plugin.category, &plugin.latest_version, 0, "")
                     .build();
 
-                    if cache::insert_plugin(
-                        PluginDataClass::calculate_hash(&cache_item),
-                        &cache_item,
-                        &self.db_file,
-                    )
-                    .is_ok()
-                    {
+                    if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
                         self.current_version = plugin.latest_version;
                     } else {
