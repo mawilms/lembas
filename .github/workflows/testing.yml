@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install ubuntu deps
+        run: sudo apt install -y gcc-multilib libxkbcommon-dev
       - name: Switch to nightly
         run: rustup default nightly
       - name: Add clippy
@@ -20,7 +22,7 @@ jobs:
       - name: Run clippy
         run: cargo clippy
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose -- --test-threads=1
       - name: Cache
         uses: actions/cache@v2.1.4
         with:

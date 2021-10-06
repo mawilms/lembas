@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>1128</Id>
+  <Name>BurglarHelper</Name>
+  <Version>1.04</Version>
+  <Author>Homeopatix</Author>
+ <Description>BurglarHelper plugin
+</Description>
+  <InfoUrl>http://www.lotrointerface.com/downloads/info1128</InfoUrl>
+  <DownloadUrl>http://www.lotrointerface.com/downloads/download1128</DownloadUrl>
+  <Descriptors>
+    <descriptor>Homeopatix\BurglarHelper.plugin</descriptor>
+  </Descriptors>
+</PluginConfig>

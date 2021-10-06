@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Plugin>
+	<Information>
+		<Name>Animalerie</Name>
+		<Author>Homeopatix</Author>
+		<Version>1.24</Version>
+		<Description>Animalerie plugin
+		</Description>
+<Image>Homeopatix/Animalerie/Resources/pluginmanager_icon.tga</Image>
+	</Information>
+	<Package>Homeopatix.Animalerie.Main</Package>
+<Configuration Apartment="Animalerie" />
+</Plugin>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Plugin>
+	<Information>
+		<Name>HugeBag</Name>
+		<Author>by Habna</Author>
+		<Version>v1.13.66</Version>
+		<Image>HabnaPlugins/HugeBag/Resources/icon.tga</Image>
+		<Description>This plugin will replace all your in-game bags into one HUGEBAG.
+
+HugeBag as several options so you can customise it to your needs. Just to mention a few, you can sort, merge and search your items, you can change the orientation, see how many free and used slots you have and change icon size.
+
+This plugin is featuring 2 mode, window and widget mode. The widget mode has a sliding effect. Options and shell commands varies depending of the mode your are using.
+
+To see more options right click the 'Top Left' corner.</Description>
+	</Information>
+	<Package>HabnaPlugins.HugeBag.Main</Package>
+	<Configuration Apartment="HugeBag" />
+</Plugin>

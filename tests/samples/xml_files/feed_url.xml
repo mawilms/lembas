@@ -1,0 +1,38 @@
+<Favorites>
+    <Ui>
+        <UID>1085</UID>
+        <UIName>PrimePlugin</UIName>
+        <UIAuthorName>Rolo</UIAuthorName>
+        <UIVersion>8.3.5</UIVersion>
+        <UIUpdated>1628959911</UIUpdated>
+        <UIDownloads>60737</UIDownloads>
+        <UICategory>Raiding & Instances</UICategory>
+        <UIDescription>
+PrimePlugin RaidTools The primeplugins consisting of: Primeplugins Prime Vitals Prime Party Vitals beta Prime Bags Prime Parse beta Prime Cast
+        </UIDescription>
+        <UIFile>PrimePlugin.zip</UIFile>
+        <UIMD5/>
+        <UISize>8032546</UISize>
+        <UIFileURL>
+http://www.lotrointerface.com/downloads/download1085
+        </UIFileURL>
+    </Ui>
+    <Ui>
+        <UID>1144</UID>
+        <UIName>Opaque Quest Tracker</UIName>
+        <UIAuthorName>b414213562</UIAuthorName>
+        <UIVersion>1.0.1</UIVersion>
+        <UIUpdated>1628623797</UIUpdated>
+        <UIDownloads>567</UIDownloads>
+        <UICategory>Other</UICategory>
+        <UIDescription>
+Introduction Opaque Quest Tracker is a movable window that you can put behind your quest tracker to make it easier to read the text. Click and drag to move the window. Click and drag on an edge to resize the window. In the options screen lock the window once it is the correct location / size. You can also save the current settings as the default for any new characters. You can also change the background color using the color picker.
+        </UIDescription>
+        <UIFile>OpaqueQuestTracker v1.0.1.zip</UIFile>
+        <UIMD5/>
+        <UISize>22615</UISize>
+        <UIFileURL>
+http://www.lotrointerface.com/downloads/download1144
+        </UIFileURL>
+    </Ui>
+</Favorites>

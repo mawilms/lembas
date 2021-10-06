@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>1108</Id>
+  <Name>Animalerie</Name>
+  <Version>1.24</Version>
+  <Author>Homeopatix</Author>
+ <Description>Hello World
+</Description>
+  <InfoUrl>http://www.lotrointerface.com/downloads/info1108</InfoUrl>
+  <DownloadUrl>http://www.lotrointerface.com/downloads/download1108</DownloadUrl>
+  <Descriptors>
+    <descriptor>Homeopatix\Animalerie.plugin</descriptor>
+  </Descriptors>
+</PluginConfig>

@@ -1,205 +1,361 @@
-use super::api_connector::APIOperations;
-use super::plugin_parser::PluginCompendium;
-use crate::core::config::CONFIGURATION;
-use crate::core::io::{APIConnector, PluginParser};
-use crate::core::Installed as InstalledPlugin;
-use globset::Glob;
-use rusqlite::{params, Connection, Statement};
-use std::fs::metadata;
-use std::{collections::HashMap, error::Error, fs::read_dir, path::Path};
-use std::path::MAIN_SEPARATOR;
+use super::api_connector;
+use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin};
+use super::file_comparer::compare_files;
+use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
+use crate::core::parsers::compendium_parser::parse_compendium_file;
+use crate::core::parsers::plugin_parser::parse_plugin_file;
+use crate::core::{Config, PluginCollection, PluginDataClass};
+use log::{debug, error};
+use std::{collections::HashMap, error::Error, path::Path};
 
-pub struct Synchronizer {}
+#[derive(Default, Debug, Clone)]
+pub struct Synchronizer {
+    config: Config,
+}
 
 impl Synchronizer {
-    pub async fn synchronize_application() -> Result<(), Box<dyn Error>> {
-        let local_plugins = Self::search_local().unwrap();
-        let local_db_plugins = Self::get_plugins();
+    pub async fn synchronize_application(
+        plugins_dir: &str,
+        db_path: &str,
+        feed_url: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
 
-        Self::compare_local_state(&local_plugins, &local_db_plugins).await;
+        Synchronizer::compare_local_state(&local_plugins, db_path, feed_url).await;
 
         Ok(())
     }
 
     pub async fn compare_local_state(
-        local_plugins: &HashMap<String, PluginCompendium>,
-        db_plugins: &HashMap<String, InstalledPlugin>,
+        local_plugins: &PluginCollection,
+        db_path: &str,
+        feed_url: &str,
     ) {
-        for (key, element) in local_plugins {
-            if db_plugins.contains_key(key) {
-                if let Ok(retrieved_plugin) =
-                    APIConnector::fetch_details(db_plugins.get(key).unwrap().plugin_id).await
-                {
-                    let local_plugin = db_plugins.get(key).unwrap();
-                    if local_plugin.latest_version != retrieved_plugin.base_plugin.latest_version {
-                        Self::update_plugin(
-                            &local_plugin.title,
-                            &retrieved_plugin.base_plugin.latest_version,
-                        )
-                        .unwrap();
+        match api_connector::fetch_plugins(feed_url.to_string()).await {
+            Ok(remote_plugins) => {
+                Synchronizer::sync_cache(local_plugins, &remote_plugins, db_path);
+            }
+            Err(_) => {
+                error!(
+                    "{}",
+                    format!(
+                        "Couldn't fetch plugins with the given feed url: {}",
+                        feed_url
+                    )
+                );
+            }
+        };
+    }
+
+    fn sync_cache(
+        local_plugins: &PluginCollection,
+        remote_plugins: &PluginCollection,
+        db_path: &str,
+    ) {
+        let db_plugins = get_plugins(db_path);
+        // Managed plugins
+        Synchronizer::update_local_plugins(remote_plugins, local_plugins, db_path);
+
+        // Unmanaged plugins
+        Synchronizer::check_existing_plugins(remote_plugins, local_plugins, db_path).unwrap();
+
+        Synchronizer::delete_not_existing_local_plugins(local_plugins, &db_plugins, db_path);
+    }
+
+    fn update_local_plugins(
+        remote_plugins: &HashMap<String, PluginDataClass>,
+        local_plugins: &HashMap<String, PluginDataClass>,
+        db_path: &str,
+    ) {
+        for (title, remote_plugin) in remote_plugins {
+            if local_plugins.contains_key(title) {
+                match insert_plugin(remote_plugin, db_path) {
+                    Ok(_) => {
+                        debug!("Local plugin {} updated", remote_plugin.name);
+                    }
+                    Err(_) => {
+                        debug!("Error while updating local plugin {}", remote_plugin.name);
                     }
                 }
-            } else if let Ok(retrieved_plugin) =
-                APIConnector::fetch_details(local_plugins.get(key).unwrap().id).await
-            {
-                let mut description = String::new();
-                if !&local_plugins
-                    .get(key)
-                    .unwrap()
-                    .plugin_file_location
-                    .is_empty()
-                {
-                    let information = PluginParser::parse_file(
-                        Path::new(&CONFIGURATION.lock().unwrap().plugins_dir)
-                            .join(&local_plugins.get(key).unwrap().plugin_file_location.replace("\\", &MAIN_SEPARATOR.to_string())),
-                    );
-                    description = information.description;
-                }
-
-                Self::insert_plugin(&InstalledPlugin::new(
-                    retrieved_plugin.base_plugin.plugin_id,
-                    &retrieved_plugin.base_plugin.title,
-                    &description,
-                    &retrieved_plugin.base_plugin.category,
-                    &element.version,
-                    &retrieved_plugin.base_plugin.latest_version,
-                    &retrieved_plugin.base_plugin.folder,
-                ))
-                .unwrap();
-            }
-        }
-
-        for (key, element) in db_plugins {
-            if !local_plugins.contains_key(key) {
-                Self::delete_plugin(&element.title).unwrap();
             }
         }
     }
 
-    pub fn search_local() -> Result<HashMap<String, PluginCompendium>, Box<dyn Error>> {
+    /// Checks if local plugins exist in the database. If they exist and their versions are different,
+    /// the versions are updated. If they don't exist the missing plugin is inserted.
+    fn check_existing_plugins(
+        remote_plugins: &HashMap<String, PluginDataClass>,
+        local_plugins: &HashMap<String, PluginDataClass>,
+        db_path: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        for (title, local_plugin) in local_plugins {
+            if !remote_plugins.contains_key(title) {
+                insert_plugin(local_plugin, db_path)?;
+            } else if let Some(db_plugin) = get_plugin(&local_plugin.name, db_path)? {
+                insert_plugin(&db_plugin, db_path)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Checks if the database contains plugins that are not existing anymore in the local plugins folder
+    /// If a plugin doesn't exist in the plugin folder but in the database, the database entry gets deleted.
+    fn delete_not_existing_local_plugins(
+        local_plugins: &HashMap<String, PluginDataClass>,
+        db_plugins: &HashMap<String, PluginDataClass>,
+        db_path: &str,
+    ) {
+        for keys in db_plugins.keys() {
+            if !local_plugins.contains_key(keys) {
+                delete_plugin(keys, db_path).unwrap();
+            }
+        }
+    }
+
+    pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let glob = Glob::new("*.plugincompendium")?.compile_matcher();
-        let plugins_dir = &CONFIGURATION.lock().unwrap().plugins_dir;
+        let mut all_descriptors = Vec::new();
 
-        for entry in read_dir(Path::new(plugins_dir))? {
-            let direcorty_path = Path::new(plugins_dir).join(entry.unwrap().path());
-            if metadata(&direcorty_path).unwrap().is_dir() {
-                let directory = read_dir(&direcorty_path.to_str().unwrap());
+        let compendium_files = collect_all_compendium_files(Path::new(&plugins_dir))?;
+        let mut plugin_files = collect_all_plugin_files(Path::new(&plugins_dir))?;
 
-                for file in directory? {
-                    let path = file?.path();
-                    if !path.to_str().unwrap().to_lowercase().contains("loader")
-                        && glob.is_match(&path)
-                    {
-                        let xml_content = PluginParser::parse_compendium_file(&path);
-                        local_plugins.insert(xml_content.name.clone(), xml_content);
-                    }
+        for compendium_file in &compendium_files {
+            let tmp_plugin_name = Synchronizer::build_plugin_file_path(compendium_file);
+
+            if let Some(position) = plugin_files
+                .iter()
+                .position(|element| element.to_str().unwrap().contains(&tmp_plugin_name))
+            {
+                let (compendium_content, descriptors) = parse_compendium_file(compendium_file);
+                local_plugins.insert(compendium_content.name.clone(), compendium_content);
+
+                plugin_files.remove(position);
+
+                for element in descriptors {
+                    all_descriptors.push(element);
                 }
             }
+        }
+
+        plugin_files = compare_files(&compendium_files, &plugin_files);
+        for plugin_file_path in plugin_files {
+            let plugin = parse_plugin_file(&plugin_file_path);
+            local_plugins.insert(plugin.name.clone(), plugin);
         }
 
         Ok(local_plugins)
     }
 
-    // Creates the local database if it doesn't exist.
-    pub fn create_plugins_db() {
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-        conn.execute(
-            "
-                CREATE TABLE IF NOT EXISTS plugin (
-                    id INTEGER PRIMARY KEY,
-                    plugin_id INTEGER UNIQUE,
-                    title TEXT,
-                    description TEXT,
-                    category TEXT,
-                    current_version TEXT,
-                    latest_version TEXT,
-                    folder_name TEXT
-                );
-        ",
-            [],
-        )
-        .unwrap();
+    fn build_plugin_file_path(path: &Path) -> String {
+        let mut path = path.to_path_buf();
+        path.set_extension("plugin");
+        path.file_name().unwrap().to_str().unwrap().to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::{
+        io::cache::{create_cache_db, get_plugins, insert_plugin},
+        PluginDataClass,
+    };
+    use fs_extra::dir::{copy, CopyOptions};
+    use std::{
+        collections::HashMap,
+        env,
+        fs::{create_dir_all, read_dir, remove_dir_all},
+        path::{Path, PathBuf},
+    };
+    use uuid::Uuid;
+
+    fn setup() -> PathBuf {
+        // Create plugins directory and move items from the samples to this directory to test functionality
+        let uuid = Uuid::new_v4().to_string();
+        let plugins_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let samples_path = Path::new("tests/samples/plugin_folders");
+        let samples_content = read_dir(samples_path).unwrap();
+
+        create_dir_all(&plugins_dir).unwrap();
+        let options = CopyOptions::new();
+
+        for element in samples_content {
+            copy(element.unwrap().path(), &plugins_dir, &options)
+                .expect("Error while running setup method");
+        }
+
+        plugins_dir
     }
 
-    pub fn insert_plugin(plugin: impl AsRef<InstalledPlugin>) -> Result<(), Box<dyn Error>> {
-        let glob = Glob::new("*.plugin")?.compile_matcher();
-        let directory = read_dir(
-            Path::new(&CONFIGURATION.lock().unwrap().plugins_dir).join(&plugin.as_ref().folder),
+    fn teardown(test_dir: &Path) {
+        remove_dir_all(test_dir).expect("Error while running teardown method");
+    }
+
+    #[test]
+    fn search_local_plugins() {
+        let test_dir = setup();
+
+        let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
+
+        assert_eq!(local_plugins.len(), 7);
+
+        teardown(&test_dir);
+    }
+
+    #[test]
+    fn cache_synching() {
+        let (test_dir, db_path) = setup_db();
+        let mut local_plugins = HashMap::new();
+        let mut remote_plugins = HashMap::new();
+
+        let plugin = PluginDataClass::new("GreenCar", "Marius", "1.0");
+        local_plugins.insert(plugin.name.clone(), plugin);
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.1");
+        local_plugins.insert(plugin.name.clone(), plugin);
+
+        let plugin = PluginDataClass::new("BlueElephant", "Marius", "1.2")
+            .with_remote_information("", "1.2", 0, "");
+
+        let remote_plugin_name = plugin.name.clone();
+        remote_plugins.insert(remote_plugin_name.clone(), plugin);
+
+        Synchronizer::sync_cache(&local_plugins, &remote_plugins, &db_path);
+
+        get_plugins(&db_path);
+
+        assert!(remote_plugins.contains_key(&remote_plugin_name));
+        assert_eq!(
+            remote_plugins.get(&remote_plugin_name).unwrap().version,
+            "1.2"
         );
 
-        for file in directory? {
-            let path = file?.path();
-            if glob.is_match(&path) {
-                let xml_content = PluginParser::parse_file(&path);
-                let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
-
-                conn.execute(
-                        "INSERT INTO plugin (plugin_id, title, description, category, current_version, latest_version, folder_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT (plugin_id) DO UPDATE SET plugin_id=?1, title=?2, description=?3, category=?4, current_version=?5, latest_version=?6, folder_name=?7;",
-                        params![plugin.as_ref().plugin_id, plugin.as_ref().title,xml_content.description, plugin.as_ref().category, plugin.as_ref().latest_version, plugin.as_ref().latest_version, plugin.as_ref().folder])?;
-            }
-        }
-
-        Ok(())
+        teardown_db(&test_dir);
     }
 
-    fn update_plugin(title: &str, version: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
-        conn.execute(
-            "UPDATE plugin SET latest_version=?2 WHERE title=?1;",
-            params![title, version],
-        )?;
-        Ok(())
+    #[test]
+    fn update_local_plugin() {
+        let (test_dir, db_path) = setup_db();
+
+        let mut remote_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        remote_plugins.insert(data_class_one.name.clone(), data_class_one.clone());
+        remote_plugins.insert(data_class_two.name.clone(), data_class_two);
+
+        let mut local_plugins = HashMap::new();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
+        local_plugins.insert(
+            local_data_class_two.name.clone(),
+            local_data_class_two.clone(),
+        );
+
+        Synchronizer::update_local_plugins(&remote_plugins, &local_plugins, &db_path);
+
+        let plugin = get_plugins(&db_path)
+            .get(&local_data_class_two.name)
+            .unwrap()
+            .clone();
+
+        assert_eq!(plugin.name, "PetStable");
+        assert_eq!(plugin.latest_version.unwrap(), "1.1");
+
+        teardown_db(&test_dir);
     }
 
-    pub fn delete_plugin(title: &str) -> Result<(), Box<dyn Error>> {
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file)?;
-        conn.execute("DELETE FROM plugin WHERE title=?1;", params![title])?;
-        Ok(())
+    #[test]
+    fn insert_not_existing_local_plugin() {
+        let (test_dir, db_path) = setup_db();
+
+        let mut remote_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let data_class_two = PluginDataClass::new("PetStable", "Marius", "1.1")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        remote_plugins.insert(data_class_one.name.clone(), data_class_one.clone());
+        remote_plugins.insert(data_class_two.name.clone(), data_class_two);
+
+        let mut local_plugins = HashMap::new();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
+        local_plugins.insert(
+            local_data_class_two.name.clone(),
+            local_data_class_two.clone(),
+        );
+
+        Synchronizer::check_existing_plugins(&remote_plugins, &local_plugins, &db_path).unwrap();
+
+        let plugin = get_plugins(&db_path)
+            .get(&local_data_class_two.name)
+            .unwrap()
+            .clone();
+
+        assert_eq!(plugin.name, "PetStable");
+        assert_eq!(plugin.latest_version.unwrap(), "1.1");
+
+        teardown_db(&test_dir);
     }
 
-    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<InstalledPlugin> {
-        let mut all_plugins = Vec::new();
+    #[test]
+    fn delete_not_existing_plugin_from_db() {
+        let (test_dir, db_path) = setup_db();
 
-        let empty_params = params![];
-        let has_params = params![params];
-        let mut query_params = empty_params;
+        let mut local_plugins = HashMap::new();
+        let data_class_one = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_remote_information("", "0.1.0", 0, "")
+            .build();
+        let local_data_class_two = PluginDataClass::new("PetStable", "Marius", "1.0").build();
+        let local_data_class_two_hash = local_data_class_two.name;
+        local_plugins.insert(data_class_one.name.clone(), data_class_one);
 
-        if !params.is_empty() {
-            query_params = has_params;
-        }
+        let db_plugins = get_plugins(&db_path);
 
-        let plugin_iter = stmt
-            .query_map(query_params, |row| {
-                Ok(InstalledPlugin {
-                    plugin_id: row.get(0).unwrap(),
-                    title: row.get(1).unwrap(),
-                    description: row.get(2).unwrap(),
-                    category: row.get(3).unwrap(),
-                    current_version: row.get(4).unwrap(),
-                    latest_version: row.get(5).unwrap(),
-                    folder: row.get(6).unwrap(),
-                })
-            })
-            .unwrap();
+        Synchronizer::delete_not_existing_local_plugins(&local_plugins, &db_plugins, &db_path);
 
-        for plugin in plugin_iter {
-            all_plugins.push(plugin.unwrap());
-        }
-        all_plugins
+        let plugins = get_plugins(&db_path);
+
+        assert!(!plugins.contains_key(&local_data_class_two_hash));
+        teardown_db(&test_dir);
     }
 
-    pub fn get_plugins() -> HashMap<String, InstalledPlugin> {
-        let mut plugins = HashMap::new();
+    type TemporaryPaths = (PathBuf, String);
 
-        let conn = Connection::open(&CONFIGURATION.lock().unwrap().db_file).unwrap();
-        let mut stmt = conn
-            .prepare("SELECT plugin_id, title, description, category, current_version, latest_version, folder_name FROM plugin ORDER BY title;")
-            .unwrap();
+    fn setup_db() -> TemporaryPaths {
+        let uuid = Uuid::new_v4().to_string();
+        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
+        let db_path = test_dir.join("db.sqlite3");
 
-        for element in Self::execute_stmt(&mut stmt, "") {
-            plugins.insert(element.title.clone(), element);
-        }
-        plugins
+        create_dir_all(&test_dir).unwrap();
+        create_cache_db(db_path.to_str().unwrap()).unwrap();
+
+        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+            .with_id(1)
+            .with_description("Lorem ipsum")
+            .build();
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
+
+        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+            .with_id(2)
+            .with_description("Lorem ipsum")
+            .with_remote_information("", "1.1", 0, "")
+            .build();
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
+
+        (test_dir, db_path.to_str().unwrap().to_string())
+    }
+
+    fn teardown_db(test_dir: &Path) {
+        remove_dir_all(test_dir).expect("Error while running test teardown");
     }
 }

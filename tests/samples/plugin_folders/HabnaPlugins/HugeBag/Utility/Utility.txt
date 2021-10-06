@@ -1,0 +1,19 @@
+HugeBag Utility Known bugs:
+	None
+
+
+HugeBag future functions:
+	None
+
+
+HugeBag change log:
+	2.0.3 (2012/05/15)	- Fix: Utiliy will reset it's location if out of screen when loaded
+
+	2.0.2 (2011/07/18)	- Fix: Bug when moving the utility it was reloading HugeBag.
+
+	2.0.1 (2011/07/05)	- Add: It's now moveable and will save his position.
+						- Add: If release out of bound, it will come back in bound of screen.
+
+	2.0.0 (2011/07/03)	- New: Redesign to be just an image.
+
+	1.0.0 (2011/05/25)	- Initial release.

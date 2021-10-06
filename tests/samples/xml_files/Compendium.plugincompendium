@@ -7,8 +7,8 @@
   <InfoUrl>http://www.lotrointerface.com/downloads/info526</InfoUrl>
   <DownloadUrl>http://www.lotrointerface.com/downloads/download526</DownloadUrl>
   <Descriptors>
-    <descriptor>Compendium\Compendium.plugin</descriptor>
-    <descriptor>Compendium\CompendiumReloader.plugin</descriptor>
+    <descriptor>Hello</descriptor>
+    <descriptor>World</descriptor>
   </Descriptors>
   <Dependencies>
 	  <dependency>640</dependency>

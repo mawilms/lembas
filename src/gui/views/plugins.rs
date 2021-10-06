@@ -1,6 +1,6 @@
-use crate::core::io::api_connector::{APIError, APIOperations};
-use crate::core::io::{APIConnector, Synchronizer};
-use crate::core::{Installed as InstalledPlugin, Installer, Plugin as DetailPlugin};
+use crate::core::io::cache::{self};
+use crate::core::io::Synchronizer;
+use crate::core::{Config, Installer, PluginDataClass};
 use crate::gui::style;
 use iced::{
     button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
@@ -13,25 +13,32 @@ pub enum Plugins {
     Loaded(State),
 }
 
-impl Default for Plugins {
-    fn default() -> Self {
-        let mut installed_plugins: Vec<InstalledPlugin> =
-            Synchronizer::get_plugins().values().cloned().collect();
-        installed_plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+impl Plugins {
+    pub fn new(config: Config) -> Self {
+        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.db_file_path)
+            .values()
+            .cloned()
+            .collect();
+        installed_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         let mut plugins: Vec<PluginRow> = Vec::new();
         for plugin in installed_plugins {
             plugins.push(PluginRow::new(
-                plugin.plugin_id,
-                &plugin.title,
-                &plugin.description,
-                &plugin.category,
-                &plugin.current_version,
-                &plugin.latest_version,
-                &plugin.folder,
+                plugin.id.unwrap(),
+                &plugin.name,
+                &plugin.author,
+                &plugin.description.unwrap(),
+                &plugin.version,
+                &plugin.latest_version.unwrap(),
+                &plugin.download_url.unwrap(),
+                config.application_settings.backup_enabled,
+                &config.plugins_dir,
+                &config.cache_dir,
+                &config.db_file_path,
             ));
         }
 
         Self::Loaded(State {
+            config,
             base_plugins: plugins.clone(),
             plugins,
             ..State::default()
@@ -41,6 +48,7 @@ impl Default for Plugins {
 
 #[derive(Default, Debug, Clone)]
 pub struct State {
+    config: Config,
     plugin_scrollable_state: scrollable::State,
     input_value: String,
     pub plugins: Vec<PluginRow>,
@@ -65,11 +73,16 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    async fn refresh_db() -> Result<(), ApplicationError> {
-        let local_plugins = Synchronizer::search_local().map_err(|_| ApplicationError::Synchronize);
-        let local_db_plugins = Synchronizer::get_plugins();
+    async fn refresh_db(config: Config) -> Result<(), ApplicationError> {
+        let local_plugins = Synchronizer::search_local(&config.plugins_dir)
+            .map_err(|_| ApplicationError::Synchronize);
 
-        Synchronizer::compare_local_state(&local_plugins.unwrap(), &local_db_plugins).await;
+        Synchronizer::compare_local_state(
+            &local_plugins.unwrap(),
+            &config.db_file_path,
+            &config.application_settings.feed_url,
+        )
+        .await;
 
         Ok(())
     }
@@ -81,19 +94,26 @@ impl Plugins {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins().values().cloned().collect();
+                        let mut all_plugins: Vec<PluginDataClass> =
+                            cache::get_plugins(&state.config.db_file_path)
+                                .values()
+                                .cloned()
+                                .collect();
                         all_plugins
-                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.folder,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.author,
+                                &plugin.description.unwrap(),
+                                &plugin.version,
+                                &plugin.latest_version.unwrap(),
+                                &plugin.download_url.unwrap(),
+                                state.config.application_settings.backup_enabled,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -103,9 +123,10 @@ impl Plugins {
                         .map(move |msg| PluginMessage::Plugin(index, msg))
                 }
 
-                PluginMessage::RefreshPressed => {
-                    Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
-                }
+                PluginMessage::RefreshPressed => Command::perform(
+                    Self::refresh_db(state.config.clone()),
+                    PluginMessage::DbRefreshed,
+                ),
                 PluginMessage::UpdateAllPressed => {
                     for i in 1..state.plugins.len() {
                         if state.plugins[i].current_version != state.plugins[i].latest_version {
@@ -117,17 +138,24 @@ impl Plugins {
                 }
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<InstalledPlugin> =
-                        Synchronizer::get_plugins().values().cloned().collect();
+                    let installed_plugins: Vec<PluginDataClass> =
+                        cache::get_plugins(&state.config.db_file_path)
+                            .values()
+                            .cloned()
+                            .collect();
                     for plugin in installed_plugins {
                         plugins.push(PluginRow::new(
-                            plugin.plugin_id,
-                            &plugin.title,
-                            &plugin.description,
-                            &plugin.category,
-                            &plugin.current_version,
-                            &plugin.latest_version,
-                            &plugin.folder,
+                            plugin.id.unwrap(),
+                            &plugin.name,
+                            &plugin.author,
+                            &plugin.description.unwrap(),
+                            &plugin.version,
+                            &plugin.latest_version.unwrap(),
+                            &plugin.download_url.unwrap(),
+                            state.config.application_settings.backup_enabled,
+                            &state.config.plugins_dir,
+                            &state.config.cache_dir,
+                            &state.config.db_file_path,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -155,19 +183,26 @@ impl Plugins {
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<InstalledPlugin> =
-                            Synchronizer::get_plugins().values().cloned().collect();
+                        let mut all_plugins: Vec<PluginDataClass> =
+                            cache::get_plugins(&state.config.db_file_path)
+                                .values()
+                                .cloned()
+                                .collect();
                         all_plugins
-                            .sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
                         for plugin in all_plugins {
                             plugins.push(PluginRow::new(
-                                plugin.plugin_id,
-                                &plugin.title,
-                                &plugin.description,
-                                &plugin.category,
-                                &plugin.current_version,
-                                &plugin.latest_version,
-                                &plugin.folder,
+                                plugin.id.unwrap(),
+                                &plugin.name,
+                                &plugin.author,
+                                &plugin.description.unwrap(),
+                                &plugin.version,
+                                &plugin.latest_version.unwrap(),
+                                &plugin.download_url.unwrap(),
+                                state.config.application_settings.backup_enabled,
+                                &state.config.plugins_dir,
+                                &state.config.cache_dir,
+                                &state.config.db_file_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -181,6 +216,7 @@ impl Plugins {
     pub fn view(&mut self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
+                config: _,
                 plugin_scrollable_state,
                 input_value,
                 plugins,
@@ -266,15 +302,17 @@ impl Plugins {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
-    #[serde(default)]
+    pub author: String,
     pub description: String,
-    #[serde(default)]
-    pub category: String,
     #[serde(default)]
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
-    pub folder_name: String,
+    pub download_url: String,
+    pub backup_enabled: bool,
+    pub plugins_dir: String,
+    pub cache_dir: String,
+    pub db_file: String,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -295,8 +333,6 @@ pub enum RowMessage {
     UpdatePressed(PluginRow),
     DeletePressed(PluginRow),
     WebsitePressed(i32, String),
-    Updating(Result<DetailPlugin, APIError>),
-    Deleting(Result<DetailPlugin, APIError>),
 }
 
 pub enum Event {
@@ -308,43 +344,55 @@ impl PluginRow {
     pub fn new(
         id: i32,
         title: &str,
+        author: &str,
         description: &str,
-        category: &str,
         current_version: &str,
         latest_version: &str,
-        folder_name: &str,
+        download_url: &str,
+        backup_enabled: bool,
+        plugins_dir: &str,
+        cache_dir: &str,
+        db_file: &str,
     ) -> Self {
         if current_version == latest_version {
             Self {
                 id,
                 title: title.to_string(),
+                author: author.to_string(),
                 description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
-                folder_name: folder_name.to_string(),
+                download_url: download_url.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                backup_enabled,
+                plugins_dir: plugins_dir.to_string(),
+                cache_dir: cache_dir.to_string(),
+                db_file: db_file.to_string(),
             }
         } else {
             Self {
                 id,
                 title: title.to_string(),
+                author: author.to_string(),
                 description: description.to_string(),
-                category: category.to_string(),
                 current_version: current_version.to_string(),
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
-                folder_name: folder_name.to_string(),
+                download_url: download_url.to_string(),
                 update_btn_state: button::State::default(),
                 delete_btn_state: button::State::default(),
                 website_btn_state: button::State::default(),
                 toggle_view_btn: button::State::new(),
                 opened: false,
+                backup_enabled,
+                plugins_dir: plugins_dir.to_string(),
+                cache_dir: cache_dir.to_string(),
+                db_file: db_file.to_string(),
             }
         }
     }
@@ -355,63 +403,64 @@ impl PluginRow {
                 self.opened = !self.opened;
                 (Event::Nothing, Command::none())
             }
-            RowMessage::UpdatePressed(plugin) => (
-                Event::Nothing,
-                Command::perform(APIConnector::fetch_details(plugin.id), RowMessage::Updating),
-            ),
-            RowMessage::DeletePressed(row) => (
-                Event::Nothing,
-                Command::perform(APIConnector::fetch_details(row.id), RowMessage::Deleting),
-            ),
-            RowMessage::WebsitePressed(id, title) => {
-                webbrowser::open(&format!(
-                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
-                    id, title,
-                ))
-                .unwrap();
-                (Event::Nothing, Command::none())
-            }
-            RowMessage::Updating(fetched_plugin) => {
-                if let Ok(fetched_plugin) = fetched_plugin {
-                    if Installer::download(&fetched_plugin).is_ok() {
-                        if Installer::delete(
-                            &fetched_plugin.base_plugin.folder,
-                            &fetched_plugin.files,
+            RowMessage::UpdatePressed(plugin) => {
+                if let Ok(install_information) = Installer::download(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.download_url,
+                    &self.plugins_dir,
+                    &self.cache_dir,
+                    self.backup_enabled,
+                ) {
+                    if Installer::delete(
+                        &install_information.0,
+                        &install_information.1,
+                        &self.plugins_dir,
+                    )
+                    .is_ok()
+                    {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                        let cache_item = PluginDataClass::new(
+                            &plugin.title,
+                            &plugin.author,
+                            &plugin.current_version,
                         )
-                        .is_ok()
-                        {
-                            if Installer::extract(&fetched_plugin).is_ok() {
-                                Installer::delete_cache_folder(&fetched_plugin);
-                                if Synchronizer::insert_plugin(&fetched_plugin).is_ok() {
-                                    self.status = "Updated".to_string();
-                                    (Event::Synchronize, Command::none())
-                                } else {
-                                    self.status = "Update failed".to_string();
-                                    (Event::Nothing, Command::none())
-                                }
-                            } else {
-                                self.status = "Unpacking failed".to_string();
-                                (Event::Nothing, Command::none())
-                            }
+                        .with_id(plugin.id)
+                        .with_description(&plugin.description)
+                        .with_remote_information("", &plugin.latest_version, 0, "")
+                        .build();
+
+                        if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
+                            self.status = "Updated".to_string();
+                            (Event::Synchronize, Command::none())
                         } else {
-                            self.status = "Installation failed".to_string();
+                            self.status = "Update failed".to_string();
                             (Event::Nothing, Command::none())
                         }
                     } else {
-                        self.status = "Download failed".to_string();
+                        self.status = "Installation failed".to_string();
                         (Event::Nothing, Command::none())
                     }
                 } else {
-                    self.status = "Update failed".to_string();
+                    self.status = "Download failed".to_string();
                     (Event::Nothing, Command::none())
                 }
             }
-            RowMessage::Deleting(fetched_plugin) => {
-                if let Ok(fetched_plugin) = fetched_plugin {
-                    if let Ok(()) =
-                        Installer::delete(&fetched_plugin.base_plugin.folder, &fetched_plugin.files)
-                    {
-                        if Synchronizer::delete_plugin(&fetched_plugin.base_plugin.title).is_ok() {
+            RowMessage::DeletePressed(plugin) => {
+                if let Ok(install_information) = Installer::download(
+                    plugin.id,
+                    &plugin.title,
+                    &plugin.download_url,
+                    &self.plugins_dir,
+                    &self.cache_dir,
+                    self.backup_enabled,
+                ) {
+                    if let Ok(()) = Installer::delete(
+                        &install_information.0,
+                        &install_information.1,
+                        &self.plugins_dir,
+                    ) {
+                        if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -426,6 +475,14 @@ impl PluginRow {
                     self.status = "Delete failed".to_string();
                     (Event::Nothing, Command::none())
                 }
+            }
+            RowMessage::WebsitePressed(id, title) => {
+                webbrowser::open(&format!(
+                    "https://www.lotrointerface.com/downloads/info{}-{}.html",
+                    id, title,
+                ))
+                .unwrap();
+                (Event::Nothing, Command::none())
             }
         }
     }
@@ -474,8 +531,12 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
+                            .push(if self.latest_version.is_empty() {
+                                Text::new(&format!("{} (unmanaged)", self.title))
+                                    .width(Length::FillPortion(6))
+                            } else {
+                                Text::new(&self.title).width(Length::FillPortion(6))
+                            })
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
@@ -501,29 +562,38 @@ impl PluginRow {
                         &mut self.toggle_view_btn,
                         Row::new()
                             .align_items(Align::Center)
-                            .push(Text::new(&self.title).width(Length::FillPortion(6)))
+                            .push(if self.latest_version.is_empty() {
+                                Text::new(&format!("{} (unmanaged)", self.title))
+                                    .width(Length::FillPortion(6))
+                            } else {
+                                Text::new(&self.title).width(Length::FillPortion(6))
+                            })
                             .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
                             .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
-                            .push(if self.latest_version == self.current_version {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new(".")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::TransparentButton::Enabled)
-                                .width(Length::FillPortion(2))
-                            } else {
-                                Button::new(
-                                    &mut self.update_btn_state,
-                                    Text::new("Update")
-                                        .width(Length::Fill)
-                                        .horizontal_alignment(HorizontalAlignment::Center),
-                                )
-                                .style(style::PrimaryButton::Enabled)
-                                .on_press(RowMessage::UpdatePressed(plugin))
-                                .width(Length::FillPortion(2))
-                            }),
+                            .push(
+                                if self.latest_version == self.current_version
+                                    || self.latest_version.is_empty()
+                                {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new(".")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::TransparentButton::Enabled)
+                                    .width(Length::FillPortion(2))
+                                } else {
+                                    Button::new(
+                                        &mut self.update_btn_state,
+                                        Text::new("Update")
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                    )
+                                    .style(style::PrimaryButton::Enabled)
+                                    .on_press(RowMessage::UpdatePressed(plugin))
+                                    .width(Length::FillPortion(2))
+                                },
+                            ),
                     )
                     .on_press(RowMessage::ToggleView)
                     .style(style::PluginRow::Enabled),
