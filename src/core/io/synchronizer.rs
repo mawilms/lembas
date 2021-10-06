@@ -4,7 +4,7 @@ use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
 use crate::core::parsers::plugin_parser::parse_plugin_file;
-use crate::core::{Config, PluginCollection, PluginDataClass};
+use crate::core::{is_not_existing_in_blacklist, Config, PluginCollection, PluginDataClass};
 use log::{debug, error};
 use std::{collections::HashMap, error::Error, path::Path};
 
@@ -68,7 +68,7 @@ impl Synchronizer {
         db_path: &str,
     ) {
         for (title, remote_plugin) in remote_plugins {
-            if local_plugins.contains_key(title) {
+            if local_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
                 match insert_plugin(remote_plugin, db_path) {
                     Ok(_) => {
                         debug!("Local plugin {} updated", remote_plugin.name);
@@ -89,7 +89,7 @@ impl Synchronizer {
         db_path: &str,
     ) -> Result<(), Box<dyn Error>> {
         for (title, local_plugin) in local_plugins {
-            if !remote_plugins.contains_key(title) {
+            if !remote_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
                 insert_plugin(local_plugin, db_path)?;
             } else if let Some(db_plugin) = get_plugin(&local_plugin.name, db_path)? {
                 insert_plugin(&db_plugin, db_path)?;
@@ -115,7 +115,6 @@ impl Synchronizer {
 
     pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let mut all_descriptors = Vec::new();
 
         let compendium_files = collect_all_compendium_files(Path::new(&plugins_dir))?;
         let mut plugin_files = collect_all_plugin_files(Path::new(&plugins_dir))?;
@@ -127,14 +126,10 @@ impl Synchronizer {
                 .iter()
                 .position(|element| element.to_str().unwrap().contains(&tmp_plugin_name))
             {
-                let (compendium_content, descriptors) = parse_compendium_file(compendium_file);
+                let compendium_content = parse_compendium_file(compendium_file);
                 local_plugins.insert(compendium_content.name.clone(), compendium_content);
 
                 plugin_files.remove(position);
-
-                for element in descriptors {
-                    all_descriptors.push(element);
-                }
             }
         }
 
