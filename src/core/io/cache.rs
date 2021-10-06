@@ -10,8 +10,8 @@ pub fn create_cache_db(db_path: &str) -> Result<(), rusqlite::Error> {
     conn.execute(
         "
             CREATE TABLE IF NOT EXISTS plugin (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL,
                 author TEXT NOT NULL,
                 current_version TEXT NOT NULL,
                 plugin_id INTEGER,
@@ -30,58 +30,45 @@ pub fn create_cache_db(db_path: &str) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-pub fn insert_plugin(
-    id: u64,
-    plugin: &PluginDataClass,
-    db_path: &str,
-) -> Result<(), Box<dyn Error>> {
+pub fn insert_plugin(plugin: &PluginDataClass, db_path: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
 
     conn.execute(
-        "INSERT INTO plugin (id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12) ON CONFLICT (id) DO UPDATE SET id=?1, name=?2, author=?3, current_version=?4, plugin_id=?5, description=?6, download_url=?7, info_url=?8, category=?9, latest_version=?10, downloads=?11, archive_name=?12;",
-    params![format!("{}",id), plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
+        "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT (name) DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11;",
+    params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
 
     Ok(())
 }
 
-pub fn update_plugin(id: u64, version: &str, db_path: &str) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_path)?;
-    conn.execute(
-        "UPDATE plugin SET latest_version=?2 WHERE id=?1;",
-        params![format!("{}", id), version],
-    )?;
-    Ok(())
-}
-
-pub fn get_plugin(id: u64, db_path: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+pub fn get_plugin(name: &str, db_path: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     let mut stmt = conn
-        .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE id=?1;")
+        .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
         .unwrap();
-    let mut plugin_iter = stmt.query_map([format!("{}", id)], |row| {
+    let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
         Ok(PluginDataClass {
-            name: row.get(1).unwrap(),
-            author: row.get(2).unwrap(),
-            version: row.get(3).unwrap(),
-            id: Some(row.get(4).unwrap()),
-            description: Some(row.get(5).unwrap()),
-            download_url: Some(row.get(6).unwrap()),
-            info_url: Some(row.get(7).unwrap()),
-            category: Some(row.get(8).unwrap()),
-            latest_version: Some(row.get(9).unwrap()),
-            downloads: Some(row.get(10).unwrap()),
-            archive_name: Some(row.get(11).unwrap()),
+            name: row.get(0).unwrap(),
+            author: row.get(1).unwrap(),
+            version: row.get(2).unwrap(),
+            id: Some(row.get(3).unwrap()),
+            description: Some(row.get(4).unwrap()),
+            download_url: Some(row.get(5).unwrap()),
+            info_url: Some(row.get(6).unwrap()),
+            category: Some(row.get(7).unwrap()),
+            latest_version: Some(row.get(8).unwrap()),
+            downloads: Some(row.get(9).unwrap()),
+            archive_name: Some(row.get(10).unwrap()),
         })
     })?;
 
     Ok(plugin_iter.next().transpose()?)
 }
 
-pub fn delete_plugin(id: u64, db_path: &str) -> Result<(), Box<dyn Error>> {
+pub fn delete_plugin(name: &str, db_path: &str) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     conn.execute(
-        "DELETE FROM plugin WHERE id=?1;",
-        params![format!("{}", id)],
+        "DELETE FROM plugin WHERE name=?1;",
+        params![name.to_string()],
     )?;
 
     Ok(())
@@ -92,11 +79,11 @@ pub fn get_plugins(db_path: &str) -> PluginCollection {
 
     let conn = Connection::open(db_path).unwrap();
     let mut stmt = conn
-        .prepare("SELECT id, name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
+        .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
         .unwrap();
 
     for element in execute_stmt(&mut stmt, "") {
-        plugins.insert(PluginDataClass::calculate_hash(&element), element);
+        plugins.insert(element.name.clone(), element);
     }
 
     plugins
@@ -116,17 +103,17 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
     let plugin_iter = stmt
         .query_map(query_params, |row| {
             Ok(PluginDataClass {
-                name: row.get(1).unwrap(),
-                author: row.get(2).unwrap(),
-                version: row.get(3).unwrap(),
-                id: Some(row.get(4).unwrap()),
-                description: Some(row.get(5).unwrap()),
-                download_url: Some(row.get(6).unwrap()),
-                info_url: Some(row.get(7).unwrap()),
-                category: Some(row.get(8).unwrap()),
-                latest_version: Some(row.get(9).unwrap()),
-                downloads: Some(row.get(10).unwrap()),
-                archive_name: Some(row.get(11).unwrap()),
+                name: row.get(0).unwrap(),
+                author: row.get(1).unwrap(),
+                version: row.get(2).unwrap(),
+                id: Some(row.get(3).unwrap()),
+                description: Some(row.get(4).unwrap()),
+                download_url: Some(row.get(5).unwrap()),
+                info_url: Some(row.get(6).unwrap()),
+                category: Some(row.get(7).unwrap()),
+                latest_version: Some(row.get(8).unwrap()),
+                downloads: Some(row.get(9).unwrap()),
+                archive_name: Some(row.get(10).unwrap()),
             })
         })
         .unwrap();
@@ -174,24 +161,16 @@ mod tests {
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(
-            PluginDataClass::calculate_hash(&data_class),
-            &data_class,
-            db_path.to_str().unwrap(),
-        )
-        .expect("Error while running test setup");
+        insert_plugin(&data_class, db_path.to_str().unwrap())
+            .expect("Error while running test setup");
 
         (test_dir, db_path.to_str().unwrap().to_string())
     }
@@ -211,21 +190,7 @@ mod tests {
                 .with_id(1)
                 .with_description("Lorem ipsum")
                 .build();
-            insert_plugin(
-                PluginDataClass::calculate_hash(&data_class),
-                &data_class,
-                &db_path,
-            )
-            .unwrap();
-
-            teardown(test_dir);
-        }
-
-        #[test]
-        fn test_update_plugin() {
-            let (test_dir, db_path) = setup_with_items();
-
-            update_plugin(17_418_645_804_149_917_555, "1.1", &db_path).unwrap();
+            insert_plugin(&data_class, &db_path).unwrap();
 
             teardown(test_dir);
         }
@@ -234,7 +199,7 @@ mod tests {
         fn test_delete_plugin() {
             let (test_dir, db_path) = setup_with_items();
 
-            delete_plugin(17_418_645_804_149_917_555, &db_path).unwrap();
+            delete_plugin("PetStable", &db_path).unwrap();
 
             teardown(test_dir);
         }
@@ -247,11 +212,9 @@ mod tests {
         fn get_one_plugin() {
             let (test_dir, db_path) = setup_with_items();
 
-            let plugin = get_plugin(17_418_645_804_149_917_555, &db_path)
-                .unwrap()
-                .unwrap();
+            let plugin = get_plugin("PetStable", &db_path).unwrap().unwrap();
 
-            assert_eq!(plugin.name, "Hello World");
+            assert_eq!(plugin.name, "PetStable");
 
             teardown(test_dir);
         }
@@ -263,8 +226,8 @@ mod tests {
             let plugins = get_plugins(&db_path);
 
             assert_eq!(plugins.keys().len(), 2);
-            assert!(plugins.contains_key(&17_418_645_804_149_917_555));
-            assert!(plugins.contains_key(&12_652_764_195_116_899_398));
+            assert!(plugins.contains_key("PetStable"));
+            assert!(plugins.contains_key("Hello World"));
 
             teardown(test_dir);
         }

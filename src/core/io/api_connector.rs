@@ -22,7 +22,7 @@ pub async fn fetch_plugins(url: String) -> Result<PluginCollection, APIError> {
                             )
                             .build();
 
-                    plugins.insert(PluginDataClass::calculate_hash(&data_class), data_class);
+                    plugins.insert(data_class.name.clone(), data_class);
                 }
                 Ok(plugins)
             }
