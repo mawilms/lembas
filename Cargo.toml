@@ -13,6 +13,11 @@ Lembas is an easy to use plugin manager for the MMORPG Lord of the Rings Online.
 """
 categories = ["gaming", "plugins", "iced"]
 keywords = ["gaming", "plugins", "lotro"]
+exclude = [
+    "screenshots/*",
+    "samples/*",
+    "tests/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
