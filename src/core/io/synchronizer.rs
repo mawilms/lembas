@@ -4,7 +4,7 @@ use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
 use crate::core::parsers::plugin_parser::parse_plugin_file;
-use crate::core::{Config, PluginCollection, PluginDataClass};
+use crate::core::{is_not_existing_in_blacklist, Config, PluginCollection, PluginDataClass};
 use log::{debug, error};
 use std::{collections::HashMap, error::Error, path::Path};
 
@@ -15,8 +15,8 @@ pub struct Synchronizer {
 
 impl Synchronizer {
     pub async fn synchronize_application(
-        plugins_dir: &str,
-        db_path: &str,
+        plugins_dir: &Path,
+        db_path: &Path,
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
@@ -28,7 +28,7 @@ impl Synchronizer {
 
     pub async fn compare_local_state(
         local_plugins: &PluginCollection,
-        db_path: &str,
+        db_path: &Path,
         feed_url: &str,
     ) {
         match api_connector::fetch_plugins(feed_url.to_string()).await {
@@ -50,7 +50,7 @@ impl Synchronizer {
     fn sync_cache(
         local_plugins: &PluginCollection,
         remote_plugins: &PluginCollection,
-        db_path: &str,
+        db_path: &Path,
     ) {
         let db_plugins = get_plugins(db_path);
         // Managed plugins
@@ -65,10 +65,10 @@ impl Synchronizer {
     fn update_local_plugins(
         remote_plugins: &HashMap<String, PluginDataClass>,
         local_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &Path,
     ) {
         for (title, remote_plugin) in remote_plugins {
-            if local_plugins.contains_key(title) {
+            if local_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
                 match insert_plugin(remote_plugin, db_path) {
                     Ok(_) => {
                         debug!("Local plugin {} updated", remote_plugin.name);
@@ -86,10 +86,10 @@ impl Synchronizer {
     fn check_existing_plugins(
         remote_plugins: &HashMap<String, PluginDataClass>,
         local_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &Path,
     ) -> Result<(), Box<dyn Error>> {
         for (title, local_plugin) in local_plugins {
-            if !remote_plugins.contains_key(title) {
+            if !remote_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
                 insert_plugin(local_plugin, db_path)?;
             } else if let Some(db_plugin) = get_plugin(&local_plugin.name, db_path)? {
                 insert_plugin(&db_plugin, db_path)?;
@@ -104,7 +104,7 @@ impl Synchronizer {
     fn delete_not_existing_local_plugins(
         local_plugins: &HashMap<String, PluginDataClass>,
         db_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &Path,
     ) {
         for keys in db_plugins.keys() {
             if !local_plugins.contains_key(keys) {
@@ -113,9 +113,8 @@ impl Synchronizer {
         }
     }
 
-    pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
+    pub fn search_local(plugins_dir: &Path) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
-        let mut all_descriptors = Vec::new();
 
         let compendium_files = collect_all_compendium_files(Path::new(&plugins_dir))?;
         let mut plugin_files = collect_all_plugin_files(Path::new(&plugins_dir))?;
@@ -127,14 +126,10 @@ impl Synchronizer {
                 .iter()
                 .position(|element| element.to_str().unwrap().contains(&tmp_plugin_name))
             {
-                let (compendium_content, descriptors) = parse_compendium_file(compendium_file);
+                let compendium_content = parse_compendium_file(compendium_file);
                 local_plugins.insert(compendium_content.name.clone(), compendium_content);
 
                 plugin_files.remove(position);
-
-                for element in descriptors {
-                    all_descriptors.push(element);
-                }
             }
         }
 
@@ -196,7 +191,7 @@ mod tests {
     fn search_local_plugins() {
         let test_dir = setup();
 
-        let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
+        let local_plugins = Synchronizer::search_local(&test_dir).unwrap();
 
         assert_eq!(local_plugins.len(), 7);
 
@@ -327,7 +322,7 @@ mod tests {
         teardown_db(&test_dir);
     }
 
-    type TemporaryPaths = (PathBuf, String);
+    type TemporaryPaths = (PathBuf, PathBuf);
 
     fn setup_db() -> TemporaryPaths {
         let uuid = Uuid::new_v4().to_string();
@@ -335,24 +330,22 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap()).unwrap();
+        create_cache_db(&db_path).unwrap();
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
-        (test_dir, db_path.to_str().unwrap().to_string())
+        (test_dir, db_path)
     }
 
     fn teardown_db(test_dir: &Path) {

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::PathBuf;
 use std::{
     fs::{self, write, File},
     io::Read,
@@ -9,10 +9,10 @@ use crate::gui::views::Paths;
 
 #[derive(Default, Debug, Clone)]
 pub struct Config {
-    pub settings: String,
-    pub plugins_dir: String,
-    pub db_file_path: String,
-    pub cache_dir: String,
+    pub settings: PathBuf,
+    pub plugins_dir: PathBuf,
+    pub db_file_path: PathBuf,
+    pub cache_dir: PathBuf,
     pub application_settings: SettingsFile,
 }
 
@@ -22,10 +22,10 @@ impl Config {
         fs::create_dir_all(&paths.settings).expect("Couldn't create the lembas settings folder");
         fs::create_dir_all(&paths.cache).expect("Couldn't create the lembas cache folder");
 
-        let path = Path::new(&paths.settings).join("plugins.sqlite3");
+        let path = &paths.settings.join("plugins.sqlite3");
 
         let mut initial_settings = SettingsFile::default();
-        let settings_file_path = Path::new(&paths.settings).join("settings.json");
+        let settings_file_path = &paths.settings.join("settings.json");
 
         if settings_file_path.exists() {
             let mut file = File::open(settings_file_path).unwrap();
@@ -45,16 +45,16 @@ impl Config {
         }
 
         Self {
-            settings: paths.settings.into_os_string().into_string().unwrap(),
-            plugins_dir: paths.plugins.into_os_string().into_string().unwrap(),
-            db_file_path: path.into_os_string().into_string().unwrap(),
-            cache_dir: paths.cache.into_os_string().into_string().unwrap(),
+            settings: paths.settings,
+            plugins_dir: paths.plugins,
+            db_file_path: path.clone(),
+            cache_dir: paths.cache,
             application_settings: initial_settings,
         }
     }
 
     pub fn save_changes(&self) {
-        let settings_file_path = Path::new(&self.settings).join("settings.json");
+        let settings_file_path = &self.settings.join("settings.json");
 
         write(
             &settings_file_path,

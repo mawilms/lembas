@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::core::io::cache::{self};
 use crate::core::io::Synchronizer;
 use crate::core::{Config, Installer, PluginDataClass};
@@ -128,8 +130,10 @@ impl Plugins {
                     PluginMessage::DbRefreshed,
                 ),
                 PluginMessage::UpdateAllPressed => {
-                    for i in 1..state.plugins.len() {
-                        if state.plugins[i].current_version != state.plugins[i].latest_version {
+                    for i in 1..=state.plugins.len() {
+                        if state.plugins[i].current_version != state.plugins[i].latest_version
+                            && !state.plugins[i].latest_version.is_empty()
+                        {
                             let test = state.plugins[i].clone();
                             state.plugins[i].update(RowMessage::UpdatePressed(test));
                         }
@@ -310,9 +314,9 @@ pub struct PluginRow {
     pub status: String,
     pub download_url: String,
     pub backup_enabled: bool,
-    pub plugins_dir: String,
-    pub cache_dir: String,
-    pub db_file: String,
+    pub plugins_dir: PathBuf,
+    pub cache_dir: PathBuf,
+    pub db_file: PathBuf,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -350,9 +354,9 @@ impl PluginRow {
         latest_version: &str,
         download_url: &str,
         backup_enabled: bool,
-        plugins_dir: &str,
-        cache_dir: &str,
-        db_file: &str,
+        plugins_dir: &PathBuf,
+        cache_dir: &PathBuf,
+        db_file: &PathBuf,
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -370,9 +374,9 @@ impl PluginRow {
                 toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                plugins_dir: plugins_dir.clone(),
+                cache_dir: cache_dir.clone(),
+                db_file: db_file.clone(),
             }
         } else {
             Self {
@@ -390,9 +394,9 @@ impl PluginRow {
                 toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                plugins_dir: plugins_dir.clone(),
+                cache_dir: cache_dir.clone(),
+                db_file: db_file.clone(),
             }
         }
     }
@@ -404,7 +408,7 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                if let Ok(install_information) = Installer::download(
+                if let Ok(files) = Installer::download(
                     plugin.id,
                     &plugin.title,
                     &plugin.download_url,
@@ -412,13 +416,7 @@ impl PluginRow {
                     &self.cache_dir,
                     self.backup_enabled,
                 ) {
-                    if Installer::delete(
-                        &install_information.0,
-                        &install_information.1,
-                        &self.plugins_dir,
-                    )
-                    .is_ok()
-                    {
+                    if Installer::delete(&files, &self.plugins_dir).is_ok() {
                         Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
                         let cache_item = PluginDataClass::new(
                             &plugin.title,
@@ -447,7 +445,7 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(plugin) => {
-                if let Ok(install_information) = Installer::download(
+                if let Ok(files) = Installer::download(
                     plugin.id,
                     &plugin.title,
                     &plugin.download_url,
@@ -455,11 +453,8 @@ impl PluginRow {
                     &self.cache_dir,
                     self.backup_enabled,
                 ) {
-                    if let Ok(()) = Installer::delete(
-                        &install_information.0,
-                        &install_information.1,
-                        &self.plugins_dir,
-                    ) {
+                    if let Ok(()) = Installer::delete(&files, &self.plugins_dir) {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
                         if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
