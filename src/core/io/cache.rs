@@ -1,9 +1,9 @@
 use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
 use rusqlite::{params, Connection, Statement};
-use std::{collections::HashMap, error::Error, path::PathBuf};
+use std::{collections::HashMap, error::Error, path::Path};
 
-pub fn create_cache_db(db_path: &PathBuf) -> Result<(), rusqlite::Error> {
+pub fn create_cache_db(db_path: &Path) -> Result<(), rusqlite::Error> {
     let conn = Connection::open(db_path)
         .map_err(|_| debug!("Error while opening SQLite database"))
         .unwrap();
@@ -30,7 +30,7 @@ pub fn create_cache_db(db_path: &PathBuf) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-pub fn insert_plugin(plugin: &PluginDataClass, db_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn insert_plugin(plugin: &PluginDataClass, db_path: &Path) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
 
     conn.execute(
@@ -40,10 +40,7 @@ pub fn insert_plugin(plugin: &PluginDataClass, db_path: &PathBuf) -> Result<(), 
     Ok(())
 }
 
-pub fn get_plugin(
-    name: &str,
-    db_path: &PathBuf,
-) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+pub fn get_plugin(name: &str, db_path: &Path) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     let mut stmt = conn
         .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
@@ -67,7 +64,7 @@ pub fn get_plugin(
     Ok(plugin_iter.next().transpose()?)
 }
 
-pub fn delete_plugin(name: &str, db_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn delete_plugin(name: &str, db_path: &Path) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     conn.execute(
         "DELETE FROM plugin WHERE name=?1;",
@@ -77,7 +74,7 @@ pub fn delete_plugin(name: &str, db_path: &PathBuf) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-pub fn get_plugins(db_path: &PathBuf) -> PluginCollection {
+pub fn get_plugins(db_path: &Path) -> PluginCollection {
     let mut plugins = HashMap::new();
 
     let conn = Connection::open(db_path).unwrap();

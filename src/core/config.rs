@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{
     fs::{self, write, File},
     io::Read,
@@ -22,10 +22,10 @@ impl Config {
         fs::create_dir_all(&paths.settings).expect("Couldn't create the lembas settings folder");
         fs::create_dir_all(&paths.cache).expect("Couldn't create the lembas cache folder");
 
-        let path = Path::new(&paths.settings).join("plugins.sqlite3");
+        let path = &paths.settings.join("plugins.sqlite3");
 
         let mut initial_settings = SettingsFile::default();
-        let settings_file_path = Path::new(&paths.settings).join("settings.json");
+        let settings_file_path = &paths.settings.join("settings.json");
 
         if settings_file_path.exists() {
             let mut file = File::open(settings_file_path).unwrap();
@@ -47,14 +47,14 @@ impl Config {
         Self {
             settings: paths.settings,
             plugins_dir: paths.plugins,
-            db_file_path: path,
+            db_file_path: path.clone(),
             cache_dir: paths.cache,
             application_settings: initial_settings,
         }
     }
 
     pub fn save_changes(&self) {
-        let settings_file_path = Path::new(&self.settings).join("settings.json");
+        let settings_file_path = &self.settings.join("settings.json");
 
         write(
             &settings_file_path,

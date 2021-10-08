@@ -7,7 +7,8 @@
 ![Github testing](https://github.com/mawilms/lembas/actions/workflows/testing.yml/badge.svg)
 ![GitHub issues](https://img.shields.io/github/issues/mawilms/lembas)
 ![GitHub downloads](https://img.shields.io/github/downloads/mawilms/lembas/total)
-![GitHub Latest version](https://img.shields.io/github/v/release/mawilms/lembas?include_prereleases)
+![Cargo Downloads](https://img.shields.io/crates/d/lembas)
+![Cargo Latest version](https://img.shields.io/crates/v/lembas)
 
 </div>
 

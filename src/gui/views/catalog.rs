@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::core::{
     io::{
@@ -356,9 +356,9 @@ impl PluginRow {
     fn with_information(
         mut self,
         download_url: &str,
-        plugins_dir: &PathBuf,
-        cache_dir: &PathBuf,
-        db_file: &PathBuf,
+        plugins_dir: &Path,
+        cache_dir: &Path,
+        db_file: &Path,
         backup_enabled: bool,
     ) -> Self {
         self.download_url = download_url.to_string();
