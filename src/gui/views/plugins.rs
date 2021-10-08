@@ -130,9 +130,10 @@ impl Plugins {
                     PluginMessage::DbRefreshed,
                 ),
                 PluginMessage::UpdateAllPressed => {
-                    
                     for i in 1..=state.plugins.len() {
-                        if state.plugins[i].current_version != state.plugins[i].latest_version && !state.plugins[i].latest_version.is_empty() {
+                        if state.plugins[i].current_version != state.plugins[i].latest_version
+                            && !state.plugins[i].latest_version.is_empty()
+                        {
                             let test = state.plugins[i].clone();
                             state.plugins[i].update(RowMessage::UpdatePressed(test));
                         }
@@ -407,7 +408,7 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                if let Ok(install_information) = Installer::download(
+                if let Ok(files) = Installer::download(
                     plugin.id,
                     &plugin.title,
                     &plugin.download_url,
@@ -415,13 +416,7 @@ impl PluginRow {
                     &self.cache_dir,
                     self.backup_enabled,
                 ) {
-                    if Installer::delete(
-                        &install_information.0,
-                        &install_information.1,
-                        &self.plugins_dir,
-                    )
-                    .is_ok()
-                    {
+                    if Installer::delete(&files, &self.plugins_dir).is_ok() {
                         Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
                         let cache_item = PluginDataClass::new(
                             &plugin.title,
@@ -450,7 +445,7 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(plugin) => {
-                if let Ok(install_information) = Installer::download(
+                if let Ok(files) = Installer::download(
                     plugin.id,
                     &plugin.title,
                     &plugin.download_url,
@@ -458,11 +453,8 @@ impl PluginRow {
                     &self.cache_dir,
                     self.backup_enabled,
                 ) {
-                    if let Ok(()) = Installer::delete(
-                        &install_information.0,
-                        &install_information.1,
-                        &self.plugins_dir,
-                    ) {
+                    if let Ok(()) = Installer::delete(&files, &self.plugins_dir) {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
                         if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())

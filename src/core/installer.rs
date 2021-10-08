@@ -23,7 +23,7 @@ impl Installer {
         plugins_dir: &Path,
         cache_dir: &Path,
         backup_enabled: bool,
-    ) -> Result<(String, Vec<String>), Box<dyn Error>> {
+    ) -> Result<Vec<String>, Box<dyn Error>> {
         if backup_enabled {
             Self::back_plugin_folder(plugins_dir);
         }
@@ -56,25 +56,26 @@ impl Installer {
                     .collect::<Vec<String>>();
 
                 Self::move_files(&tmp_file_path, &root_folder_name, plugins_dir);
-                // TODO: Check if this is the correct return value
-                Ok((root_folder_name, files))
+                Ok(files)
             }
         }
     }
 
-    pub fn delete(name: &str, files: &[String], plugins_dir: &Path) -> Result<(), Box<dyn Error>> {
+    pub fn delete(files: &[String], plugins_dir: &Path) -> Result<(), Box<dyn Error>> {
+        let root_name = files[0].split('/').next().unwrap();
         for file in files {
-            let path = plugins_dir.join(name).join(file);
-            let md = metadata(&path).unwrap();
-            if md.is_dir() {
-                fs::remove_dir_all(&path)?;
-            } else {
-                fs::remove_file(&path)?;
+            let path = plugins_dir.join(file);
+            if let Ok(md) = metadata(&path) {
+                if md.is_dir() {
+                    fs::remove_dir_all(&path)?;
+                } else {
+                    fs::remove_file(&path)?;
+                }
             }
         }
 
-        if plugins_dir.join(name).read_dir()?.next().is_none() {
-            fs::remove_dir_all(&plugins_dir.join(name))?;
+        if plugins_dir.read_dir()?.next().is_none() {
+            fs::remove_dir_all(&plugins_dir.join(root_name))?;
         }
 
         Ok(())

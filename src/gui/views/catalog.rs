@@ -395,7 +395,6 @@ impl PluginRow {
                                 "",
                             )
                             .build();
-                    debug!("{:?}", cache_item);
 
                     if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
