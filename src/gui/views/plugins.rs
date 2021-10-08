@@ -128,8 +128,9 @@ impl Plugins {
                     PluginMessage::DbRefreshed,
                 ),
                 PluginMessage::UpdateAllPressed => {
-                    for i in 1..state.plugins.len() {
-                        if state.plugins[i].current_version != state.plugins[i].latest_version {
+                    
+                    for i in 1..=state.plugins.len() {
+                        if state.plugins[i].current_version != state.plugins[i].latest_version && !state.plugins[i].latest_version.is_empty() {
                             let test = state.plugins[i].clone();
                             state.plugins[i].update(RowMessage::UpdatePressed(test));
                         }
