@@ -92,8 +92,6 @@ impl Synchronizer {
             if !remote_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
                 insert_plugin(local_plugin, db_path)?;
             } else if let Some(db_plugin) = get_plugin(&local_plugin.name, db_path)? {
-                println!("{:?}", db_plugin);
-                println!("{:?}", local_plugin);
                 insert_plugin(&db_plugin, db_path)?;
             }
         }
