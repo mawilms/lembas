@@ -450,7 +450,7 @@ impl PluginRow {
                                     .horizontal_alignment(HorizontalAlignment::Center),
                             )
                             .on_press(RowMessage::InstallPressed(plugin))
-                            .style(style::InstallButton::Enabled)
+                            .style(style::PrimaryButton::Enabled)
                             .width(Length::FillPortion(2))
                         }),
                 )
