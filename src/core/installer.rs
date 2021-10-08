@@ -5,7 +5,10 @@ use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
-use std::{error::Error, fs::File};
+use std::{
+    error::Error,
+    fs::{File, OpenOptions},
+};
 use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
@@ -33,15 +36,18 @@ impl Installer {
         let cache_path = cache_dir
             .join(&format!("{}_{}", plugin_id, plugin_title))
             .join("plugin.zip");
-        match File::create(cache_path) {
+        match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
                 let content = response.bytes()?;
                 file.write_all(&content)?;
-                let mut zip_archive = zip::ZipArchive::new(file)?;
-
+                let file = OpenOptions::new()
+                    .write(true)
+                    .read(true)
+                    .open(&cache_path)
+                    .unwrap();
+                let mut zip_archive = zip::ZipArchive::new(file).unwrap();
                 zip::ZipArchive::extract(&mut zip_archive, &tmp_file_path)?;
-
                 let root_folder_name = zip_archive.by_index(0).unwrap().name().to_string();
 
                 let files = zip_archive

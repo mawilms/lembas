@@ -384,15 +384,18 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    let cache_item = PluginDataClass::new(
-                        &plugin.title,
-                        &plugin.author,
-                        &plugin.current_version,
-                    )
-                    .with_id(plugin.id)
-                    .with_description(&plugin.description)
-                    .with_remote_information(&plugin.category, &plugin.latest_version, 0, "")
-                    .build();
+                    let cache_item =
+                        PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
+                            .with_id(plugin.id)
+                            .with_description(&plugin.description)
+                            .with_remote_information(
+                                &plugin.category,
+                                &plugin.latest_version,
+                                0,
+                                "",
+                            )
+                            .build();
+                    debug!("{:?}", cache_item);
 
                     if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
