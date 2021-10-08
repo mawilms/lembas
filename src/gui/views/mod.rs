@@ -278,7 +278,7 @@ impl Lembas {
         };
         let config = Config::new(paths);
 
-        create_cache_db(&config.db_file_path);
+        create_cache_db(&config.db_file_path).expect("Unable to create cache db");
         Synchronizer::synchronize_application(
             &config.plugins_dir,
             &config.db_file_path,

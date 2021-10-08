@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use crate::core::{
     io::{
         api_connector::{self, APIError},
@@ -307,9 +309,9 @@ pub struct PluginRow {
     pub latest_version: String,
     pub status: String,
     pub download_url: String,
-    pub plugins_dir: String,
-    pub cache_dir: String,
-    pub db_file: String,
+    pub plugins_dir: PathBuf,
+    pub cache_dir: PathBuf,
+    pub db_file: PathBuf,
     pub backup_enabled: bool,
 
     install_btn_state: button::State,
@@ -337,9 +339,9 @@ impl PluginRow {
             install_btn_state: button::State::default(),
             website_btn_state: button::State::default(),
             download_url: String::new(),
-            plugins_dir: String::new(),
-            cache_dir: String::new(),
-            db_file: String::new(),
+            plugins_dir: PathBuf::new(),
+            cache_dir: PathBuf::new(),
+            db_file: PathBuf::new(),
             backup_enabled: true,
         }
     }
@@ -354,15 +356,15 @@ impl PluginRow {
     fn with_information(
         mut self,
         download_url: &str,
-        plugins_dir: &str,
-        cache_dir: &str,
-        db_file: &str,
+        plugins_dir: &Path,
+        cache_dir: &Path,
+        db_file: &Path,
         backup_enabled: bool,
     ) -> Self {
         self.download_url = download_url.to_string();
-        self.plugins_dir = plugins_dir.to_string();
-        self.cache_dir = cache_dir.to_string();
-        self.db_file = db_file.to_string();
+        self.plugins_dir = plugins_dir.to_path_buf();
+        self.cache_dir = cache_dir.to_path_buf();
+        self.db_file = db_file.to_path_buf();
         self.backup_enabled = backup_enabled;
 
         self
@@ -382,15 +384,17 @@ impl PluginRow {
                 .is_ok()
                 {
                     Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                    let cache_item = PluginDataClass::new(
-                        &plugin.title,
-                        &plugin.author,
-                        &plugin.current_version,
-                    )
-                    .with_id(plugin.id)
-                    .with_description(&plugin.description)
-                    .with_remote_information(&plugin.category, &plugin.latest_version, 0, "")
-                    .build();
+                    let cache_item =
+                        PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
+                            .with_id(plugin.id)
+                            .with_description(&plugin.description)
+                            .with_remote_information(
+                                &plugin.category,
+                                &plugin.latest_version,
+                                0,
+                                "",
+                            )
+                            .build();
 
                     if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
                         self.status = "Installed".to_string();
@@ -448,7 +452,7 @@ impl PluginRow {
                                     .horizontal_alignment(HorizontalAlignment::Center),
                             )
                             .on_press(RowMessage::InstallPressed(plugin))
-                            .style(style::InstallButton::Enabled)
+                            .style(style::PrimaryButton::Enabled)
                             .width(Length::FillPortion(2))
                         }),
                 )
