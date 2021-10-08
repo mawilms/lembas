@@ -1,9 +1,9 @@
 use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
 use rusqlite::{params, Connection, Statement};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, path::PathBuf};
 
-pub fn create_cache_db(db_path: &str) -> Result<(), rusqlite::Error> {
+pub fn create_cache_db(db_path: &PathBuf) -> Result<(), rusqlite::Error> {
     let conn = Connection::open(db_path)
         .map_err(|_| debug!("Error while opening SQLite database"))
         .unwrap();
@@ -30,7 +30,7 @@ pub fn create_cache_db(db_path: &str) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-pub fn insert_plugin(plugin: &PluginDataClass, db_path: &str) -> Result<(), Box<dyn Error>> {
+pub fn insert_plugin(plugin: &PluginDataClass, db_path: &PathBuf) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
 
     conn.execute(
@@ -40,7 +40,10 @@ pub fn insert_plugin(plugin: &PluginDataClass, db_path: &str) -> Result<(), Box<
     Ok(())
 }
 
-pub fn get_plugin(name: &str, db_path: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+pub fn get_plugin(
+    name: &str,
+    db_path: &PathBuf,
+) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     let mut stmt = conn
         .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
@@ -64,7 +67,7 @@ pub fn get_plugin(name: &str, db_path: &str) -> Result<Option<PluginDataClass>, 
     Ok(plugin_iter.next().transpose()?)
 }
 
-pub fn delete_plugin(name: &str, db_path: &str) -> Result<(), Box<dyn Error>> {
+pub fn delete_plugin(name: &str, db_path: &PathBuf) -> Result<(), Box<dyn Error>> {
     let conn = Connection::open(db_path)?;
     conn.execute(
         "DELETE FROM plugin WHERE name=?1;",
@@ -74,7 +77,7 @@ pub fn delete_plugin(name: &str, db_path: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn get_plugins(db_path: &str) -> PluginCollection {
+pub fn get_plugins(db_path: &PathBuf) -> PluginCollection {
     let mut plugins = HashMap::new();
 
     let conn = Connection::open(db_path).unwrap();
@@ -136,7 +139,7 @@ mod tests {
     };
     use uuid::Uuid;
 
-    type TemporaryPaths = (PathBuf, String);
+    type TemporaryPaths = (PathBuf, PathBuf);
 
     fn setup() -> TemporaryPaths {
         let uuid = Uuid::new_v4().to_string();
@@ -144,9 +147,9 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap()).unwrap();
+        create_cache_db(&db_path).unwrap();
 
-        (test_dir, db_path.to_str().unwrap().to_string())
+        (test_dir, db_path)
     }
 
     fn setup_with_items() -> TemporaryPaths {
@@ -155,24 +158,22 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).expect("Error while running test setup");
-        create_cache_db(db_path.to_str().expect("Error while running test setup")).unwrap();
+        create_cache_db(&db_path).unwrap();
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
-        (test_dir, db_path.to_str().unwrap().to_string())
+        (test_dir, db_path)
     }
 
     fn teardown(test_dir: PathBuf) {

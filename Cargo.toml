@@ -1,4 +1,4 @@
-cargo-features = ["strip"]
+#cargo-features = ["strip"]
 
 [package]
 name = "lembas"
@@ -26,18 +26,15 @@ serde-xml-rs = "^0"
 dirs = "^3"
 rusqlite = { version = "^0", features = ["bundled"] }
 futures = "^0"
-lazy_static = "^1"
 tokio = { version = "^1", features = ["full"]}
 image = "^0"
 webbrowser = "^0"
 fs_extra = "^1"
 globset = "^0"
 chrono = "^0"
-async-trait = "^0"
 log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] }
 env_logger = "^0"
 uuid = { version = "^0", features = ["v4"] }
-httpmock = "^0"
 walkdir = "^2"
 regex = "^1"
 itertools = "^0"
@@ -55,5 +52,5 @@ winapi = "^0"
 [profile.release]
 opt-level = "s"
 lto = true
-strip = "symbols"# Currently only useable for nightly --> 
+#strip = "symbols"# Currently only useable for nightly --> 
 codegen-units = 1

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::core::io::cache::{self};
 use crate::core::io::Synchronizer;
 use crate::core::{Config, Installer, PluginDataClass};
@@ -310,9 +312,9 @@ pub struct PluginRow {
     pub status: String,
     pub download_url: String,
     pub backup_enabled: bool,
-    pub plugins_dir: String,
-    pub cache_dir: String,
-    pub db_file: String,
+    pub plugins_dir: PathBuf,
+    pub cache_dir: PathBuf,
+    pub db_file: PathBuf,
 
     #[serde(skip)]
     update_btn_state: button::State,
@@ -350,9 +352,9 @@ impl PluginRow {
         latest_version: &str,
         download_url: &str,
         backup_enabled: bool,
-        plugins_dir: &str,
-        cache_dir: &str,
-        db_file: &str,
+        plugins_dir: &PathBuf,
+        cache_dir: &PathBuf,
+        db_file: &PathBuf,
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -370,9 +372,9 @@ impl PluginRow {
                 toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                plugins_dir: plugins_dir.clone(),
+                cache_dir: cache_dir.clone(),
+                db_file: db_file.clone(),
             }
         } else {
             Self {
@@ -390,9 +392,9 @@ impl PluginRow {
                 toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
-                plugins_dir: plugins_dir.to_string(),
-                cache_dir: cache_dir.to_string(),
-                db_file: db_file.to_string(),
+                plugins_dir: plugins_dir.clone(),
+                cache_dir: cache_dir.clone(),
+                db_file: db_file.clone(),
             }
         }
     }

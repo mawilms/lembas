@@ -6,6 +6,7 @@ use crate::core::parsers::compendium_parser::parse_compendium_file;
 use crate::core::parsers::plugin_parser::parse_plugin_file;
 use crate::core::{is_not_existing_in_blacklist, Config, PluginCollection, PluginDataClass};
 use log::{debug, error};
+use std::path::PathBuf;
 use std::{collections::HashMap, error::Error, path::Path};
 
 #[derive(Default, Debug, Clone)]
@@ -15,8 +16,8 @@ pub struct Synchronizer {
 
 impl Synchronizer {
     pub async fn synchronize_application(
-        plugins_dir: &str,
-        db_path: &str,
+        plugins_dir: &PathBuf,
+        db_path: &PathBuf,
         feed_url: &str,
     ) -> Result<(), Box<dyn Error>> {
         let local_plugins = Synchronizer::search_local(plugins_dir).unwrap();
@@ -28,7 +29,7 @@ impl Synchronizer {
 
     pub async fn compare_local_state(
         local_plugins: &PluginCollection,
-        db_path: &str,
+        db_path: &PathBuf,
         feed_url: &str,
     ) {
         match api_connector::fetch_plugins(feed_url.to_string()).await {
@@ -50,7 +51,7 @@ impl Synchronizer {
     fn sync_cache(
         local_plugins: &PluginCollection,
         remote_plugins: &PluginCollection,
-        db_path: &str,
+        db_path: &PathBuf,
     ) {
         let db_plugins = get_plugins(db_path);
         // Managed plugins
@@ -65,7 +66,7 @@ impl Synchronizer {
     fn update_local_plugins(
         remote_plugins: &HashMap<String, PluginDataClass>,
         local_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &PathBuf,
     ) {
         for (title, remote_plugin) in remote_plugins {
             if local_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
@@ -86,7 +87,7 @@ impl Synchronizer {
     fn check_existing_plugins(
         remote_plugins: &HashMap<String, PluginDataClass>,
         local_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &PathBuf,
     ) -> Result<(), Box<dyn Error>> {
         for (title, local_plugin) in local_plugins {
             if !remote_plugins.contains_key(title) && is_not_existing_in_blacklist(title) {
@@ -104,7 +105,7 @@ impl Synchronizer {
     fn delete_not_existing_local_plugins(
         local_plugins: &HashMap<String, PluginDataClass>,
         db_plugins: &HashMap<String, PluginDataClass>,
-        db_path: &str,
+        db_path: &PathBuf,
     ) {
         for keys in db_plugins.keys() {
             if !local_plugins.contains_key(keys) {
@@ -113,7 +114,7 @@ impl Synchronizer {
         }
     }
 
-    pub fn search_local(plugins_dir: &str) -> Result<PluginCollection, Box<dyn Error>> {
+    pub fn search_local(plugins_dir: &PathBuf) -> Result<PluginCollection, Box<dyn Error>> {
         let mut local_plugins = HashMap::new();
 
         let compendium_files = collect_all_compendium_files(Path::new(&plugins_dir))?;
@@ -191,7 +192,7 @@ mod tests {
     fn search_local_plugins() {
         let test_dir = setup();
 
-        let local_plugins = Synchronizer::search_local(test_dir.to_str().unwrap()).unwrap();
+        let local_plugins = Synchronizer::search_local(&test_dir).unwrap();
 
         assert_eq!(local_plugins.len(), 7);
 
@@ -322,7 +323,7 @@ mod tests {
         teardown_db(&test_dir);
     }
 
-    type TemporaryPaths = (PathBuf, String);
+    type TemporaryPaths = (PathBuf, PathBuf);
 
     fn setup_db() -> TemporaryPaths {
         let uuid = Uuid::new_v4().to_string();
@@ -330,24 +331,22 @@ mod tests {
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(db_path.to_str().unwrap()).unwrap();
+        create_cache_db(&db_path).unwrap();
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(&data_class, db_path.to_str().unwrap())
-            .expect("Error while running test setup");
+        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
 
-        (test_dir, db_path.to_str().unwrap().to_string())
+        (test_dir, db_path)
     }
 
     fn teardown_db(test_dir: &Path) {

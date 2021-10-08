@@ -5,7 +5,7 @@ use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
-use std::{error::Error, fs::File};
+use std::{error::Error, fs::File, path::PathBuf};
 use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
@@ -17,8 +17,8 @@ impl Installer {
         plugin_id: i32,
         plugin_title: &str,
         download_url: &str,
-        plugins_dir: &str,
-        cache_dir: &str,
+        plugins_dir: &PathBuf,
+        cache_dir: &PathBuf,
         backup_enabled: bool,
     ) -> Result<(String, Vec<String>), Box<dyn Error>> {
         if backup_enabled {
@@ -54,14 +54,18 @@ impl Installer {
                     &root_folder_name,
                     plugins_dir,
                 );
-                Ok((plugins_dir.to_string(), files))
+                Ok((root_folder_name, files))
             }
         }
     }
 
-    pub fn delete(name: &str, files: &[String], plugins_dir: &str) -> Result<(), Box<dyn Error>> {
+    pub fn delete(
+        name: &str,
+        files: &[String],
+        plugins_dir: &PathBuf,
+    ) -> Result<(), Box<dyn Error>> {
         for file in files {
-            let path = Path::new(&plugins_dir).join(name).join(file);
+            let path = plugins_dir.join(name).join(file);
             let md = metadata(&path).unwrap();
             if md.is_dir() {
                 fs::remove_dir_all(&path)?;
@@ -82,7 +86,7 @@ impl Installer {
         Ok(())
     }
 
-    fn move_files(tmp_path: &str, folder_name: &str, plugins_dir: &str) {
+    fn move_files(tmp_path: &str, folder_name: &str, plugins_dir: &PathBuf) {
         let tmp_folder = fs::read_dir(&Path::new(tmp_path).join(&folder_name)).unwrap();
         fs::remove_file(&Path::new(tmp_path).join("plugin.zip")).unwrap();
 
@@ -117,13 +121,13 @@ impl Installer {
         }
     }
 
-    pub fn delete_cache_folder(plugin_id: i32, plugin_title: &str, cache_dir: &str) {
+    pub fn delete_cache_folder(plugin_id: i32, plugin_title: &str, cache_dir: &PathBuf) {
         let tmp_file_path = Path::new(&cache_dir).join(format!("{}_{}", plugin_id, plugin_title));
 
         fs::remove_dir_all(tmp_file_path).unwrap();
     }
 
-    fn back_plugin_folder(plugins_dir: &str) {
+    fn back_plugin_folder(plugins_dir: &PathBuf) {
         let backup_path = home_dir()
             .expect("Couldn't find your home directory")
             .join("Documents")
