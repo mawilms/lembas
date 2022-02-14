@@ -293,7 +293,7 @@ impl Plugins {
                 Container::new(content)
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    .padding(10)
+                    .padding(20)
                     .style(style::Content)
                     .into()
             }
