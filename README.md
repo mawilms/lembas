@@ -12,6 +12,8 @@
 
 </div>
 
+> **Note: Lembas is currently heavily work in progress and will contain a lot changes in the upcoming release. The app will get a major rework.**
+
 Lembas is a plugin management tool completely written in Rust for the game "Lord of the Rings Online". You may ask why we chose the name "Lembas"? Good question. For a succesful journey in LotRO you may need some plugins but definitely the famous lembas bread!
 
 ## Table of contents
