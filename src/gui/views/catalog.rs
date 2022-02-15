@@ -258,7 +258,7 @@ impl Catalog {
 
                 Container::new(content)
                     .height(Length::Fill)
-                    .padding(10)
+                    .padding(20)
                     .style(style::Content)
                     .into()
             }

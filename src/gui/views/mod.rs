@@ -237,24 +237,21 @@ impl Application for Lembas {
                     }
                     View::Catalog => {
                         let main_container = catalog_view.view().map(Message::CatalogAction);
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
                     }
                     View::About => {
                         let main_container = about_view.view();
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
                     }
                     View::Configuration => {
                         let main_container = config_view.view().map(Message::ConfigAction);
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
