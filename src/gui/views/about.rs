@@ -16,15 +16,13 @@ It's open source and shouldn't be used commercially in any way.
         );
 
         let content = Column::new()
-            .width(Length::Fill)
-            .spacing(10)
             .align_items(Align::Center)
             .push(about_text);
 
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(10)
+            .padding(20)
             .style(style::Content)
             .into()
     }

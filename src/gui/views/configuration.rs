@@ -73,7 +73,7 @@ impl Configuration {
             .push(feed_row);
 
         Container::new(content)
-            .padding(10)
+            .padding(20)
             .width(Length::Fill)
             .height(Length::Fill)
             .style(style::Content)

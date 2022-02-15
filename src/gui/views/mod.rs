@@ -19,7 +19,8 @@ use dirs::data_dir;
 use dirs::home_dir;
 use iced::{
     button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
-    Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
+    Container, Element, HorizontalAlignment, Image, Length, Row, Settings, Space, Text,
+    VerticalAlignment,
 };
 pub use plugins::Plugins as PluginsView;
 
@@ -170,68 +171,87 @@ impl Application for Lembas {
                 about_btn,
                 settings_btn,
             }) => {
-                let plugins_btn = Button::new(plugins_btn, Text::new("My Plugins"))
-                    .on_press(Message::PluginsPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let catalog_btn = Button::new(catalog_btn, Text::new("Catalog"))
-                    .on_press(Message::CatalogPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let divider = Space::new(Length::Fill, Length::Shrink);
-                let about_btn = Button::new(about_btn, Text::new("About"))
-                    .on_press(Message::AboutPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let settings_btn = Button::new(settings_btn, Text::new("Settings"))
-                    .on_press(Message::SettingsPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
+                let plugins_btn = Button::new(
+                    plugins_btn,
+                    Text::new("My Plugins").horizontal_alignment(HorizontalAlignment::Center),
+                )
+                .on_press(Message::PluginsPressed)
+                .width(Length::Units(100))
+                .padding(5)
+                .style(style::PrimaryButton::Enabled);
+                let catalog_btn = Button::new(
+                    catalog_btn,
+                    Text::new("Catalog").horizontal_alignment(HorizontalAlignment::Center),
+                )
+                .on_press(Message::CatalogPressed)
+                .width(Length::Units(100))
+                .padding(5)
+                .style(style::PrimaryButton::Enabled);
+                let about_btn = Button::new(
+                    about_btn,
+                    Text::new("About").horizontal_alignment(HorizontalAlignment::Center),
+                )
+                .on_press(Message::AboutPressed)
+                .width(Length::Units(100))
+                .padding(5)
+                .style(style::PrimaryButton::Enabled);
+                let settings_btn = Button::new(
+                    settings_btn,
+                    Text::new("Settings").horizontal_alignment(HorizontalAlignment::Center),
+                )
+                .on_press(Message::SettingsPressed)
+                .width(Length::Units(100))
+                .padding(5)
+                .style(style::PrimaryButton::Enabled);
 
-                let row = Row::new()
-                    .width(Length::Fill)
+                let mut image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                image_path.push("resources/assets/bread_light.png");
+
+                let row = Column::new()
+                    .spacing(20)
                     .align_items(Align::Center)
-                    .spacing(10)
+                    .push(
+                        Image::new(image_path)
+                            .width(Length::Units(85))
+                            .height(Length::Units(85)),
+                    )
                     .push(plugins_btn)
                     .push(catalog_btn)
-                    .push(divider)
+                    .push(Space::new(Length::Shrink, Length::Fill))
                     .push(about_btn)
                     .push(settings_btn);
 
                 let navigation_container = Container::new(row)
-                    .width(Length::Fill)
-                    .padding(10)
+                    .width(Length::Shrink)
+                    .height(Length::Fill)
+                    .padding(25)
                     .style(style::NavigationContainer);
 
                 match view {
                     View::Plugins => {
                         let main_container = plugins_view.view().map(Message::PluginAction);
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
                     }
                     View::Catalog => {
                         let main_container = catalog_view.view().map(Message::CatalogAction);
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
                     }
                     View::About => {
                         let main_container = about_view.view();
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
                     }
                     View::Configuration => {
                         let main_container = config_view.view().map(Message::ConfigAction);
-                        Column::new()
-                            .width(Length::Fill)
+                        Row::new()
                             .push(navigation_container)
                             .push(main_container)
                             .into()
