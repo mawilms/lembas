@@ -83,7 +83,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.db_file_path);
+                        let installed_plugins = cache::get_plugins(&state.config.database_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
@@ -96,8 +96,7 @@ impl Catalog {
                             .with_information(
                                 &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.db_file_path,
+                                &state.config.database_path,
                                 state.config.application_settings.backup_enabled,
                             );
 
@@ -141,7 +140,7 @@ impl Catalog {
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.db_file_path);
+                        let installed_plugins = cache::get_plugins(&state.config.database_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
@@ -154,8 +153,7 @@ impl Catalog {
                             .with_information(
                                 &plugin.download_url.unwrap(),
                                 &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.db_file_path,
+                                &state.config.database_path,
                                 state.config.application_settings.backup_enabled,
                             );
 
@@ -343,13 +341,11 @@ impl PluginRow {
         mut self,
         download_url: &str,
         plugins_dir: &Path,
-        cache_dir: &Path,
         db_file: &Path,
         backup_enabled: bool,
     ) -> Self {
         self.download_url = download_url.to_string();
         self.plugins_dir = plugins_dir.to_path_buf();
-        self.cache_dir = cache_dir.to_path_buf();
         self.db_file = db_file.to_path_buf();
         self.backup_enabled = backup_enabled;
 

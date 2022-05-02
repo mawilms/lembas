@@ -15,7 +15,7 @@ pub enum Plugins {
 
 impl Plugins {
     pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.db_file_path)
+        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.database_path)
             .values()
             .cloned()
             .collect();
@@ -33,7 +33,7 @@ impl Plugins {
                 config.application_settings.backup_enabled,
                 &config.plugins_dir,
                 &config.cache_dir,
-                &config.db_file_path,
+                &config.database_path,
             ));
         }
 
@@ -76,7 +76,7 @@ impl Plugins {
 
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.db_file_path,
+            &config.database_path,
             &config.application_settings.feed_url,
         )
         .await;
@@ -92,7 +92,7 @@ impl Plugins {
                     if let Event::Synchronize = update_event.0 {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.db_file_path)
+                            cache::get_plugins(&state.config.database_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -109,8 +109,7 @@ impl Plugins {
                                 &plugin.download_url.unwrap(),
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.db_file_path,
+                                &state.config.database_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -138,7 +137,7 @@ impl Plugins {
                 PluginMessage::LoadPlugins => {
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins: Vec<PluginDataClass> =
-                        cache::get_plugins(&state.config.db_file_path)
+                        cache::get_plugins(&state.config.database_path)
                             .values()
                             .cloned()
                             .collect();
@@ -154,7 +153,7 @@ impl Plugins {
                             state.config.application_settings.backup_enabled,
                             &state.config.plugins_dir,
                             &state.config.cache_dir,
-                            &state.config.db_file_path,
+                            &state.config.database_path,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -183,7 +182,7 @@ impl Plugins {
                     if result.is_ok() {
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.db_file_path)
+                            cache::get_plugins(&state.config.database_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -201,7 +200,7 @@ impl Plugins {
                                 state.config.application_settings.backup_enabled,
                                 &state.config.plugins_dir,
                                 &state.config.cache_dir,
-                                &state.config.db_file_path,
+                                &state.config.database_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -303,7 +302,6 @@ pub struct PluginRow {
     pub download_url: String,
     pub backup_enabled: bool,
     pub plugins_dir: PathBuf,
-    pub cache_dir: PathBuf,
     pub db_file: PathBuf,
 
     #[serde(skip)]
@@ -335,7 +333,6 @@ impl PluginRow {
         download_url: &str,
         backup_enabled: bool,
         plugins_dir: &PathBuf,
-        cache_dir: &PathBuf,
         db_file: &PathBuf,
     ) -> Self {
         if current_version == latest_version {
@@ -351,7 +348,6 @@ impl PluginRow {
                 opened: false,
                 backup_enabled,
                 plugins_dir: plugins_dir.clone(),
-                cache_dir: cache_dir.clone(),
                 db_file: db_file.clone(),
             }
         } else {
@@ -367,7 +363,6 @@ impl PluginRow {
                 opened: false,
                 backup_enabled,
                 plugins_dir: plugins_dir.clone(),
-                cache_dir: cache_dir.clone(),
                 db_file: db_file.clone(),
             }
         }
@@ -385,7 +380,6 @@ impl PluginRow {
                     &plugin.title,
                     &plugin.download_url,
                     &self.plugins_dir,
-                    &self.cache_dir,
                     self.backup_enabled,
                 ) {
                     if Installer::delete(&files, &self.plugins_dir).is_ok() {
@@ -422,7 +416,6 @@ impl PluginRow {
                     &plugin.title,
                     &plugin.download_url,
                     &self.plugins_dir,
-                    &self.cache_dir,
                     self.backup_enabled,
                 ) {
                     if let Ok(()) = Installer::delete(&files, &self.plugins_dir) {

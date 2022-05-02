@@ -14,9 +14,7 @@ use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
-use dirs::cache_dir;
-use dirs::data_dir;
-use dirs::home_dir;
+
 use iced::pure::{button, column, container, image, row, text, Application, Element};
 use iced::{
     alignment::{Horizontal, Vertical},
@@ -55,8 +53,6 @@ pub struct State {
     catalog_view: CatalogView,
     about_view: AboutView,
     config_view: ConfigView,
-
-    input_value: String,
 }
 
 #[derive(Debug, Clone)]
@@ -83,7 +79,6 @@ impl State {
             catalog_view: CatalogView::new(config.clone()),
             about_view: AboutView::default(),
             config_view: ConfigView::new(config),
-            input_value: "".to_string(),
         }
     }
 }
@@ -158,7 +153,6 @@ impl Application for Lembas {
                 catalog_view,
                 about_view,
                 config_view,
-                input_value: _,
             }) => {
                 let plugins_btn =
                     button(text("My Plugins").horizontal_alignment(Horizontal::Center))
@@ -254,21 +248,12 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        let paths = Paths {
-            plugins: home_dir()
-                .expect("Couldn't find your home directory")
-                .join("Documents")
-                .join("The Lord of the Rings Online")
-                .join("Plugins"),
-            settings: data_dir().unwrap().join("lembas"),
-            cache: cache_dir().unwrap().join("lembas"),
-        };
-        let config = Config::new(paths);
+        let config = Config::new();
 
-        create_cache_db(&config.db_file_path).expect("Unable to create cache db");
+        create_cache_db(&config.database_path).expect("Unable to create cache db");
         Synchronizer::synchronize_application(
             &config.plugins_dir,
-            &config.db_file_path,
+            &config.database_path,
             &config.application_settings.feed_url,
         )
         .await
@@ -291,10 +276,4 @@ fn loading_data<'a>() -> Element<'a, Message> {
     .center_x()
     .style(style::Content)
     .into()
-}
-
-pub struct Paths {
-    pub plugins: PathBuf,
-    pub settings: PathBuf,
-    pub cache: PathBuf,
 }
