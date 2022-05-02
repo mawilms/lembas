@@ -4,10 +4,8 @@ use crate::core::io::cache::{self};
 use crate::core::io::Synchronizer;
 use crate::core::{Config, Installer, PluginDataClass};
 use crate::gui::style;
-use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Space, Text, TextInput,
-};
+use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
+use iced::{alignment::Horizontal, Alignment, Command, Length, Space};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -51,13 +49,10 @@ impl Plugins {
 #[derive(Default, Debug, Clone)]
 pub struct State {
     config: Config,
-    plugin_scrollable_state: scrollable::State,
+
     input_value: String,
     pub plugins: Vec<PluginRow>,
     base_plugins: Vec<PluginRow>,
-    input: text_input::State,
-    refresh_button: button::State,
-    update_all_button: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -217,80 +212,73 @@ impl Plugins {
         }
     }
 
-    pub fn view(&mut self) -> Element<PluginMessage> {
+    pub fn view(&self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
                 config: _,
-                plugin_scrollable_state,
                 input_value,
                 plugins,
                 base_plugins: _,
-                input,
-                refresh_button,
-                update_all_button,
             }) => {
-                let refresh_button = Button::new(refresh_button, Text::new("Refresh"))
+                let refresh_button = button(text("Refresh"))
                     .on_press(PluginMessage::RefreshPressed)
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
-                let update_all_button = Button::new(update_all_button, Text::new("Update all"))
+                let update_all_button = button(text("Update all"))
                     .on_press(PluginMessage::UpdateAllPressed)
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
-                let installed_plugins = Text::new(format!("{} plugins installed", plugins.len()));
-                let search_plugins = TextInput::new(
-                    input,
+                let installed_plugins = text(format!("{} plugins installed", plugins.len()));
+                let search_plugins = text_input(
                     "Search plugins...",
                     input_value,
                     PluginMessage::PluginInputChanged,
                 )
                 .padding(5);
 
-                let control_panel = Row::new()
+                let control_panel = row()
                     .width(Length::Fill)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .spacing(10)
                     .push(refresh_button)
                     .push(update_all_button)
                     .push(installed_plugins)
                     .push(search_plugins);
 
-                let plugin_name = Text::new("Plugin").width(Length::FillPortion(6));
-                let current_version = Text::new("Current Version").width(Length::FillPortion(3));
-                let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
-                let update = Text::new("Update").width(Length::FillPortion(2));
+                let plugin_name = text("Plugin").width(Length::FillPortion(6));
+                let current_version = text("Current Version").width(Length::FillPortion(3));
+                let latest_version = text("Latest version").width(Length::FillPortion(3));
+                let update = text("Update").width(Length::FillPortion(2));
 
-                let plugin_panel = Row::new()
+                let plugin_panel = row()
                     .width(Length::Fill)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(plugin_name)
                     .push(current_version)
                     .push(latest_version)
                     .push(update);
 
                 let plugins = plugins
-                    .iter_mut()
+                    .iter()
                     .enumerate()
-                    .fold(Column::new().spacing(5), |col, (i, p)| {
+                    .fold(column().spacing(5), |col, (i, p)| {
                         col.push(p.view().map(move |msg| PluginMessage::Plugin(i, msg)))
                     });
 
-                let plugins_scrollable = Scrollable::new(plugin_scrollable_state)
-                    .push(plugins)
-                    .spacing(5)
-                    .width(Length::Fill)
-                    .align_items(Align::Center)
-                    .style(style::Scrollable);
+                let plugins_scrollable = scrollable(plugins);
+                // .width(Length::Fill)
+                // .align_items(Alignment::Center)
+                // .style(style::Scrollable);
 
-                let content = Column::new()
+                let content = column()
                     .width(Length::Fill)
                     .spacing(10)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(control_panel)
                     .push(plugin_panel)
                     .push(plugins_scrollable);
 
-                Container::new(content)
+                container(content)
                     .width(Length::Fill)
                     .height(Length::Fill)
                     .padding(20)
@@ -319,15 +307,7 @@ pub struct PluginRow {
     pub db_file: PathBuf,
 
     #[serde(skip)]
-    update_btn_state: button::State,
-    #[serde(skip)]
-    delete_btn_state: button::State,
-    #[serde(skip)]
-    website_btn_state: button::State,
-    #[serde(skip)]
     opened: bool,
-    #[serde(skip)]
-    toggle_view_btn: button::State,
 }
 
 #[derive(Clone, Debug)]
@@ -368,10 +348,6 @@ impl PluginRow {
                 latest_version: latest_version.to_string(),
                 status: "".to_string(),
                 download_url: download_url.to_string(),
-                update_btn_state: button::State::default(),
-                delete_btn_state: button::State::default(),
-                website_btn_state: button::State::default(),
-                toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
                 plugins_dir: plugins_dir.clone(),
@@ -388,10 +364,6 @@ impl PluginRow {
                 latest_version: latest_version.to_string(),
                 status: "Update".to_string(),
                 download_url: download_url.to_string(),
-                update_btn_state: button::State::default(),
-                delete_btn_state: button::State::default(),
-                website_btn_state: button::State::default(),
-                toggle_view_btn: button::State::new(),
                 opened: false,
                 backup_enabled,
                 plugins_dir: plugins_dir.clone(),
@@ -482,64 +454,63 @@ impl PluginRow {
         }
     }
 
-    pub fn view(&mut self) -> Element<'_, RowMessage> {
+    pub fn view(&self) -> Element<'_, RowMessage> {
         let plugin = self.clone();
         let bla = self.clone();
 
-        let description_label = Text::new("Description");
-        let description = Text::new(&self.description.to_string());
-        let description_section = Column::new()
+        let description_label = text("Description");
+        let description = text(&self.description.to_string());
+        let description_section = column()
             .push(description_label)
             .push(description)
             .spacing(10)
             .width(Length::Fill);
 
-        let website_btn = Button::new(&mut self.website_btn_state, Text::new("Website"))
+        let website_btn = button(text("Website"))
             .padding(5)
             .on_press(RowMessage::WebsitePressed(self.id, self.title.clone()))
             .style(style::PrimaryButton::Enabled);
 
-        let delete_btn = Button::new(&mut self.delete_btn_state, Text::new("Delete"))
+        let delete_btn = button(text("Delete"))
             .padding(5)
             .on_press(RowMessage::DeletePressed(bla))
             .style(style::PrimaryButton::Enabled);
 
-        let button_row = Row::new()
+        let button_row = row()
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(website_btn)
             .push(delete_btn)
             .width(Length::Fill)
             .spacing(10)
-            .align_items(Align::End);
+            .align_items(Alignment::End);
 
-        let toggle_section = Column::new().push(description_section).push(button_row);
+        let toggle_section = column().push(description_section).push(button_row);
 
-        let container = Container::new(toggle_section)
+        let container = container(toggle_section)
             .width(Length::Fill)
             .padding(15)
             .style(style::NavigationContainer);
 
         if self.opened {
-            Column::new()
+            column()
                 .push(
-                    Button::new(
-                        &mut self.toggle_view_btn,
-                        Row::new()
-                            .align_items(Align::Center)
+                    button(
+                        row()
+                            .align_items(Alignment::Center)
                             .push(if self.latest_version.is_empty() {
-                                Text::new(&format!("{} (unmanaged)", self.title))
+                                text(&format!("{} (unmanaged)", self.title))
                                     .width(Length::FillPortion(6))
                             } else {
-                                Text::new(&self.title).width(Length::FillPortion(6))
+                                text(&self.title).width(Length::FillPortion(6))
                             })
-                            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                            .push(text(&self.current_version).width(Length::FillPortion(3)))
+                            .push(text(&self.latest_version).width(Length::FillPortion(3)))
                             .push(if self.latest_version == self.current_version {
-                                Button::new(&mut self.update_btn_state, Text::new("."))
+                                button(text("."))
                                     .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
                             } else {
-                                Button::new(&mut self.update_btn_state, Text::new(&self.status))
+                                button(text(&self.status))
                                     .on_press(RowMessage::UpdatePressed(plugin))
                                     .style(style::PrimaryButton::Enabled)
                                     .width(Length::FillPortion(2))
@@ -551,38 +522,35 @@ impl PluginRow {
                 .push(container)
                 .into()
         } else {
-            Column::new()
+            column()
                 .push(
-                    Button::new(
-                        &mut self.toggle_view_btn,
-                        Row::new()
-                            .align_items(Align::Center)
+                    button(
+                        row()
+                            .align_items(Alignment::Center)
                             .push(if self.latest_version.is_empty() {
-                                Text::new(&format!("{} (unmanaged)", self.title))
+                                text(&format!("{} (unmanaged)", self.title))
                                     .width(Length::FillPortion(6))
                             } else {
-                                Text::new(&self.title).width(Length::FillPortion(6))
+                                text(&self.title).width(Length::FillPortion(6))
                             })
-                            .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                            .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                            .push(text(&self.current_version).width(Length::FillPortion(3)))
+                            .push(text(&self.latest_version).width(Length::FillPortion(3)))
                             .push(
                                 if self.latest_version == self.current_version
                                     || self.latest_version.is_empty()
                                 {
-                                    Button::new(
-                                        &mut self.update_btn_state,
-                                        Text::new(".")
+                                    button(
+                                        text(".")
                                             .width(Length::Fill)
-                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                            .horizontal_alignment(Horizontal::Center),
                                     )
                                     .style(style::TransparentButton::Enabled)
                                     .width(Length::FillPortion(2))
                                 } else {
-                                    Button::new(
-                                        &mut self.update_btn_state,
-                                        Text::new("Update")
+                                    button(
+                                        text("Update")
                                             .width(Length::Fill)
-                                            .horizontal_alignment(HorizontalAlignment::Center),
+                                            .horizontal_alignment(Horizontal::Center),
                                     )
                                     .style(style::PrimaryButton::Enabled)
                                     .on_press(RowMessage::UpdatePressed(plugin))

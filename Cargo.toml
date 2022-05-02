@@ -22,7 +22,7 @@ exclude = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { version = "^0", features = ["tokio", "image"] }
+iced = { version = "^0", features = ["tokio", "image", "pure"] }
 reqwest = { version = "^0", features = ["blocking", "json"] }
 zip = "^0"
 serde = { version = "^1", features = ["derive"] }
@@ -39,7 +39,7 @@ globset = "^0"
 chrono = "^0"
 log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] }
 env_logger = "^0"
-uuid = { version = "^0", features = ["v4"] }
+uuid = { version = "^1", features = ["v4"] }
 walkdir = "^2"
 regex = "^1"
 itertools = "^0"

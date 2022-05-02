@@ -17,10 +17,11 @@ pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
 use dirs::cache_dir;
 use dirs::data_dir;
 use dirs::home_dir;
+use iced::pure::{button, column, container, image, row, text, Application, Element};
 use iced::{
-    button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
-    Container, Element, HorizontalAlignment, Image, Length, Row, Settings, Space, Text,
-    VerticalAlignment,
+    alignment::{Horizontal, Vertical},
+    window::Settings as Window,
+    Alignment, Command, Length, Settings, Space,
 };
 pub use plugins::Plugins as PluginsView;
 
@@ -56,10 +57,6 @@ pub struct State {
     config_view: ConfigView,
 
     input_value: String,
-    plugins_btn: button::State,
-    catalog_btn: button::State,
-    about_btn: button::State,
-    settings_btn: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -87,10 +84,6 @@ impl State {
             about_view: AboutView::default(),
             config_view: ConfigView::new(config),
             input_value: "".to_string(),
-            plugins_btn: button::State::default(),
-            catalog_btn: button::State::default(),
-            about_btn: button::State::default(),
-            settings_btn: button::State::default(),
         }
     }
 }
@@ -111,7 +104,7 @@ impl Application for Lembas {
         format!("Lembas {}", VERSION)
     }
 
-    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(state) = message {
@@ -155,7 +148,7 @@ impl Application for Lembas {
         }
     }
 
-    fn view(&mut self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
@@ -166,52 +159,38 @@ impl Application for Lembas {
                 about_view,
                 config_view,
                 input_value: _,
-                plugins_btn,
-                catalog_btn,
-                about_btn,
-                settings_btn,
             }) => {
-                let plugins_btn = Button::new(
-                    plugins_btn,
-                    Text::new("My Plugins").horizontal_alignment(HorizontalAlignment::Center),
-                )
-                .on_press(Message::PluginsPressed)
-                .width(Length::Units(100))
-                .padding(5)
-                .style(style::PrimaryButton::Enabled);
-                let catalog_btn = Button::new(
-                    catalog_btn,
-                    Text::new("Catalog").horizontal_alignment(HorizontalAlignment::Center),
-                )
-                .on_press(Message::CatalogPressed)
-                .width(Length::Units(100))
-                .padding(5)
-                .style(style::PrimaryButton::Enabled);
-                let about_btn = Button::new(
-                    about_btn,
-                    Text::new("About").horizontal_alignment(HorizontalAlignment::Center),
-                )
-                .on_press(Message::AboutPressed)
-                .width(Length::Units(100))
-                .padding(5)
-                .style(style::PrimaryButton::Enabled);
-                let settings_btn = Button::new(
-                    settings_btn,
-                    Text::new("Settings").horizontal_alignment(HorizontalAlignment::Center),
-                )
-                .on_press(Message::SettingsPressed)
-                .width(Length::Units(100))
-                .padding(5)
-                .style(style::PrimaryButton::Enabled);
+                let plugins_btn =
+                    button(text("My Plugins").horizontal_alignment(Horizontal::Center))
+                        .on_press(Message::PluginsPressed)
+                        .width(Length::Units(100))
+                        .padding(5)
+                        .style(style::PrimaryButton::Enabled);
+                let catalog_btn = button(text("Catalog").horizontal_alignment(Horizontal::Center))
+                    .on_press(Message::CatalogPressed)
+                    .width(Length::Units(100))
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
+                let about_btn = button(text("About").horizontal_alignment(Horizontal::Center))
+                    .on_press(Message::AboutPressed)
+                    .width(Length::Units(100))
+                    .padding(5)
+                    .style(style::PrimaryButton::Enabled);
+                let settings_btn =
+                    button(text("Settings").horizontal_alignment(Horizontal::Center))
+                        .on_press(Message::SettingsPressed)
+                        .width(Length::Units(100))
+                        .padding(5)
+                        .style(style::PrimaryButton::Enabled);
 
                 let mut image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
                 image_path.push("resources/assets/bread_light.png");
 
-                let row = Column::new()
+                let row_bla = column()
                     .spacing(20)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(
-                        Image::new(image_path)
+                        image(image_path)
                             .width(Length::Units(85))
                             .height(Length::Units(85)),
                     )
@@ -221,7 +200,7 @@ impl Application for Lembas {
                     .push(about_btn)
                     .push(settings_btn);
 
-                let navigation_container = Container::new(row)
+                let navigation_container = container(row_bla)
                     .width(Length::Shrink)
                     .height(Length::Fill)
                     .padding(25)
@@ -230,31 +209,19 @@ impl Application for Lembas {
                 match view {
                     View::Plugins => {
                         let main_container = plugins_view.view().map(Message::PluginAction);
-                        Row::new()
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::Catalog => {
                         let main_container = catalog_view.view().map(Message::CatalogAction);
-                        Row::new()
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::About => {
                         let main_container = about_view.view();
-                        Row::new()
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::Configuration => {
                         let main_container = config_view.view().map(Message::ConfigAction);
-                        Row::new()
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        row().push(navigation_container).push(main_container).into()
                     }
                 }
             }
@@ -312,10 +279,10 @@ impl Lembas {
 }
 
 fn loading_data<'a>() -> Element<'a, Message> {
-    Container::new(
-        Text::new("Plugins loading...")
-            .horizontal_alignment(HorizontalAlignment::Center)
-            .vertical_alignment(VerticalAlignment::Center)
+    container(
+        text("Plugins loading...")
+            .horizontal_alignment(Horizontal::Center)
+            .vertical_alignment(Vertical::Center)
             .size(20),
     )
     .width(Length::Fill)

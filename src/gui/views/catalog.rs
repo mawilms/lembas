@@ -9,9 +9,10 @@ use crate::core::{
 };
 use crate::core::{Installer, PluginCollection};
 use crate::gui::style;
+use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Text, TextInput, VerticalAlignment,
+    alignment::{Horizontal, Vertical},
+    Alignment, Command, Length,
 };
 use log::debug;
 
@@ -33,9 +34,6 @@ impl Catalog {
 #[derive(Default, Debug, Clone)]
 pub struct State {
     config: Config,
-    input: text_input::State,
-    plugin_scrollable_state: scrollable::State,
-    retry_btn_state: button::State,
     pub input_value: String,
 
     pub base_plugins: Vec<PluginRow>,
@@ -194,69 +192,65 @@ impl Catalog {
         }
     }
 
-    pub fn view(&mut self) -> Element<Message> {
+    pub fn view(&self) -> Element<Message> {
         match self {
             Catalog::Loaded(State {
                 config: _,
-                input,
-                plugin_scrollable_state,
                 plugins,
                 input_value,
                 base_plugins: _,
-                retry_btn_state: _,
             }) => {
-                let search_plugins = TextInput::new(
-                    input,
+                let search_plugins = text_input(
                     "Search plugins...",
                     input_value,
                     Message::CatalogInputChanged,
                 )
                 .padding(5);
 
-                let plugin_amount = Text::new(format!("{} plugins found", plugins.len()));
+                let plugin_amount = text(format!("{} plugins found", plugins.len()));
 
-                let search_row = Row::new()
+                let search_row = row()
                     .width(Length::Fill)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .spacing(10)
                     .push(search_plugins)
                     .push(plugin_amount);
 
-                let plugin_name = Text::new("Plugin").width(Length::FillPortion(6));
-                let current_version = Text::new("Current Version").width(Length::FillPortion(3));
-                let latest_version = Text::new("Latest version").width(Length::FillPortion(3));
-                let upgrade = Text::new("").width(Length::FillPortion(2));
+                let plugin_name = text("Plugin").width(Length::FillPortion(6));
+                let current_version = text("Current Version").width(Length::FillPortion(3));
+                let latest_version = text("Latest version").width(Length::FillPortion(3));
+                let upgrade = text("").width(Length::FillPortion(2));
 
-                let plugin_panel = Row::new()
+                let plugin_panel = row()
                     .width(Length::Fill)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(plugin_name)
                     .push(current_version)
                     .push(latest_version)
                     .push(upgrade);
 
                 let plugins = plugins
-                    .iter_mut()
+                    .iter()
                     .enumerate()
-                    .fold(Column::new().spacing(5), |col, (i, p)| {
+                    .fold(column().spacing(5), |col, (i, p)| {
                         col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
                     });
 
-                let plugins_scrollable = Scrollable::new(plugin_scrollable_state)
-                    .push(plugins)
-                    .spacing(5)
-                    .align_items(Align::Center)
-                    .style(style::Scrollable);
+                let plugins_scrollable = scrollable(plugins);
+                // .push(plugins)
+                // .spacing(5)
+                // .align_items(Alignment::Center)
+                // .style(style::Scrollable);
 
-                let content = Column::new()
+                let content = column()
                     .width(Length::Fill)
                     .spacing(10)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(search_row)
                     .push(plugin_panel)
                     .push(plugins_scrollable);
 
-                Container::new(content)
+                container(content)
                     .height(Length::Fill)
                     .padding(20)
                     .style(style::Content)
@@ -264,30 +258,27 @@ impl Catalog {
             }
             Catalog::NoInternet(State {
                 config: _,
-                retry_btn_state,
-                input: _,
-                plugin_scrollable_state: _,
                 plugins: _,
                 input_value: _,
                 base_plugins: _,
             }) => {
-                let retry_button = Button::new(retry_btn_state, Text::new("Retry"))
+                let retry_button = button(text("Retry"))
                     .on_press(Message::RetryPressed)
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
 
-                let content = Column::new()
+                let content = column()
                     .push(
-                        Text::new("No Lembas server connection")
-                            .horizontal_alignment(HorizontalAlignment::Center)
-                            .vertical_alignment(VerticalAlignment::Center)
+                        text("No Lembas server connection")
+                            .horizontal_alignment(Horizontal::Center)
+                            .vertical_alignment(Vertical::Center)
                             .size(20),
                     )
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .spacing(10)
                     .push(retry_button);
 
-                Container::new(content)
+                container(content)
                     .width(Length::Fill)
                     .height(Length::Fill)
                     .center_y()
@@ -313,9 +304,6 @@ pub struct PluginRow {
     pub cache_dir: PathBuf,
     pub db_file: PathBuf,
     pub backup_enabled: bool,
-
-    install_btn_state: button::State,
-    website_btn_state: button::State,
 }
 
 #[derive(Clone, Debug)]
@@ -336,8 +324,6 @@ impl PluginRow {
             current_version: String::new(),
             latest_version: String::new(),
             status: "Installed".to_string(),
-            install_btn_state: button::State::default(),
-            website_btn_state: button::State::default(),
             download_url: String::new(),
             plugins_dir: PathBuf::new(),
             cache_dir: PathBuf::new(),
@@ -421,35 +407,32 @@ impl PluginRow {
         }
     }
 
-    pub fn view(&mut self) -> Element<RowMessage> {
+    pub fn view(&self) -> Element<RowMessage> {
         let plugin = self.clone();
         let website_plugin = self.clone();
 
-        Column::new()
+        column()
             .push(
-                Button::new(
-                    &mut self.website_btn_state,
-                    Row::new()
-                        .align_items(Align::Center)
-                        .push(Text::new(&self.title).width(Length::FillPortion(6)))
-                        .push(Text::new(&self.current_version).width(Length::FillPortion(3)))
-                        .push(Text::new(&self.latest_version).width(Length::FillPortion(3)))
+                button(
+                    row()
+                        .align_items(Alignment::Center)
+                        .push(text(&self.title).width(Length::FillPortion(6)))
+                        .push(text(&self.current_version).width(Length::FillPortion(3)))
+                        .push(text(&self.latest_version).width(Length::FillPortion(3)))
                         .push(if &plugin.status == "Installed" {
-                            Button::new(
-                                &mut self.install_btn_state,
-                                Text::new(&plugin.status)
+                            button(
+                                text(&plugin.status)
                                     .width(Length::Fill)
-                                    .horizontal_alignment(HorizontalAlignment::Center),
+                                    .horizontal_alignment(Horizontal::Center),
                             )
                             .on_press(RowMessage::NoEvent)
                             .style(style::InstallButton::Enabled)
                             .width(Length::FillPortion(2))
                         } else {
-                            Button::new(
-                                &mut self.install_btn_state,
-                                Text::new(&plugin.status)
+                            button(
+                                text(&plugin.status)
                                     .width(Length::Fill)
-                                    .horizontal_alignment(HorizontalAlignment::Center),
+                                    .horizontal_alignment(Horizontal::Center),
                             )
                             .on_press(RowMessage::InstallPressed(plugin))
                             .style(style::PrimaryButton::Enabled)

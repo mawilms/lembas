@@ -1,5 +1,8 @@
 use crate::{core::Config, gui::style};
-use iced::{text_input, Align, Checkbox, Column, Container, Element, Length, Row, Text, TextInput};
+use iced::{
+    text_input, Alignment, Length
+};
+use iced::pure::{checkbox, column, text, Element, row, text_input, container};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
@@ -43,36 +46,35 @@ impl Configuration {
         }
     }
 
-    pub fn view(&mut self) -> Element<Message> {
-        let about_text = Text::new("General");
+    pub fn view(&self) -> Element<Message> {
+        let about_text = text("General");
 
-        let checkbox = Checkbox::new(self.backup, &self.description, Message::BackupTriggered);
+        let checkbox = checkbox(&self.description,self.backup , Message::BackupTriggered);
 
-        let feed_label = Text::new("Feed URL");
+        let feed_label = text("Feed URL");
 
-        let feed_url = TextInput::new(
-            &mut self.feed_url,
+        let feed_url = text_input(
             "Feed Url",
             &self.feed_url_value,
             Message::FeedUrlChanged,
         )
         .padding(5);
 
-        let feed_row = Row::new()
+        let feed_row = row()
             .width(Length::Shrink)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .spacing(10)
             .push(feed_label)
             .push(feed_url);
 
-        let content = Column::new()
+        let content = column()
             .width(Length::Fill)
             .spacing(10)
             .push(about_text)
             .push(checkbox)
             .push(feed_row);
 
-        Container::new(content)
+        container(content)
             .padding(20)
             .width(Length::Fill)
             .height(Length::Fill)
