@@ -4,14 +4,12 @@ use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
 use crate::core::parsers::plugin_parser::parse_plugin_file;
-use crate::core::{is_not_existing_in_blacklist, Config, PluginCollection, PluginDataClass};
+use crate::core::{is_not_existing_in_blacklist, PluginCollection, PluginDataClass};
 use log::{debug, error};
 use std::{collections::HashMap, error::Error, path::Path};
 
 #[derive(Default, Debug, Clone)]
-pub struct Synchronizer {
-    config: Config,
-}
+pub struct Synchronizer;
 
 impl Synchronizer {
     pub async fn synchronize_application(
@@ -31,7 +29,7 @@ impl Synchronizer {
         db_path: &Path,
         feed_url: &str,
     ) {
-        match api_connector::fetch_plugins(feed_url.to_string()).await {
+        match api_connector::fetch_plugins().await {
             Ok(remote_plugins) => {
                 Synchronizer::sync_cache(local_plugins, &remote_plugins, db_path);
             }

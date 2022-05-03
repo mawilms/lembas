@@ -1,8 +1,9 @@
-use std::path::PathBuf;
-
+use crate::core::config::{
+    get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
+};
 use crate::core::io::cache::{self};
 use crate::core::io::Synchronizer;
-use crate::core::{Config, Installer, PluginDataClass};
+use crate::core::{Installer, PluginDataClass};
 use crate::gui::style;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{alignment::Horizontal, Alignment, Command, Length, Space};
@@ -14,8 +15,9 @@ pub enum Plugins {
 }
 
 impl Plugins {
-    pub fn new(config: Config) -> Self {
-        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&config.database_path)
+    pub fn new() -> Self {
+        let database_path = get_database_file_path();
+        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&database_path)
             .values()
             .cloned()
             .collect();
@@ -30,15 +32,10 @@ impl Plugins {
                 &plugin.version,
                 &plugin.latest_version.unwrap(),
                 &plugin.download_url.unwrap(),
-                config.application_settings.backup_enabled,
-                &config.plugins_dir,
-                &config.cache_dir,
-                &config.database_path,
             ));
         }
 
         Self::Loaded(State {
-            config,
             base_plugins: plugins.clone(),
             plugins,
             ..State::default()
@@ -48,8 +45,6 @@ impl Plugins {
 
 #[derive(Default, Debug, Clone)]
 pub struct State {
-    config: Config,
-
     input_value: String,
     pub plugins: Vec<PluginRow>,
     base_plugins: Vec<PluginRow>,
@@ -70,14 +65,17 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    async fn refresh_db(config: Config) -> Result<(), ApplicationError> {
-        let local_plugins = Synchronizer::search_local(&config.plugins_dir)
-            .map_err(|_| ApplicationError::Synchronize);
+    async fn refresh_db() -> Result<(), ApplicationError> {
+        let plugins_dir = get_plugins_dir();
+        let local_plugins =
+            Synchronizer::search_local(&plugins_dir).map_err(|_| ApplicationError::Synchronize);
 
+        let database_path = get_database_file_path();
+        let settings = read_existing_settings_file();
         Synchronizer::compare_local_state(
             &local_plugins.unwrap(),
-            &config.database_path,
-            &config.application_settings.feed_url,
+            &database_path,
+            &settings.feed_url,
         )
         .await;
 
@@ -90,9 +88,10 @@ impl Plugins {
                 PluginMessage::Plugin(index, msg) => {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
+                        let database_path = get_database_file_path();
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.database_path)
+                            cache::get_plugins(&database_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -107,9 +106,6 @@ impl Plugins {
                                 &plugin.version,
                                 &plugin.latest_version.unwrap(),
                                 &plugin.download_url.unwrap(),
-                                state.config.application_settings.backup_enabled,
-                                &state.config.plugins_dir,
-                                &state.config.database_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -119,10 +115,9 @@ impl Plugins {
                         .map(move |msg| PluginMessage::Plugin(index, msg))
                 }
 
-                PluginMessage::RefreshPressed => Command::perform(
-                    Self::refresh_db(state.config.clone()),
-                    PluginMessage::DbRefreshed,
-                ),
+                PluginMessage::RefreshPressed => {
+                    Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
+                }
                 PluginMessage::UpdateAllPressed => {
                     for i in 1..=state.plugins.len() {
                         if state.plugins[i].current_version != state.plugins[i].latest_version
@@ -135,9 +130,10 @@ impl Plugins {
                     Command::none()
                 }
                 PluginMessage::LoadPlugins => {
+                    let database_path = get_database_file_path();
                     let mut plugins: Vec<PluginRow> = Vec::new();
                     let installed_plugins: Vec<PluginDataClass> =
-                        cache::get_plugins(&state.config.database_path)
+                        cache::get_plugins(&database_path)
                             .values()
                             .cloned()
                             .collect();
@@ -150,10 +146,6 @@ impl Plugins {
                             &plugin.version,
                             &plugin.latest_version.unwrap(),
                             &plugin.download_url.unwrap(),
-                            state.config.application_settings.backup_enabled,
-                            &state.config.plugins_dir,
-                            &state.config.cache_dir,
-                            &state.config.database_path,
                         ));
                         plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
                     }
@@ -180,9 +172,10 @@ impl Plugins {
                 }
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
+                        let database_path = get_database_file_path();
                         let mut plugins: Vec<PluginRow> = Vec::new();
                         let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&state.config.database_path)
+                            cache::get_plugins(&database_path)
                                 .values()
                                 .cloned()
                                 .collect();
@@ -197,10 +190,6 @@ impl Plugins {
                                 &plugin.version,
                                 &plugin.latest_version.unwrap(),
                                 &plugin.download_url.unwrap(),
-                                state.config.application_settings.backup_enabled,
-                                &state.config.plugins_dir,
-                                &state.config.cache_dir,
-                                &state.config.database_path,
                             ));
                         }
                         state.plugins = plugins;
@@ -214,7 +203,6 @@ impl Plugins {
     pub fn view(&self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
-                config: _,
                 input_value,
                 plugins,
                 base_plugins: _,
@@ -300,9 +288,6 @@ pub struct PluginRow {
     pub latest_version: String,
     pub status: String,
     pub download_url: String,
-    pub backup_enabled: bool,
-    pub plugins_dir: PathBuf,
-    pub db_file: PathBuf,
 
     #[serde(skip)]
     opened: bool,
@@ -331,9 +316,6 @@ impl PluginRow {
         current_version: &str,
         latest_version: &str,
         download_url: &str,
-        backup_enabled: bool,
-        plugins_dir: &PathBuf,
-        db_file: &PathBuf,
     ) -> Self {
         if current_version == latest_version {
             Self {
@@ -346,9 +328,6 @@ impl PluginRow {
                 status: "".to_string(),
                 download_url: download_url.to_string(),
                 opened: false,
-                backup_enabled,
-                plugins_dir: plugins_dir.clone(),
-                db_file: db_file.clone(),
             }
         } else {
             Self {
@@ -361,9 +340,6 @@ impl PluginRow {
                 status: "Update".to_string(),
                 download_url: download_url.to_string(),
                 opened: false,
-                backup_enabled,
-                plugins_dir: plugins_dir.clone(),
-                db_file: db_file.clone(),
             }
         }
     }
@@ -375,15 +351,13 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                if let Ok(files) = Installer::download(
-                    plugin.id,
-                    &plugin.title,
-                    &plugin.download_url,
-                    &self.plugins_dir,
-                    self.backup_enabled,
-                ) {
-                    if Installer::delete(&files, &self.plugins_dir).is_ok() {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                if let Ok(files) =
+                    Installer::download(plugin.id, &plugin.title, &plugin.download_url)
+                {
+                    let plugins_dir = get_plugins_dir();
+                    let tmp_dir = get_tmp_dir();
+                    if Installer::delete(&files, &plugins_dir).is_ok() {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
                         let cache_item = PluginDataClass::new(
                             &plugin.title,
                             &plugin.author,
@@ -394,7 +368,8 @@ impl PluginRow {
                         .with_remote_information("", &plugin.latest_version, 0, "")
                         .build();
 
-                        if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
+                        let database_path = get_database_file_path();
+                        if cache::insert_plugin(&cache_item, &database_path).is_ok() {
                             self.status = "Updated".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -411,16 +386,15 @@ impl PluginRow {
                 }
             }
             RowMessage::DeletePressed(plugin) => {
-                if let Ok(files) = Installer::download(
-                    plugin.id,
-                    &plugin.title,
-                    &plugin.download_url,
-                    &self.plugins_dir,
-                    self.backup_enabled,
-                ) {
-                    if let Ok(()) = Installer::delete(&files, &self.plugins_dir) {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
-                        if cache::delete_plugin(&plugin.title, &self.db_file).is_ok() {
+                if let Ok(files) =
+                    Installer::download(plugin.id, &plugin.title, &plugin.download_url)
+                {
+                    let plugins_dir = get_plugins_dir();
+                    let tmp_dir = get_tmp_dir();
+                    let database_path = get_database_file_path();
+                    if let Ok(()) = Installer::delete(&files, &plugins_dir) {
+                        Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
+                        if cache::delete_plugin(&plugin.title, &database_path).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {

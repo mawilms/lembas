@@ -1,9 +1,11 @@
 use super::FeedUrlParser;
-use crate::core::{PluginCollection, PluginDataClass};
+use crate::core::{config::read_existing_settings_file, PluginCollection, PluginDataClass};
 use log::debug;
 use std::collections::HashMap;
 
-pub async fn fetch_plugins(url: String) -> Result<PluginCollection, APIError> {
+pub async fn fetch_plugins() -> Result<PluginCollection, APIError> {
+    let url = read_existing_settings_file().feed_url;
+
     match reqwest::get(url).await {
         Ok(response) => match response.text().await {
             Ok(content) => {

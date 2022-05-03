@@ -13,6 +13,8 @@ use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
+use super::config::{get_plugins_dir, get_tmp_dir, read_existing_settings_file};
+
 pub struct Installer;
 
 impl Installer {
@@ -20,20 +22,22 @@ impl Installer {
         plugin_id: i32,
         plugin_title: &str,
         download_url: &str,
-        plugins_dir: &Path,
-        cache_dir: &Path,
-        backup_enabled: bool,
     ) -> Result<Vec<String>, Box<dyn Error>> {
-        if backup_enabled {
-            Self::back_plugin_folder(plugins_dir);
+        let plugins_dir = get_plugins_dir();
+        let settings = read_existing_settings_file();
+
+        if settings.backup_enabled {
+            Self::back_plugin_folder(&plugins_dir);
         }
+        let tmp_dir = get_tmp_dir();
+
         let response = reqwest::blocking::get(download_url)?;
 
-        let tmp_file_path = cache_dir.join(&format!("{}_{}", plugin_id, plugin_title));
+        let tmp_file_path = tmp_dir.join(&format!("{}_{}", plugin_id, plugin_title));
 
         fs::create_dir(&tmp_file_path)?;
 
-        let cache_path = cache_dir
+        let cache_path = tmp_dir
             .join(&format!("{}_{}", plugin_id, plugin_title))
             .join("plugin.zip");
         match File::create(&cache_path) {
@@ -55,7 +59,7 @@ impl Installer {
                     .map(std::string::ToString::to_string)
                     .collect::<Vec<String>>();
 
-                Self::move_files(&tmp_file_path, &root_folder_name, plugins_dir);
+                Self::move_files(&tmp_file_path, &root_folder_name, &plugins_dir);
                 Ok(files)
             }
         }

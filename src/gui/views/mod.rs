@@ -7,9 +7,9 @@ use std::env;
 use std::path::PathBuf;
 
 use super::views::plugins::PluginMessage;
+use crate::core::config::{get_database_file_path, get_plugins_dir, read_existing_settings_file};
 use crate::core::io::cache::create_cache_db;
 use crate::core::io::Synchronizer;
-use crate::core::Config;
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
@@ -47,7 +47,6 @@ pub enum Lembas {
 
 #[derive(Debug, Clone)]
 pub struct State {
-    config: Config,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -71,14 +70,13 @@ pub enum Message {
 }
 
 impl State {
-    pub fn new(config: &Config) -> Self {
+    pub fn new() -> Self {
         Self {
-            config: config.clone(),
             view: View::default(),
-            plugins_view: PluginsView::new(config.clone()),
-            catalog_view: CatalogView::new(config.clone()),
+            plugins_view: PluginsView::new(),
+            catalog_view: CatalogView::new(),
             about_view: AboutView::default(),
-            config_view: ConfigView::new(config),
+            config_view: ConfigView::new(),
         }
     }
 }
@@ -147,7 +145,6 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
-                config: _,
                 view,
                 plugins_view,
                 catalog_view,
@@ -248,18 +245,16 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        let config = Config::new();
+        let database_path = get_database_file_path();
+        let plugins_dir = get_plugins_dir();
+        let settings = read_existing_settings_file();
 
-        create_cache_db(&config.database_path).expect("Unable to create cache db");
-        Synchronizer::synchronize_application(
-            &config.plugins_dir,
-            &config.database_path,
-            &config.application_settings.feed_url,
-        )
-        .await
-        .unwrap();
+        create_cache_db(&database_path).expect("Unable to create cache db");
+        Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
+            .await
+            .unwrap();
 
-        State::new(&config)
+        State::new()
     }
 }
 

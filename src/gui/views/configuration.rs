@@ -1,26 +1,19 @@
-use crate::{core::Config, gui::style};
-use iced::{
-    text_input, Alignment, Length
-};
-use iced::pure::{checkbox, column, text, Element, row, text_input, container};
+use crate::core::config::{read_existing_settings_file, save_settings_changes, SettingsFile};
+use crate::gui::style;
+use iced::pure::{checkbox, column, container, row, text, text_input, Element};
+use iced::{Alignment, Length};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
-    config: Config,
     description: String,
-    backup: bool,
-    feed_url: text_input::State,
-    feed_url_value: String,
+    settings: SettingsFile,
 }
 
 impl Configuration {
-    pub fn new(config: &Config) -> Self {
+    pub fn new() -> Self {
         Self {
-            config: config.clone(),
             description: "Enable Backup".to_string(),
-            backup: config.application_settings.backup_enabled,
-            feed_url: text_input::State::default(),
-            feed_url_value: config.application_settings.feed_url.clone(),
+            settings: read_existing_settings_file(),
         }
     }
 }
@@ -35,13 +28,14 @@ impl Configuration {
     pub fn update(&mut self, msg: Message) {
         match msg {
             Message::BackupTriggered(toggled) => {
-                self.backup = toggled;
-                self.config.application_settings.backup_enabled = self.backup;
-                self.config.save_changes();
+                self.settings.backup_enabled = toggled;
+
+                save_settings_changes(&self.settings);
             }
             Message::FeedUrlChanged(state) => {
-                self.feed_url_value = state;
-                self.config.save_changes();
+                self.settings.feed_url = state;
+
+                save_settings_changes(&self.settings);
             }
         }
     }
@@ -49,16 +43,16 @@ impl Configuration {
     pub fn view(&self) -> Element<Message> {
         let about_text = text("General");
 
-        let checkbox = checkbox(&self.description,self.backup , Message::BackupTriggered);
+        let checkbox = checkbox(
+            &self.description,
+            self.settings.backup_enabled,
+            Message::BackupTriggered,
+        );
 
         let feed_label = text("Feed URL");
 
-        let feed_url = text_input(
-            "Feed Url",
-            &self.feed_url_value,
-            Message::FeedUrlChanged,
-        )
-        .padding(5);
+        let feed_url =
+            text_input("Feed Url", &self.settings.feed_url, Message::FeedUrlChanged).padding(5);
 
         let feed_row = row()
             .width(Length::Shrink)

@@ -1,11 +1,10 @@
-use std::path::{Path, PathBuf};
-
 use crate::core::{
+    config::{get_database_file_path, get_tmp_dir},
     io::{
         api_connector::{self, APIError},
         cache,
     },
-    Config, PluginDataClass,
+    PluginDataClass,
 };
 use crate::core::{Installer, PluginCollection};
 use crate::gui::style;
@@ -23,17 +22,13 @@ pub enum Catalog {
 }
 
 impl Catalog {
-    pub fn new(config: Config) -> Self {
-        Self::Loaded(State {
-            config,
-            ..State::default()
-        })
+    pub fn new() -> Self {
+        Self::Loaded(State { ..State::default() })
     }
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct State {
-    config: Config,
     pub input_value: String,
 
     pub base_plugins: Vec<PluginRow>,
@@ -74,16 +69,14 @@ impl Catalog {
                 Message::Catalog(index, msg) => state.plugins[index]
                     .update(msg)
                     .map(move |msg| Message::Catalog(index, msg)),
-                Message::LoadPlugins => Command::perform(
-                    api_connector::fetch_plugins(
-                        state.config.application_settings.feed_url.clone(),
-                    ),
-                    Message::LoadedPlugins,
-                ),
+                Message::LoadPlugins => {
+                    Command::perform(api_connector::fetch_plugins(), Message::LoadedPlugins)
+                }
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.database_path);
+                        let database_path = get_database_file_path();
+                        let installed_plugins = cache::get_plugins(&database_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
@@ -93,12 +86,7 @@ impl Catalog {
                                 &plugin.category.unwrap(),
                             )
                             .with_versions("", plugin.latest_version.as_ref().unwrap())
-                            .with_information(
-                                &plugin.download_url.unwrap(),
-                                &state.config.plugins_dir,
-                                &state.config.database_path,
-                                state.config.application_settings.backup_enabled,
-                            );
+                            .with_information(&plugin.download_url.unwrap());
 
                             match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
@@ -131,16 +119,14 @@ impl Catalog {
                 Message::RetryPressed => Command::none(),
             },
             Catalog::NoInternet(state) => match message {
-                Message::RetryPressed => Command::perform(
-                    api_connector::fetch_plugins(
-                        state.config.application_settings.feed_url.clone(),
-                    ),
-                    Message::LoadedPlugins,
-                ),
+                Message::RetryPressed => {
+                    Command::perform(api_connector::fetch_plugins(), Message::LoadedPlugins)
+                }
                 Message::LoadedPlugins(fetched_plugins) => {
                     if fetched_plugins.is_ok() {
                         let mut plugins = Vec::new();
-                        let installed_plugins = cache::get_plugins(&state.config.database_path);
+                        let database_path = get_database_file_path();
+                        let installed_plugins = cache::get_plugins(&database_path);
                         for (_, plugin) in fetched_plugins.unwrap() {
                             let mut plugin_row = PluginRow::new(
                                 plugin.id.unwrap(),
@@ -150,12 +136,7 @@ impl Catalog {
                                 &plugin.category.unwrap(),
                             )
                             .with_versions("", plugin.latest_version.as_ref().unwrap())
-                            .with_information(
-                                &plugin.download_url.unwrap(),
-                                &state.config.plugins_dir,
-                                &state.config.database_path,
-                                state.config.application_settings.backup_enabled,
-                            );
+                            .with_information(&plugin.download_url.unwrap());
 
                             match installed_plugins.get(&plugin.name) {
                                 Some(value) => {
@@ -193,7 +174,6 @@ impl Catalog {
     pub fn view(&self) -> Element<Message> {
         match self {
             Catalog::Loaded(State {
-                config: _,
                 plugins,
                 input_value,
                 base_plugins: _,
@@ -255,7 +235,6 @@ impl Catalog {
                     .into()
             }
             Catalog::NoInternet(State {
-                config: _,
                 plugins: _,
                 input_value: _,
                 base_plugins: _,
@@ -298,10 +277,6 @@ pub struct PluginRow {
     pub latest_version: String,
     pub status: String,
     pub download_url: String,
-    pub plugins_dir: PathBuf,
-    pub cache_dir: PathBuf,
-    pub db_file: PathBuf,
-    pub backup_enabled: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -323,10 +298,6 @@ impl PluginRow {
             latest_version: String::new(),
             status: "Installed".to_string(),
             download_url: String::new(),
-            plugins_dir: PathBuf::new(),
-            cache_dir: PathBuf::new(),
-            db_file: PathBuf::new(),
-            backup_enabled: true,
         }
     }
 
@@ -337,17 +308,8 @@ impl PluginRow {
         self
     }
 
-    fn with_information(
-        mut self,
-        download_url: &str,
-        plugins_dir: &Path,
-        db_file: &Path,
-        backup_enabled: bool,
-    ) -> Self {
+    fn with_information(mut self, download_url: &str) -> Self {
         self.download_url = download_url.to_string();
-        self.plugins_dir = plugins_dir.to_path_buf();
-        self.db_file = db_file.to_path_buf();
-        self.backup_enabled = backup_enabled;
 
         self
     }
@@ -355,17 +317,9 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                if Installer::download(
-                    plugin.id,
-                    &plugin.title,
-                    &plugin.download_url,
-                    &self.plugins_dir,
-                    &self.cache_dir,
-                    self.backup_enabled,
-                )
-                .is_ok()
-                {
-                    Installer::delete_cache_folder(plugin.id, &plugin.title, &self.cache_dir);
+                if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
+                    let tmp_dir = get_tmp_dir();
+                    Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
                     let cache_item =
                         PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
                             .with_id(plugin.id)
@@ -378,7 +332,8 @@ impl PluginRow {
                             )
                             .build();
 
-                    if cache::insert_plugin(&cache_item, &self.db_file).is_ok() {
+                    let database_path = get_database_file_path();
+                    if cache::insert_plugin(&cache_item, &database_path).is_ok() {
                         self.status = "Installed".to_string();
                         self.current_version = plugin.latest_version;
                     } else {
