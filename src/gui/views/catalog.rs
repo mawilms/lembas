@@ -214,11 +214,9 @@ impl Catalog {
                         col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
                     });
 
-                let plugins_scrollable = scrollable(plugins);
-                // .push(plugins)
-                // .spacing(5)
-                // .align_items(Alignment::Center)
-                // .style(style::Scrollable);
+                let plugins_scrollable = scrollable(plugins)
+                    .scrollbar_width(10)
+                    .style(style::Scrollable);
 
                 let content = column()
                     .width(Length::Fill)

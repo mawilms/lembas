@@ -1,4 +1,5 @@
-use iced::{button, container, scrollable, Background, Color, Vector};
+use iced::pure::widget::scrollable;
+use iced::{button, container, Background, Color, Vector};
 // 331C12
 pub const BORDER_COLOR: Color = Color::from_rgb(0.32, 0.41, 0.05);
 pub const BUTTON_COLOR_DEFAULT: Color = Color::from_rgb(0.39, 0.48, 0.1);

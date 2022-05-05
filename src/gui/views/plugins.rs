@@ -14,35 +14,6 @@ pub enum Plugins {
     Loaded(State),
 }
 
-impl Plugins {
-    pub fn new() -> Self {
-        let database_path = get_database_file_path();
-        let mut installed_plugins: Vec<PluginDataClass> = cache::get_plugins(&database_path)
-            .values()
-            .cloned()
-            .collect();
-        installed_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        let mut plugins: Vec<PluginRow> = Vec::new();
-        for plugin in installed_plugins {
-            plugins.push(PluginRow::new(
-                plugin.id.unwrap(),
-                &plugin.name,
-                &plugin.author,
-                &plugin.description.unwrap(),
-                &plugin.version,
-                &plugin.latest_version.unwrap(),
-                &plugin.download_url.unwrap(),
-            ));
-        }
-
-        Self::Loaded(State {
-            base_plugins: plugins.clone(),
-            plugins,
-            ..State::default()
-        })
-    }
-}
-
 #[derive(Default, Debug, Clone)]
 pub struct State {
     input_value: String,
@@ -65,6 +36,16 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
+    pub fn new() -> Self {
+        let plugins = Plugins::populate_plugin_rows();
+
+        Self::Loaded(State {
+            base_plugins: plugins.clone(),
+            plugins,
+            ..State::default()
+        })
+    }
+
     async fn refresh_db() -> Result<(), ApplicationError> {
         let plugins_dir = get_plugins_dir();
         let local_plugins =
@@ -82,33 +63,35 @@ impl Plugins {
         Ok(())
     }
 
+    fn populate_plugin_rows() -> Vec<PluginRow> {
+        let database_path = get_database_file_path();
+        let mut plugins: Vec<PluginRow> = Vec::new();
+        let mut all_plugins: Vec<PluginDataClass> = cache::get_plugins(&database_path)
+            .values()
+            .cloned()
+            .collect();
+        all_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        for plugin in all_plugins {
+            plugins.push(PluginRow::new(
+                plugin.id.unwrap(),
+                &plugin.name,
+                &plugin.author,
+                &plugin.description.unwrap(),
+                &plugin.version,
+                &plugin.latest_version.unwrap(),
+                &plugin.download_url.unwrap(),
+            ));
+        }
+        plugins
+    }
+
     pub fn update(&mut self, message: PluginMessage) -> Command<PluginMessage> {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
                     let update_event = state.plugins[index].update(msg);
                     if let Event::Synchronize = update_event.0 {
-                        let database_path = get_database_file_path();
-                        let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&database_path)
-                                .values()
-                                .cloned()
-                                .collect();
-                        all_plugins
-                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-                        for plugin in all_plugins {
-                            plugins.push(PluginRow::new(
-                                plugin.id.unwrap(),
-                                &plugin.name,
-                                &plugin.author,
-                                &plugin.description.unwrap(),
-                                &plugin.version,
-                                &plugin.latest_version.unwrap(),
-                                &plugin.download_url.unwrap(),
-                            ));
-                        }
-                        state.plugins = plugins;
+                        state.plugins = Plugins::populate_plugin_rows();
                     }
                     update_event
                         .1
@@ -130,26 +113,7 @@ impl Plugins {
                     Command::none()
                 }
                 PluginMessage::LoadPlugins => {
-                    let database_path = get_database_file_path();
-                    let mut plugins: Vec<PluginRow> = Vec::new();
-                    let installed_plugins: Vec<PluginDataClass> =
-                        cache::get_plugins(&database_path)
-                            .values()
-                            .cloned()
-                            .collect();
-                    for plugin in installed_plugins {
-                        plugins.push(PluginRow::new(
-                            plugin.id.unwrap(),
-                            &plugin.name,
-                            &plugin.author,
-                            &plugin.description.unwrap(),
-                            &plugin.version,
-                            &plugin.latest_version.unwrap(),
-                            &plugin.download_url.unwrap(),
-                        ));
-                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                    }
-                    state.plugins = plugins;
+                    state.plugins = Plugins::populate_plugin_rows();
                     Command::none()
                 }
                 PluginMessage::PluginInputChanged(letter) => {
@@ -172,27 +136,7 @@ impl Plugins {
                 }
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
-                        let database_path = get_database_file_path();
-                        let mut plugins: Vec<PluginRow> = Vec::new();
-                        let mut all_plugins: Vec<PluginDataClass> =
-                            cache::get_plugins(&database_path)
-                                .values()
-                                .cloned()
-                                .collect();
-                        all_plugins
-                            .sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-                        for plugin in all_plugins {
-                            plugins.push(PluginRow::new(
-                                plugin.id.unwrap(),
-                                &plugin.name,
-                                &plugin.author,
-                                &plugin.description.unwrap(),
-                                &plugin.version,
-                                &plugin.latest_version.unwrap(),
-                                &plugin.download_url.unwrap(),
-                            ));
-                        }
-                        state.plugins = plugins;
+                        state.plugins = Plugins::populate_plugin_rows();
                     }
                     Command::none()
                 }
@@ -252,10 +196,9 @@ impl Plugins {
                         col.push(p.view().map(move |msg| PluginMessage::Plugin(i, msg)))
                     });
 
-                let plugins_scrollable = scrollable(plugins);
-                // .width(Length::Fill)
-                // .align_items(Alignment::Center)
-                // .style(style::Scrollable);
+                let plugins_scrollable = scrollable(plugins)
+                    .scrollbar_width(10)
+                    .style(style::Scrollable);
 
                 let content = column()
                     .width(Length::Fill)
