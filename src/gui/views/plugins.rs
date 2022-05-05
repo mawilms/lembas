@@ -102,7 +102,7 @@ impl Plugins {
                     Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
                 }
                 PluginMessage::UpdateAllPressed => {
-                    for i in 1..=state.plugins.len() {
+                    for i in 0..=state.plugins.len() {
                         if state.plugins[i].current_version != state.plugins[i].latest_version
                             && !state.plugins[i].latest_version.is_empty()
                         {
@@ -144,6 +144,34 @@ impl Plugins {
         }
     }
 
+    fn build_header(input_value: &str, plugins_amount: usize) -> Element<'static, PluginMessage> {
+        let refresh_button = button(text("Refresh"))
+            .on_press(PluginMessage::RefreshPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+        let update_all_button = button(text("Update all"))
+            .on_press(PluginMessage::UpdateAllPressed)
+            .padding(5)
+            .style(style::PrimaryButton::Enabled);
+        let installed_plugins = text(format!("{} plugins installed", plugins_amount));
+        let search_plugins = text_input(
+            "Search plugins...",
+            input_value,
+            PluginMessage::PluginInputChanged,
+        )
+        .padding(5);
+
+        row()
+            .width(Length::Fill)
+            .align_items(Alignment::Center)
+            .spacing(10)
+            .push(refresh_button)
+            .push(update_all_button)
+            .push(installed_plugins)
+            .push(search_plugins)
+            .into()
+    }
+
     pub fn view(&self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
@@ -151,30 +179,7 @@ impl Plugins {
                 plugins,
                 base_plugins: _,
             }) => {
-                let refresh_button = button(text("Refresh"))
-                    .on_press(PluginMessage::RefreshPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let update_all_button = button(text("Update all"))
-                    .on_press(PluginMessage::UpdateAllPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let installed_plugins = text(format!("{} plugins installed", plugins.len()));
-                let search_plugins = text_input(
-                    "Search plugins...",
-                    input_value,
-                    PluginMessage::PluginInputChanged,
-                )
-                .padding(5);
-
-                let control_panel = row()
-                    .width(Length::Fill)
-                    .align_items(Alignment::Center)
-                    .spacing(10)
-                    .push(refresh_button)
-                    .push(update_all_button)
-                    .push(installed_plugins)
-                    .push(search_plugins);
+                let header = Plugins::build_header(input_value, plugins.len());
 
                 let plugin_name = text("Plugin").width(Length::FillPortion(6));
                 let current_version = text("Current Version").width(Length::FillPortion(3));
@@ -204,7 +209,7 @@ impl Plugins {
                     .width(Length::Fill)
                     .spacing(10)
                     .align_items(Alignment::Center)
-                    .push(control_panel)
+                    .push(header)
                     .push(plugin_panel)
                     .push(plugins_scrollable);
 
