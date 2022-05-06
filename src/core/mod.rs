@@ -1,3 +1,4 @@
+pub mod api;
 pub mod blacklist;
 pub mod config;
 pub mod installer;
