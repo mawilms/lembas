@@ -4,7 +4,6 @@ use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
 use crate::core::io::cache;
-use crate::core::io::Synchronizer;
 use crate::core::{Installer, PluginDataClass};
 use crate::gui::style;
 use cache::Cache;
@@ -51,17 +50,17 @@ impl Plugins {
 
     async fn refresh_db() -> Result<(), ApplicationError> {
         let plugins_dir = get_plugins_dir();
-        let local_plugins =
-            Synchronizer::search_local(&plugins_dir).map_err(|_| ApplicationError::Synchronize);
+        // let local_plugins =
+        //     Synchronizer::search_local(&plugins_dir).map_err(|_| ApplicationError::Synchronize);
 
         let database_path = get_database_file_path();
         let settings = read_existing_settings_file();
-        Synchronizer::compare_local_state(
-            &local_plugins.unwrap(),
-            &database_path,
-            &settings.feed_url,
-        )
-        .await;
+        // Synchronizer::compare_local_state(
+        //     &local_plugins.unwrap(),
+        //     &database_path,
+        //     &settings.feed_url,
+        // )
+        // .await;
 
         Ok(())
     }

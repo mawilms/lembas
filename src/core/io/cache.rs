@@ -1,8 +1,8 @@
 use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
-use r2d2::{Pool};
+use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::{params, Connection, Statement};
+use rusqlite::{params, Statement};
 use std::{collections::HashMap, error::Error, sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,9 @@ impl Cache {
                     category TEXT,
                     latest_version TEXT,
                     downloads INT,
-                    archive_name TEXT
+                    archive_name TEXT,
+                    updated_at INT,
+                    hash TEXT
                 );
         ",
             [],
@@ -81,7 +83,7 @@ impl Cache {
             .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
             .unwrap();
 
-        for element in execute_stmt(&mut stmt, "") {
+        for element in Cache::execute_stmt(&mut stmt, "") {
             plugins.insert(element.name.clone(), element);
         }
 
@@ -114,42 +116,42 @@ impl Cache {
 
         Ok(plugin_iter.next().transpose()?)
     }
-}
 
-fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
-    let mut all_plugins = Vec::new();
+    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
+        let mut all_plugins = Vec::new();
 
-    let empty_params = params![];
-    let has_params = params![params];
-    let mut query_params = empty_params;
+        let empty_params = params![];
+        let has_params = params![params];
+        let mut query_params = empty_params;
 
-    if !params.is_empty() {
-        query_params = has_params;
-    }
+        if !params.is_empty() {
+            query_params = has_params;
+        }
 
-    let plugin_iter = stmt
-        .query_map(query_params, |row| {
-            Ok(PluginDataClass {
-                name: row.get(0).unwrap(),
-                author: row.get(1).unwrap(),
-                version: row.get(2).unwrap(),
-                id: Some(row.get(3).unwrap()),
-                description: Some(row.get(4).unwrap()),
-                download_url: Some(row.get(5).unwrap()),
-                info_url: Some(row.get(6).unwrap()),
-                category: Some(row.get(7).unwrap()),
-                latest_version: Some(row.get(8).unwrap()),
-                downloads: Some(row.get(9).unwrap()),
-                archive_name: Some(row.get(10).unwrap()),
+        let plugin_iter = stmt
+            .query_map(query_params, |row| {
+                Ok(PluginDataClass {
+                    name: row.get(0).unwrap(),
+                    author: row.get(1).unwrap(),
+                    version: row.get(2).unwrap(),
+                    id: Some(row.get(3).unwrap()),
+                    description: Some(row.get(4).unwrap()),
+                    download_url: Some(row.get(5).unwrap()),
+                    info_url: Some(row.get(6).unwrap()),
+                    category: Some(row.get(7).unwrap()),
+                    latest_version: Some(row.get(8).unwrap()),
+                    downloads: Some(row.get(9).unwrap()),
+                    archive_name: Some(row.get(10).unwrap()),
+                })
             })
-        })
-        .unwrap();
+            .unwrap();
 
-    for plugin in plugin_iter {
-        all_plugins.push(plugin.unwrap());
+        for plugin in plugin_iter {
+            all_plugins.push(plugin.unwrap());
+        }
+
+        all_plugins
     }
-
-    all_plugins
 }
 
 #[cfg(test)]

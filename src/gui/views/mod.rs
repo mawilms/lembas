@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use super::views::plugins::PluginMessage;
 use crate::core::config::{get_database_file_path, get_plugins_dir, read_existing_settings_file};
-use crate::core::io::{Cache, Synchronizer};
+use crate::core::io::Cache;
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
@@ -250,9 +250,9 @@ impl Lembas {
         let cache = Cache::new(pool);
 
         cache.create_cache_db().expect("Unable to create cache db");
-        Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
-            .await
-            .unwrap();
+        // Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
+        //     .await
+        //     .unwrap();
 
         State::new(&Arc::new(cache))
     }

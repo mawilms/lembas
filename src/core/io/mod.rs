@@ -7,4 +7,4 @@ pub mod synchronizer;
 
 pub use cache::Cache;
 pub use feed_url_parser::FeedUrlParser;
-pub use synchronizer::Synchronizer;
+//pub use synchronizer::Synchronizer;
