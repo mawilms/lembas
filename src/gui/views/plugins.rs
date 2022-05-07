@@ -1,10 +1,13 @@
+use std::sync::Arc;
+
 use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
-use crate::core::io::cache::{self};
+use crate::core::io::cache;
 use crate::core::io::Synchronizer;
 use crate::core::{Installer, PluginDataClass};
 use crate::gui::style;
+use cache::Cache;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{alignment::Horizontal, Alignment, Command, Length, Space};
 use serde::{Deserialize, Serialize};
@@ -14,8 +17,9 @@ pub enum Plugins {
     Loaded(State),
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct State {
+    cache: Arc<Cache>,
     input_value: String,
     pub plugins: Vec<PluginRow>,
     base_plugins: Vec<PluginRow>,
@@ -36,13 +40,12 @@ pub enum PluginMessage {
 }
 
 impl Plugins {
-    pub fn new() -> Self {
-        let plugins = Plugins::populate_plugin_rows();
-
+    pub fn new(cache: Arc<Cache>) -> Self {
         Self::Loaded(State {
-            base_plugins: plugins.clone(),
-            plugins,
-            ..State::default()
+            cache,
+            base_plugins: Vec::new(),
+            plugins: Vec::new(),
+            input_value: String::new(),
         })
     }
 
@@ -63,15 +66,13 @@ impl Plugins {
         Ok(())
     }
 
-    fn populate_plugin_rows() -> Vec<PluginRow> {
-        let database_path = get_database_file_path();
+    fn populate_plugin_rows(state: &State) -> Vec<PluginRow> {
         let mut plugins: Vec<PluginRow> = Vec::new();
-        let mut all_plugins: Vec<PluginDataClass> = cache::get_plugins(&database_path)
-            .values()
-            .cloned()
-            .collect();
-        all_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        for plugin in all_plugins {
+
+        let mut tmp_plugins: Vec<PluginDataClass> =
+            state.cache.get_plugins().values().cloned().collect();
+        tmp_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        for plugin in tmp_plugins {
             plugins.push(PluginRow::new(
                 plugin.id.unwrap(),
                 &plugin.name,
@@ -89,9 +90,9 @@ impl Plugins {
         match self {
             Plugins::Loaded(state) => match message {
                 PluginMessage::Plugin(index, msg) => {
-                    let update_event = state.plugins[index].update(msg);
+                    let update_event = state.plugins[index].update(msg, &*state.cache);
                     if let Event::Synchronize = update_event.0 {
-                        state.plugins = Plugins::populate_plugin_rows();
+                        state.plugins = Plugins::populate_plugin_rows(state);
                     }
                     update_event
                         .1
@@ -107,13 +108,13 @@ impl Plugins {
                             && !state.plugins[i].latest_version.is_empty()
                         {
                             let test = state.plugins[i].clone();
-                            state.plugins[i].update(RowMessage::UpdatePressed(test));
+                            state.plugins[i].update(RowMessage::UpdatePressed(test), &*state.cache);
                         }
                     }
                     Command::none()
                 }
                 PluginMessage::LoadPlugins => {
-                    state.plugins = Plugins::populate_plugin_rows();
+                    state.plugins = Plugins::populate_plugin_rows(state);
                     Command::none()
                 }
                 PluginMessage::PluginInputChanged(letter) => {
@@ -136,7 +137,7 @@ impl Plugins {
                 }
                 PluginMessage::DbRefreshed(result) => {
                     if result.is_ok() {
-                        state.plugins = Plugins::populate_plugin_rows();
+                        state.plugins = Plugins::populate_plugin_rows(state);
                     }
                     Command::none()
                 }
@@ -175,6 +176,7 @@ impl Plugins {
     pub fn view(&self) -> Element<PluginMessage> {
         match self {
             Plugins::Loaded(State {
+                cache: _,
                 input_value,
                 plugins,
                 base_plugins: _,
@@ -292,7 +294,7 @@ impl PluginRow {
         }
     }
 
-    pub fn update(&mut self, message: RowMessage) -> (Event, Command<RowMessage>) {
+    pub fn update(&mut self, message: RowMessage, cache: &Cache) -> (Event, Command<RowMessage>) {
         match message {
             RowMessage::ToggleView => {
                 self.opened = !self.opened;
@@ -317,7 +319,7 @@ impl PluginRow {
                         .build();
 
                         let database_path = get_database_file_path();
-                        if cache::insert_plugin(&cache_item, &database_path).is_ok() {
+                        if cache.insert_plugin(&cache_item).is_ok() {
                             self.status = "Updated".to_string();
                             (Event::Synchronize, Command::none())
                         } else {
@@ -342,7 +344,7 @@ impl PluginRow {
                     let database_path = get_database_file_path();
                     if let Ok(()) = Installer::delete(&files, &plugins_dir) {
                         Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-                        if cache::delete_plugin(&plugin.title, &database_path).is_ok() {
+                        if cache.delete_plugin(&plugin.title).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
                         } else {

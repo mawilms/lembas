@@ -1,20 +1,28 @@
 use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
+use r2d2::{Pool};
+use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Connection, Statement};
-use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
+use std::{collections::HashMap, error::Error, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct Cache {
-    connection: Arc<Connection>,
+    pool: Arc<Pool<SqliteConnectionManager>>,
 }
 
 impl Cache {
-    pub fn new(connection: Arc<Connection>) -> Self {
-        Self { connection }
+    pub fn new(connection: Pool<SqliteConnectionManager>) -> Self {
+        Self {
+            pool: Arc::new(connection),
+        }
     }
 
     pub fn create_cache_db(&self) -> Result<(), rusqlite::Error> {
-        self.connection.execute(
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        connection.execute(
             "
                 CREATE TABLE IF NOT EXISTS plugin (
                     id INTEGER PRIMARY KEY,
@@ -38,7 +46,11 @@ impl Cache {
     }
 
     pub fn insert_plugin(&self, plugin: &PluginDataClass) -> Result<(), Box<dyn Error>> {
-        self.connection.execute(
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        connection.execute(
             "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT (name) DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11;",
         params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
 
@@ -46,7 +58,11 @@ impl Cache {
     }
 
     pub fn delete_plugin(&self, name: &str) -> Result<(), Box<dyn Error>> {
-        self.connection.execute(
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        connection.execute(
             "DELETE FROM plugin WHERE name=?1;",
             params![name.to_string()],
         )?;
@@ -57,7 +73,11 @@ impl Cache {
     pub fn get_plugins(&self) -> PluginCollection {
         let mut plugins = HashMap::new();
 
-        let mut stmt = self.connection
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        let mut stmt = connection
             .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
             .unwrap();
 
@@ -69,7 +89,11 @@ impl Cache {
     }
 
     pub fn get_plugin(&self, name: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
-        let mut stmt = self.connection
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        let mut stmt = connection
             .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
             .unwrap();
         let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
@@ -90,92 +114,6 @@ impl Cache {
 
         Ok(plugin_iter.next().transpose()?)
     }
-}
-
-pub fn create_cache_db(db_path: &Path) -> Result<(), rusqlite::Error> {
-    let conn = Connection::open(db_path)
-        .map_err(|_| debug!("Error while opening SQLite database"))
-        .unwrap();
-    conn.execute(
-        "
-            CREATE TABLE IF NOT EXISTS plugin (
-                id INTEGER PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL,
-                author TEXT NOT NULL,
-                current_version TEXT NOT NULL,
-                plugin_id INTEGER,
-                description TEXT,
-                download_url TEXT,
-                info_url TEXT,
-                category TEXT,
-                latest_version TEXT,
-                downloads INT,
-                archive_name TEXT
-            );
-    ",
-        [],
-    )?;
-
-    Ok(())
-}
-
-pub fn insert_plugin(plugin: &PluginDataClass, db_path: &Path) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_path)?;
-
-    conn.execute(
-        "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT (name) DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11;",
-    params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
-
-    Ok(())
-}
-
-pub fn get_plugin(name: &str, db_path: &Path) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
-    let conn = Connection::open(db_path)?;
-    let mut stmt = conn
-        .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
-        .unwrap();
-    let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
-        Ok(PluginDataClass {
-            name: row.get(0).unwrap(),
-            author: row.get(1).unwrap(),
-            version: row.get(2).unwrap(),
-            id: Some(row.get(3).unwrap()),
-            description: Some(row.get(4).unwrap()),
-            download_url: Some(row.get(5).unwrap()),
-            info_url: Some(row.get(6).unwrap()),
-            category: Some(row.get(7).unwrap()),
-            latest_version: Some(row.get(8).unwrap()),
-            downloads: Some(row.get(9).unwrap()),
-            archive_name: Some(row.get(10).unwrap()),
-        })
-    })?;
-
-    Ok(plugin_iter.next().transpose()?)
-}
-
-pub fn delete_plugin(name: &str, db_path: &Path) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open(db_path)?;
-    conn.execute(
-        "DELETE FROM plugin WHERE name=?1;",
-        params![name.to_string()],
-    )?;
-
-    Ok(())
-}
-
-pub fn get_plugins(db_path: &Path) -> PluginCollection {
-    let mut plugins = HashMap::new();
-
-    let conn = Connection::open(db_path).unwrap();
-    let mut stmt = conn
-        .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
-        .unwrap();
-
-    for element in execute_stmt(&mut stmt, "") {
-        plugins.insert(element.name.clone(), element);
-    }
-
-    plugins
 }
 
 fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
@@ -218,6 +156,7 @@ fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
 mod tests {
     use super::*;
     use crate::core::PluginDataClass;
+    use r2d2_sqlite::SqliteConnectionManager;
     use std::{
         env,
         fs::{create_dir_all, remove_dir_all},
@@ -232,11 +171,17 @@ mod tests {
 
         create_dir_all(&test_dir).unwrap();
 
-        let connection = Connection::open(&db_path)
-            .map_err(|_| debug!("Error while opening SQLite database"))
-            .unwrap();
+        let manager = SqliteConnectionManager::file(&db_path);
+        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
+        let connection = pool
+            .get()
+            .expect("Error while creating a pooled connection");
 
-        let cache = Cache::new(Arc::new(connection));
+        // let connection = Connection::open(&db_path)
+        //     .map_err(|_| debug!("Error while opening SQLite database"))
+        //     .unwrap();
+
+        let cache = Cache::new(pool);
         cache
             .create_cache_db()
             .expect("Failed to create a temporary db");
@@ -251,11 +196,13 @@ mod tests {
 
         create_dir_all(&test_dir).expect("Error while running test setup");
 
-        let connection = Connection::open(&db_path)
-            .map_err(|_| debug!("Error while opening SQLite database"))
-            .unwrap();
+        let manager = SqliteConnectionManager::file(&db_path);
+        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
+        // let connection = pool
+        //     .get()
+        //     .expect("Error while creating a pooled connection");
 
-        let cache = Cache::new(Arc::new(connection));
+        let cache = Cache::new(pool);
         cache
             .create_cache_db()
             .expect("Failed to create a temporary db");

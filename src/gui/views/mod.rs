@@ -9,7 +9,6 @@ use std::sync::Arc;
 
 use super::views::plugins::PluginMessage;
 use crate::core::config::{get_database_file_path, get_plugins_dir, read_existing_settings_file};
-use crate::core::io::cache::create_cache_db;
 use crate::core::io::{Cache, Synchronizer};
 use crate::gui::style;
 pub use about::About as AboutView;
@@ -22,9 +21,8 @@ use iced::{
     window::Settings as Window,
     Alignment, Command, Length, Settings, Space,
 };
-use log::debug;
 pub use plugins::Plugins as PluginsView;
-use rusqlite::Connection;
+use r2d2_sqlite::SqliteConnectionManager;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -45,12 +43,11 @@ impl Default for View {
 #[derive(Debug, Clone)]
 pub enum Lembas {
     Loading,
-    Loaded(State),
+    Loaded(Box<State>),
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
-    cache: Arc<Cache>,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -74,12 +71,11 @@ pub enum Message {
 }
 
 impl State {
-    pub fn new(cache: Arc<Cache>) -> Self {
+    pub fn new(cache: &Arc<Cache>) -> Self {
         Self {
-            cache,
             view: View::default(),
-            plugins_view: PluginsView::new(),
-            catalog_view: CatalogView::new(),
+            plugins_view: PluginsView::new(cache.clone()),
+            catalog_view: CatalogView::new(cache.clone()),
             about_view: AboutView::default(),
             config_view: ConfigView::new(),
         }
@@ -106,7 +102,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(state) = message {
-                    *self = Lembas::Loaded(state);
+                    *self = Lembas::Loaded(Box::new(state));
                 }
                 Command::none()
             }
@@ -149,14 +145,7 @@ impl Application for Lembas {
     fn view(&self) -> Element<Message> {
         match self {
             Lembas::Loading => loading_data(),
-            Lembas::Loaded(State {
-                cache,
-                view,
-                plugins_view,
-                catalog_view,
-                about_view,
-                config_view,
-            }) => {
+            Lembas::Loaded(state) => {
                 let plugins_btn =
                     button(text("My Plugins").horizontal_alignment(Horizontal::Center))
                         .on_press(Message::PluginsPressed)
@@ -203,21 +192,21 @@ impl Application for Lembas {
                     .padding(25)
                     .style(style::NavigationContainer);
 
-                match view {
+                match state.view {
                     View::Plugins => {
-                        let main_container = plugins_view.view().map(Message::PluginAction);
+                        let main_container = state.plugins_view.view().map(Message::PluginAction);
                         row().push(navigation_container).push(main_container).into()
                     }
                     View::Catalog => {
-                        let main_container = catalog_view.view().map(Message::CatalogAction);
+                        let main_container = state.catalog_view.view().map(Message::CatalogAction);
                         row().push(navigation_container).push(main_container).into()
                     }
                     View::About => {
-                        let main_container = about_view.view();
+                        let main_container = state.about_view.view();
                         row().push(navigation_container).push(main_container).into()
                     }
                     View::Configuration => {
-                        let main_container = config_view.view().map(Message::ConfigAction);
+                        let main_container = state.config_view.view().map(Message::ConfigAction);
                         row().push(navigation_container).push(main_container).into()
                     }
                 }
@@ -255,18 +244,17 @@ impl Lembas {
         let plugins_dir = get_plugins_dir();
         let settings = read_existing_settings_file();
 
-        let connection = Connection::open(&database_path)
-            .map_err(|_| debug!("Error while opening SQLite database"))
-            .unwrap();
+        let manager = SqliteConnectionManager::file(&database_path);
+        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
 
-        let cache = Cache::new(Arc::new(connection));
+        let cache = Cache::new(pool);
 
-        create_cache_db(&database_path).expect("Unable to create cache db");
+        cache.create_cache_db().expect("Unable to create cache db");
         Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
             .await
             .unwrap();
 
-        State::new(Arc::new(cache))
+        State::new(&Arc::new(cache))
     }
 }
 

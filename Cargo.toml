@@ -30,6 +30,8 @@ serde_json = "^1"
 serde-xml-rs = "^0"
 dirs = "^4"
 rusqlite = { version = "^0", features = ["bundled"] }
+r2d2 = "^0"
+r2d2_sqlite = "^0"
 futures = "^0"
 tokio = { version = "^1", features = ["full"]}
 image = "^0"

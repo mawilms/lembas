@@ -1,5 +1,4 @@
 use super::api_connector;
-use super::cache::{delete_plugin, get_plugin, get_plugins, insert_plugin};
 use super::file_comparer::compare_files;
 use super::plugin_collector::{collect_all_compendium_files, collect_all_plugin_files};
 use crate::core::parsers::compendium_parser::parse_compendium_file;
@@ -150,10 +149,7 @@ impl Synchronizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::{
-        io::cache::{create_cache_db, get_plugins, insert_plugin},
-        PluginDataClass,
-    };
+    use crate::core::PluginDataClass;
     use fs_extra::dir::{copy, CopyOptions};
     use std::{
         collections::HashMap,
