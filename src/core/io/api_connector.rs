@@ -9,24 +9,25 @@ pub async fn fetch_plugins() -> Result<PluginCollection, APIError> {
     match reqwest::get(url).await {
         Ok(response) => match response.text().await {
             Ok(content) => {
-                let mut plugins: PluginCollection = HashMap::new();
-                let xml_content = FeedUrlParser::parse_response(&content);
-                for ui in xml_content.Ui {
-                    let data_class =
-                        PluginDataClass::new(&ui.UIName, &ui.UIAuthorName, &ui.UIVersion)
-                            .with_id(ui.UID)
-                            .with_description(&ui.UIDescription)
-                            .with_remote_information(
-                                &ui.UICategory,
-                                &ui.UIVersion,
-                                ui.UIDownloads,
-                                &ui.UIFileURL,
-                            )
-                            .build();
+                // let mut plugins: PluginCollection = HashMap::new();
+                // let xml_content = FeedUrlParser::parse_response_xml(&content);
+                // for ui in xml_content.Ui {
+                //     let data_class =
+                //         PluginDataClass::new(&ui.UIName, &ui.UIAuthorName, &ui.UIVersion)
+                //             .with_id(ui.UID)
+                //             .with_description(&ui.UIDescription)
+                //             .with_remote_information(
+                //                 &ui.UICategory,
+                //                 &ui.UIVersion,
+                //                 ui.UIDownloads,
+                //                 &ui.UIFileURL,
+                //             )
+                //             .build();
 
-                    plugins.insert(data_class.name.clone(), data_class);
-                }
-                Ok(plugins)
+                //     plugins.insert(data_class.name.clone(), data_class);
+                // }
+                // Ok(plugins)
+                Ok(HashMap::new())
             }
             Err(err) => {
                 debug!("{}", err);
