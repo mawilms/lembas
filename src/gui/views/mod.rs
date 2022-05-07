@@ -5,11 +5,12 @@ pub mod plugins;
 
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use super::views::plugins::PluginMessage;
 use crate::core::config::{get_database_file_path, get_plugins_dir, read_existing_settings_file};
 use crate::core::io::cache::create_cache_db;
-use crate::core::io::Synchronizer;
+use crate::core::io::{Cache, Synchronizer};
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
@@ -21,7 +22,9 @@ use iced::{
     window::Settings as Window,
     Alignment, Command, Length, Settings, Space,
 };
+use log::debug;
 pub use plugins::Plugins as PluginsView;
+use rusqlite::Connection;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -47,6 +50,7 @@ pub enum Lembas {
 
 #[derive(Debug, Clone)]
 pub struct State {
+    cache: Arc<Cache>,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
@@ -70,8 +74,9 @@ pub enum Message {
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(cache: Arc<Cache>) -> Self {
         Self {
+            cache,
             view: View::default(),
             plugins_view: PluginsView::new(),
             catalog_view: CatalogView::new(),
@@ -145,6 +150,7 @@ impl Application for Lembas {
         match self {
             Lembas::Loading => loading_data(),
             Lembas::Loaded(State {
+                cache,
                 view,
                 plugins_view,
                 catalog_view,
@@ -249,12 +255,18 @@ impl Lembas {
         let plugins_dir = get_plugins_dir();
         let settings = read_existing_settings_file();
 
+        let connection = Connection::open(&database_path)
+            .map_err(|_| debug!("Error while opening SQLite database"))
+            .unwrap();
+
+        let cache = Cache::new(Arc::new(connection));
+
         create_cache_db(&database_path).expect("Unable to create cache db");
         Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
             .await
             .unwrap();
 
-        State::new()
+        State::new(Arc::new(cache))
     }
 }
 

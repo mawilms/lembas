@@ -1,7 +1,96 @@
 use crate::core::{PluginCollection, PluginDataClass};
 use log::debug;
 use rusqlite::{params, Connection, Statement};
-use std::{collections::HashMap, error::Error, path::Path};
+use std::{collections::HashMap, error::Error, path::Path, sync::Arc};
+
+#[derive(Debug, Clone)]
+pub struct Cache {
+    connection: Arc<Connection>,
+}
+
+impl Cache {
+    pub fn new(connection: Arc<Connection>) -> Self {
+        Self { connection }
+    }
+
+    pub fn create_cache_db(&self) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            "
+                CREATE TABLE IF NOT EXISTS plugin (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    author TEXT NOT NULL,
+                    current_version TEXT NOT NULL,
+                    plugin_id INTEGER,
+                    description TEXT,
+                    download_url TEXT,
+                    info_url TEXT,
+                    category TEXT,
+                    latest_version TEXT,
+                    downloads INT,
+                    archive_name TEXT
+                );
+        ",
+            [],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn insert_plugin(&self, plugin: &PluginDataClass) -> Result<(), Box<dyn Error>> {
+        self.connection.execute(
+            "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT (name) DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11;",
+        params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
+
+        Ok(())
+    }
+
+    pub fn delete_plugin(&self, name: &str) -> Result<(), Box<dyn Error>> {
+        self.connection.execute(
+            "DELETE FROM plugin WHERE name=?1;",
+            params![name.to_string()],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_plugins(&self) -> PluginCollection {
+        let mut plugins = HashMap::new();
+
+        let mut stmt = self.connection
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
+            .unwrap();
+
+        for element in execute_stmt(&mut stmt, "") {
+            plugins.insert(element.name.clone(), element);
+        }
+
+        plugins
+    }
+
+    pub fn get_plugin(&self, name: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+        let mut stmt = self.connection
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
+            .unwrap();
+        let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
+            Ok(PluginDataClass {
+                name: row.get(0).unwrap(),
+                author: row.get(1).unwrap(),
+                version: row.get(2).unwrap(),
+                id: Some(row.get(3).unwrap()),
+                description: Some(row.get(4).unwrap()),
+                download_url: Some(row.get(5).unwrap()),
+                info_url: Some(row.get(6).unwrap()),
+                category: Some(row.get(7).unwrap()),
+                latest_version: Some(row.get(8).unwrap()),
+                downloads: Some(row.get(9).unwrap()),
+                archive_name: Some(row.get(10).unwrap()),
+            })
+        })?;
+
+        Ok(plugin_iter.next().transpose()?)
+    }
+}
 
 pub fn create_cache_db(db_path: &Path) -> Result<(), rusqlite::Error> {
     let conn = Connection::open(db_path)
@@ -136,98 +225,109 @@ mod tests {
     };
     use uuid::Uuid;
 
-    type TemporaryPaths = (PathBuf, PathBuf);
-
-    fn setup() -> TemporaryPaths {
+    fn setup() -> (Cache, PathBuf) {
         let uuid = Uuid::new_v4().to_string();
         let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).unwrap();
-        create_cache_db(&db_path).unwrap();
 
-        (test_dir, db_path)
+        let connection = Connection::open(&db_path)
+            .map_err(|_| debug!("Error while opening SQLite database"))
+            .unwrap();
+
+        let cache = Cache::new(Arc::new(connection));
+        cache
+            .create_cache_db()
+            .expect("Failed to create a temporary db");
+
+        (cache, test_dir)
     }
 
-    fn setup_with_items() -> TemporaryPaths {
+    fn setup_with_items() -> (Cache, PathBuf) {
         let uuid = Uuid::new_v4().to_string();
         let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
         let db_path = test_dir.join("db.sqlite3");
 
         create_dir_all(&test_dir).expect("Error while running test setup");
-        create_cache_db(&db_path).unwrap();
+
+        let connection = Connection::open(&db_path)
+            .map_err(|_| debug!("Error while opening SQLite database"))
+            .unwrap();
+
+        let cache = Cache::new(Arc::new(connection));
+        cache
+            .create_cache_db()
+            .expect("Failed to create a temporary db");
 
         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
             .with_id(1)
             .with_description("Lorem ipsum")
             .build();
-        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
+        cache
+            .insert_plugin(&data_class)
+            .expect("Error while running test setup");
 
         let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
             .with_remote_information("", "1.1", 0, "")
             .build();
-        insert_plugin(&data_class, &db_path).expect("Error while running test setup");
+        cache
+            .insert_plugin(&data_class)
+            .expect("Error while running test setup");
 
-        (test_dir, db_path)
+        (cache, test_dir)
     }
 
-    fn teardown(test_dir: PathBuf) {
+    fn teardown(cache: Cache, test_dir: PathBuf) {
+        drop(cache);
         remove_dir_all(test_dir).expect("Error while running test teardown");
     }
 
-    mod insert_tests {
-        use super::*;
+    #[test]
+    fn insert_plugin() {
+        let (cache, test_dir) = setup();
 
-        #[test]
-        fn test_insert_plugin() {
-            let (test_dir, db_path) = setup();
+        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+            .with_id(1)
+            .with_description("Lorem ipsum")
+            .build();
+        cache.insert_plugin(&data_class).unwrap();
 
-            let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
-                .with_id(1)
-                .with_description("Lorem ipsum")
-                .build();
-            insert_plugin(&data_class, &db_path).unwrap();
-
-            teardown(test_dir);
-        }
-
-        #[test]
-        fn test_delete_plugin() {
-            let (test_dir, db_path) = setup_with_items();
-
-            delete_plugin("PetStable", &db_path).unwrap();
-
-            teardown(test_dir);
-        }
+        teardown(cache, test_dir);
     }
 
-    mod plugin_retrieval {
-        use super::*;
+    #[test]
+    fn test_delete_plugin() {
+        let (cache, test_dir) = setup_with_items();
 
-        #[test]
-        fn get_one_plugin() {
-            let (test_dir, db_path) = setup_with_items();
+        cache.delete_plugin("PetStable").unwrap();
 
-            let plugin = get_plugin("PetStable", &db_path).unwrap().unwrap();
+        teardown(cache, test_dir);
+    }
 
-            assert_eq!(plugin.name, "PetStable");
+    #[test]
+    fn get_one_plugin() {
+        let (cache, test_dir) = setup_with_items();
 
-            teardown(test_dir);
-        }
+        let plugin = cache.get_plugin("PetStable").unwrap().unwrap();
 
-        #[test]
-        fn test_get_plugins() {
-            let (test_dir, db_path) = setup_with_items();
+        assert_eq!(plugin.name, "PetStable");
 
-            let plugins = get_plugins(&db_path);
+        teardown(cache, test_dir);
+    }
 
-            assert_eq!(plugins.keys().len(), 2);
-            assert!(plugins.contains_key("PetStable"));
-            assert!(plugins.contains_key("Hello World"));
+    #[test]
+    fn test_get_plugins() {
+        let (cache, test_dir) = setup_with_items();
 
-            teardown(test_dir);
-        }
+        let plugins = cache.get_plugins();
+
+        assert_eq!(plugins.keys().len(), 2);
+        assert!(plugins.contains_key("PetStable"));
+        assert!(plugins.contains_key("Hello World"));
+
+        teardown(cache, test_dir);
     }
 }
