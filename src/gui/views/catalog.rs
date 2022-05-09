@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use crate::core::{
     api::{Downloader, FeedDownloader},
-    config::read_existing_settings_file,
+    config::{get_tmp_dir, read_existing_settings_file},
     io::{cache, feed_url_parser::Plugin, FeedUrlParser},
+    Installer,
 };
 use crate::gui::style;
 use cache::Cache;
@@ -254,31 +255,20 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage, cache: &Cache) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                // if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
-                //     let tmp_dir = get_tmp_dir();
-                //     Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-                //     let cache_item =
-                //         PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
-                //             .with_id(plugin.id)
-                //             .with_description(&plugin.description)
-                //             .with_remote_information(
-                //                 &plugin.category,
-                //                 &plugin.latest_version,
-                //                 0,
-                //                 "",
-                //             )
-                //             .build();
+                if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
+                    let tmp_dir = get_tmp_dir();
+                    Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
 
-                //     if cache.insert_plugin(&cache_item).is_ok() {
-                //         self.status = "Installed".to_string();
-                //         self.current_version = plugin.latest_version;
-                //     } else {
-                //         self.status = "Installation failed".to_string();
-                //     }
-                // } else {
-                //     debug!("Download failed");
-                //     self.status = "Download failed".to_string();
-                // }
+                    // if cache.insert_plugin(&cache_item).is_ok() {
+                    //     self.status = "Installed".to_string();
+                    //     self.current_version = plugin.latest_version;
+                    // } else {
+                    //     self.status = "Installation failed".to_string();
+                    // }
+                } else {
+                    debug!("Download failed");
+                    self.status = "Download failed".to_string();
+                }
                 Command::none()
             }
 

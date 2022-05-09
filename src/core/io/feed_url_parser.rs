@@ -15,7 +15,7 @@ fn convert_ui_to_plugin(ui_collection: &[Ui]) -> Vec<Plugin> {
     let mut plugins = Vec::new();
 
     for element in ui_collection {
-        let mut plugin = Plugin::new(&element.UIName)
+        let plugin = Plugin::new(&element.UIName)
             .with_id(element.UID)
             .with_author(&element.UIAuthorName)
             .with_description(&element.UIDescription)
@@ -26,7 +26,6 @@ fn convert_ui_to_plugin(ui_collection: &[Ui]) -> Vec<Plugin> {
                 &element.UIFile,
                 element.UIUpdated,
                 &element.UIMD5,
-                element.UISize,
             )
             .build();
 
@@ -49,7 +48,6 @@ pub struct Plugin {
     pub description: Option<String>,
     pub archive_name: Option<String>,
     pub hash: Option<String>,
-    pub size: Option<i32>,
     pub download_url: Option<String>,
     pub info_url: Option<String>,
 }
@@ -68,7 +66,6 @@ impl Plugin {
             description: None,
             archive_name: None,
             hash: None,
-            size: None,
             download_url: None,
             info_url: None,
         }
@@ -102,7 +99,6 @@ impl Plugin {
         archive_name: &str,
         updated: i32,
         hash: &str,
-        size: i32,
     ) -> Self {
         self.category = Some(category.to_string());
         self.latest_version = Some(latest_version.to_string());
@@ -110,7 +106,6 @@ impl Plugin {
         self.archive_name = Some(archive_name.to_string());
         self.updated = Some(updated);
         self.hash = Some(hash.to_string());
-        self.size = Some(size);
 
         self
     }

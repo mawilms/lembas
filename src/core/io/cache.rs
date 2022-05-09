@@ -1,5 +1,4 @@
 use crate::core::{PluginCollection, PluginDataClass};
-use log::debug;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
@@ -50,32 +49,19 @@ impl Cache {
         Ok(())
     }
 
-    pub fn insert_plugin(&self, plugin: &PluginDataClass) -> Result<(), Box<dyn Error>> {
+    pub fn insert_plugin(&self, plugin: &Plugin, installed: i32) -> Result<(), Box<dyn Error>> {
         let connection = self
             .pool
             .get()
             .expect("Error while creating a pooled connection");
         connection.execute(
-            "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT (name) DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11;",
-        params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
+            "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+            ON CONFLICT (name)
+            DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, updated_at=?12, hash=?13, installed=?14;",
+        params![plugin.name, plugin.author, plugin.current_version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new()), plugin.updated.unwrap_or_default(), plugin.hash.as_deref().unwrap_or_default(), installed])?;
 
         Ok(())
-    }
-
-    pub fn update_plugin_database(&self, plugins: &[Plugin]) {
-        let connection = self
-            .pool
-            .get()
-            .expect("Error while creating a pooled connection");
-
-        for plugin in plugins {
-            connection.execute(
-                "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
-                ON CONFLICT (plugin_id, name)
-                DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, update_at=?12, hash=?12, installed=?13;",
-            params![plugin.name, plugin.author, "", plugin.id, plugin.description]).expect("Bla");
-        }
     }
 
     pub fn delete_plugin(&self, name: &str) -> Result<(), Box<dyn Error>> {
@@ -176,7 +162,6 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::PluginDataClass;
     use r2d2_sqlite::SqliteConnectionManager;
     use std::{
         env,
@@ -212,30 +197,31 @@ mod tests {
 
         let manager = SqliteConnectionManager::file(&db_path);
         let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
-        // let connection = pool
-        //     .get()
-        //     .expect("Error while creating a pooled connection");
 
         let cache = Cache::new(pool);
         cache
             .create_cache_db()
             .expect("Failed to create a temporary db");
 
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+        let data_class = Plugin::new("Hello World")
             .with_id(1)
+            .with_author("Marius")
+            .with_current_version("0.1.0")
             .with_description("Lorem ipsum")
             .build();
         cache
-            .insert_plugin(&data_class)
+            .insert_plugin(&data_class, 0)
             .expect("Error while running test setup");
 
-        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+        let data_class = Plugin::new("PetStable")
+            .with_author("Marius")
+            .with_current_version("0.1.0")
             .with_id(2)
             .with_description("Lorem ipsum")
-            .with_remote_information("", "1.1", 0, "")
+            .with_remote_information("", "1.1", 0, "", 0, "")
             .build();
         cache
-            .insert_plugin(&data_class)
+            .insert_plugin(&data_class, 1)
             .expect("Error while running test setup");
 
         (cache, test_dir)
@@ -250,11 +236,13 @@ mod tests {
     fn insert_plugin() {
         let (cache, test_dir) = setup();
 
-        let data_class = PluginDataClass::new("PetStable", "Marius", "1.0")
+        let data_class = Plugin::new("PetStable")
             .with_id(1)
+            .with_author("Marius")
+            .with_current_version("0.1.0")
             .with_description("Lorem ipsum")
             .build();
-        cache.insert_plugin(&data_class).unwrap();
+        cache.insert_plugin(&data_class, 0).unwrap();
 
         teardown(cache, test_dir);
     }

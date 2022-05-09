@@ -301,39 +301,40 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                if let Ok(files) =
-                    Installer::download(plugin.id, &plugin.title, &plugin.download_url)
-                {
-                    let plugins_dir = get_plugins_dir();
-                    let tmp_dir = get_tmp_dir();
-                    if Installer::delete(&files, &plugins_dir).is_ok() {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-                        let cache_item = PluginDataClass::new(
-                            &plugin.title,
-                            &plugin.author,
-                            &plugin.current_version,
-                        )
-                        .with_id(plugin.id)
-                        .with_description(&plugin.description)
-                        .with_remote_information("", &plugin.latest_version, 0, "")
-                        .build();
+                // if let Ok(files) =
+                //     Installer::download(plugin.id, &plugin.title, &plugin.download_url)
+                // {
+                //     let plugins_dir = get_plugins_dir();
+                //     let tmp_dir = get_tmp_dir();
+                //     if Installer::delete(&files, &plugins_dir).is_ok() {
+                //         Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
+                //         let cache_item = PluginDataClass::new(
+                //             &plugin.title,
+                //             &plugin.author,
+                //             &plugin.current_version,
+                //         )
+                //         .with_id(plugin.id)
+                //         .with_description(&plugin.description)
+                //         .with_remote_information("", &plugin.latest_version, 0, "")
+                //         .build();
 
-                        let database_path = get_database_file_path();
-                        if cache.insert_plugin(&cache_item).is_ok() {
-                            self.status = "Updated".to_string();
-                            (Event::Synchronize, Command::none())
-                        } else {
-                            self.status = "Update failed".to_string();
-                            (Event::Nothing, Command::none())
-                        }
-                    } else {
-                        self.status = "Installation failed".to_string();
-                        (Event::Nothing, Command::none())
-                    }
-                } else {
-                    self.status = "Download failed".to_string();
-                    (Event::Nothing, Command::none())
-                }
+                //         let database_path = get_database_file_path();
+                //         if cache.insert_plugin(&cache_item).is_ok() {
+                //             self.status = "Updated".to_string();
+                //             (Event::Synchronize, Command::none())
+                //         } else {
+                //             self.status = "Update failed".to_string();
+                //             (Event::Nothing, Command::none())
+                //         }
+                //     } else {
+                //         self.status = "Installation failed".to_string();
+                //         (Event::Nothing, Command::none())
+                //     }
+                // } else {
+                //     self.status = "Download failed".to_string();
+                //     (Event::Nothing, Command::none())
+                // }
+                (Event::Nothing, Command::none())
             }
             RowMessage::DeletePressed(plugin) => {
                 if let Ok(files) =
