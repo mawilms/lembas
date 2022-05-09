@@ -35,18 +35,18 @@ fn convert_ui_to_plugin(ui_collection: &[Ui]) -> Vec<Plugin> {
 }
 
 pub struct Plugin {
-    id: i32,
-    name: String,
-    author: String,
-    version: String,
-    updated: i32,
-    downloads: i32,
-    category: String,
-    description: String,
-    file_name: String,
-    hash: String,
-    size: i32,
-    url: String,
+    pub id: i32,
+    pub name: String,
+    pub author: String,
+    pub version: String,
+    pub updated: i32,
+    pub downloads: i32,
+    pub category: String,
+    pub description: String,
+    pub file_name: String,
+    pub hash: String,
+    pub size: i32,
+    pub url: String,
 }
 
 impl Plugin {

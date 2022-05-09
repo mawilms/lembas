@@ -21,7 +21,6 @@ pub struct State {
     cache: Arc<Cache>,
     input_value: String,
     pub plugins: Vec<PluginRow>,
-    base_plugins: Vec<PluginRow>,
 }
 
 #[derive(Debug, Clone)]
@@ -40,12 +39,15 @@ pub enum PluginMessage {
 
 impl Plugins {
     pub fn new(cache: Arc<Cache>) -> Self {
-        Self::Loaded(State {
+        let mut state = State {
             cache,
-            base_plugins: Vec::new(),
             plugins: Vec::new(),
             input_value: String::new(),
-        })
+        };
+
+        state.plugins = Plugins::populate_plugin_rows(&state);
+
+        Self::Loaded(state)
     }
 
     async fn refresh_db() -> Result<(), ApplicationError> {
@@ -120,7 +122,7 @@ impl Plugins {
                     let mut filerted_plugins = Vec::new();
                     state.input_value = letter;
 
-                    for element in &state.base_plugins {
+                    for element in &state.plugins {
                         if element
                             .title
                             .to_lowercase()
@@ -178,7 +180,6 @@ impl Plugins {
                 cache: _,
                 input_value,
                 plugins,
-                base_plugins: _,
             }) => {
                 let header = Plugins::build_header(input_value, plugins.len());
 

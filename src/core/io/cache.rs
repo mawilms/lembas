@@ -38,7 +38,8 @@ impl Cache {
                     downloads INT,
                     archive_name TEXT,
                     updated_at INT,
-                    hash TEXT
+                    hash TEXT,
+                    installed INT DEFAULT 0
                 );
         ",
             [],
@@ -175,13 +176,6 @@ mod tests {
 
         let manager = SqliteConnectionManager::file(&db_path);
         let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
-        let connection = pool
-            .get()
-            .expect("Error while creating a pooled connection");
-
-        // let connection = Connection::open(&db_path)
-        //     .map_err(|_| debug!("Error while opening SQLite database"))
-        //     .unwrap();
 
         let cache = Cache::new(pool);
         cache

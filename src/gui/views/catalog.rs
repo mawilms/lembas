@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
+use crate::core::Installer;
 use crate::core::{
-    config::{get_database_file_path, get_tmp_dir},
-    io::{
-        api_connector::{self, APIError},
-        cache,
-    },
+    api::{Downloader, FeedDownloader},
+    config::{get_database_file_path, get_tmp_dir, read_existing_settings_file},
+    io::{cache, feed_url_parser::Plugin, FeedUrlParser},
     PluginDataClass,
 };
-use crate::core::{Installer, PluginCollection};
 use crate::gui::style;
 use cache::Cache;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
@@ -26,12 +24,14 @@ pub enum Catalog {
 
 impl Catalog {
     pub fn new(cache: Arc<Cache>) -> Self {
-        Self::Loaded(State {
+        let state = State {
             cache,
-            input_value: String::new(),
             base_plugins: Vec::new(),
             plugins: Vec::new(),
-        })
+            input_value: String::new(),
+        };
+
+        Self::Loaded(state)
     }
 }
 
@@ -39,7 +39,6 @@ impl Catalog {
 pub struct State {
     cache: Arc<Cache>,
     pub input_value: String,
-
     pub base_plugins: Vec<PluginRow>,
     pub plugins: Vec<PluginRow>,
 }
@@ -49,11 +48,30 @@ pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
     LoadPlugins,
-    LoadedPlugins(Result<PluginCollection, crate::gui::views::catalog::APIError>),
+    FeedLoaded(Result<String, String>),
     RetryPressed,
 }
 
 impl Catalog {
+    fn map_plugins_to_rows(plugins: &[Plugin]) -> Vec<PluginRow> {
+        let mut rows: Vec<PluginRow> = Vec::new();
+
+        for plugin in plugins {
+            let row = PluginRow::new(
+                plugin.id,
+                &plugin.name,
+                &plugin.author,
+                &plugin.description,
+                &plugin.category,
+            )
+            .with_versions("", &plugin.version)
+            .with_information(&plugin.url);
+            rows.push(row);
+        }
+        rows.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+        rows
+    }
+
     pub fn update(&mut self, message: Message) -> Command<Message> {
         match self {
             Catalog::Loaded(state) => match message {
@@ -79,111 +97,31 @@ impl Catalog {
                     .update(msg, &*state.cache)
                     .map(move |msg| Message::Catalog(index, msg)),
                 Message::LoadPlugins => {
-                    Command::perform(api_connector::fetch_plugins(), Message::LoadedPlugins)
+                    let settings = read_existing_settings_file();
+                    Command::perform(
+                        FeedDownloader::fetch_feed_content(settings.feed_url),
+                        Message::FeedLoaded,
+                    )
                 }
-                Message::LoadedPlugins(fetched_plugins) => {
-                    if fetched_plugins.is_ok() {
-                        let mut plugins = Vec::new();
-                        let database_path = get_database_file_path();
-                        let installed_plugins = state.cache.get_plugins();
-                        for (_, plugin) in fetched_plugins.unwrap() {
-                            let mut plugin_row = PluginRow::new(
-                                plugin.id.unwrap(),
-                                &plugin.name,
-                                &plugin.author,
-                                &plugin.description.unwrap(),
-                                &plugin.category.unwrap(),
-                            )
-                            .with_versions("", plugin.latest_version.as_ref().unwrap())
-                            .with_information(&plugin.download_url.unwrap());
-
-                            match installed_plugins.get(&plugin.name) {
-                                Some(value) => {
-                                    plugin_row.current_version = value.version.clone();
-                                    if value.version == plugin.latest_version.unwrap() {
-                                        plugin_row.status = String::from("Installed");
-                                    } else {
-                                        plugin_row.status = String::from("Update");
-                                    }
-                                }
-                                None => {
-                                    plugin_row.status = String::from("Install");
-                                }
-                            }
-                            plugins.push(plugin_row);
-                        }
-                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                        *self = Catalog::Loaded(State {
-                            plugins: plugins.clone(),
-                            base_plugins: plugins,
-                            ..state.clone()
-                        });
-
-                        Command::none()
-                    } else {
-                        *self = Catalog::NoInternet(State {
-                            cache: state.cache.clone(),
-                            input_value: String::new(),
-                            base_plugins: Vec::new(),
-                            plugins: Vec::new(),
-                        });
+                Message::FeedLoaded(feed_content) => match feed_content {
+                    Ok(content) => {
+                        let plugins = FeedUrlParser::parse_response_xml(&content);
+                        let rows = Catalog::map_plugins_to_rows(&plugins);
+                        state.plugins = rows.clone();
+                        state.base_plugins = rows;
                         Command::none()
                     }
-                }
+                    Err(_) => Command::none(),
+                },
                 Message::RetryPressed => Command::none(),
             },
-            Catalog::NoInternet(state) => match message {
+            Catalog::NoInternet(_) => match message {
                 Message::RetryPressed => {
-                    Command::perform(api_connector::fetch_plugins(), Message::LoadedPlugins)
-                }
-                Message::LoadedPlugins(fetched_plugins) => {
-                    if fetched_plugins.is_ok() {
-                        let mut plugins = Vec::new();
-                        let database_path = get_database_file_path();
-                        let installed_plugins = state.cache.get_plugins();
-                        for (_, plugin) in fetched_plugins.unwrap() {
-                            let mut plugin_row = PluginRow::new(
-                                plugin.id.unwrap(),
-                                &plugin.name,
-                                &plugin.author,
-                                &plugin.description.unwrap(),
-                                &plugin.category.unwrap(),
-                            )
-                            .with_versions("", plugin.latest_version.as_ref().unwrap())
-                            .with_information(&plugin.download_url.unwrap());
-
-                            match installed_plugins.get(&plugin.name) {
-                                Some(value) => {
-                                    plugin_row.current_version = value.version.clone();
-                                    if value.version == plugin.latest_version.unwrap() {
-                                        plugin_row.status = String::from("Installed");
-                                    } else {
-                                        plugin_row.status = String::from("Update");
-                                    }
-                                }
-                                None => {
-                                    plugin_row.status = String::from("Install");
-                                }
-                            }
-                            plugins.push(plugin_row);
-                        }
-                        plugins.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-                        *self = Catalog::Loaded(State {
-                            plugins: plugins.clone(),
-                            base_plugins: plugins,
-                            ..state.clone()
-                        });
-
-                        Command::none()
-                    } else {
-                        *self = Catalog::NoInternet(State {
-                            cache: state.cache.clone(),
-                            input_value: String::new(),
-                            base_plugins: Vec::new(),
-                            plugins: Vec::new(),
-                        });
-                        Command::none()
-                    }
+                    let settings = read_existing_settings_file();
+                    Command::perform(
+                        FeedDownloader::fetch_feed_content(settings.feed_url),
+                        Message::FeedLoaded,
+                    )
                 }
                 _ => Command::none(),
             },
@@ -315,7 +253,7 @@ impl PluginRow {
             category: category.to_string(),
             current_version: String::new(),
             latest_version: String::new(),
-            status: "Installed".to_string(),
+            status: "Install".to_string(),
             download_url: String::new(),
         }
     }
