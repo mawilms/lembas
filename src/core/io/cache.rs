@@ -5,6 +5,8 @@ use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
 use std::{collections::HashMap, error::Error, sync::Arc};
 
+use super::feed_url_parser::Plugin;
+
 #[derive(Debug, Clone)]
 pub struct Cache {
     pool: Arc<Pool<SqliteConnectionManager>>,
@@ -58,6 +60,22 @@ impl Cache {
         params![plugin.name, plugin.author, plugin.version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new())])?;
 
         Ok(())
+    }
+
+    pub fn update_plugin_database(&self, plugins: &[Plugin]) {
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+
+        for plugin in plugins {
+            connection.execute(
+                "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+                ON CONFLICT (plugin_id, name)
+                DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, update_at=?12, hash=?12, installed=?13;",
+            params![plugin.name, plugin.author, "", plugin.id, plugin.description]).expect("Bla");
+        }
     }
 
     pub fn delete_plugin(&self, name: &str) -> Result<(), Box<dyn Error>> {

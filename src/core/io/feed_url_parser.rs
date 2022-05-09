@@ -15,69 +15,113 @@ fn convert_ui_to_plugin(ui_collection: &[Ui]) -> Vec<Plugin> {
     let mut plugins = Vec::new();
 
     for element in ui_collection {
-        plugins.push(Plugin::new(
-            element.UID,
-            &element.UIName,
-            &element.UIAuthorName,
-            &element.UIVersion,
-            element.UIUpdated,
-            element.UIDownloads,
-            &element.UICategory,
-            &element.UIDescription,
-            &element.UIFile,
-            &element.UIMD5,
-            element.UISize,
-            &element.UIFileURL,
-        ));
+        let mut plugin = Plugin::new(&element.UIName)
+            .with_id(element.UID)
+            .with_author(&element.UIAuthorName)
+            .with_description(&element.UIDescription)
+            .with_remote_information(
+                &element.UICategory,
+                &element.UIVersion,
+                element.UIDownloads,
+                &element.UIFile,
+                element.UIUpdated,
+                &element.UIMD5,
+                element.UISize,
+            )
+            .build();
+
+        plugins.push(plugin);
     }
 
     plugins
 }
 
+#[derive(Debug, Clone)]
 pub struct Plugin {
-    pub id: i32,
     pub name: String,
-    pub author: String,
-    pub version: String,
-    pub updated: i32,
-    pub downloads: i32,
-    pub category: String,
-    pub description: String,
-    pub file_name: String,
-    pub hash: String,
-    pub size: i32,
-    pub url: String,
+    pub id: Option<i32>,
+    pub author: Option<String>,
+    pub current_version: Option<String>,
+    pub latest_version: Option<String>,
+    pub updated: Option<i32>,
+    pub downloads: Option<i32>,
+    pub category: Option<String>,
+    pub description: Option<String>,
+    pub archive_name: Option<String>,
+    pub hash: Option<String>,
+    pub size: Option<i32>,
+    pub download_url: Option<String>,
+    pub info_url: Option<String>,
 }
 
 impl Plugin {
-    pub fn new(
-        id: i32,
-        name: &str,
-        author: &str,
-        version: &str,
-        updated: i32,
-        downloads: i32,
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            id: None,
+            author: None,
+            current_version: None,
+            latest_version: None,
+            updated: None,
+            downloads: None,
+            category: None,
+            description: None,
+            archive_name: None,
+            hash: None,
+            size: None,
+            download_url: None,
+            info_url: None,
+        }
+    }
+
+    pub fn with_id(mut self, plugin_id: i32) -> Self {
+        self.id = Some(plugin_id);
+        self
+    }
+
+    pub fn with_author(mut self, author: &str) -> Self {
+        self.author = Some(author.to_string());
+        self
+    }
+
+    pub fn with_description(mut self, description: &str) -> Self {
+        self.description = Some(description.to_string());
+        self
+    }
+
+    pub fn with_current_version(mut self, version: &str) -> Self {
+        self.current_version = Some(version.to_string());
+        self
+    }
+
+    pub fn with_remote_information(
+        mut self,
         category: &str,
-        description: &str,
-        file_name: &str,
+        latest_version: &str,
+        downloads: i32,
+        archive_name: &str,
+        updated: i32,
         hash: &str,
         size: i32,
-        url: &str,
     ) -> Self {
-        Self {
-            id,
-            name: name.to_string(),
-            author: author.to_string(),
-            version: version.to_string(),
-            updated,
-            downloads,
-            category: category.to_string(),
-            description: description.to_string(),
-            file_name: file_name.to_string(),
-            hash: hash.to_string(),
-            size,
-            url: url.to_string(),
+        self.category = Some(category.to_string());
+        self.latest_version = Some(latest_version.to_string());
+        self.downloads = Some(downloads);
+        self.archive_name = Some(archive_name.to_string());
+        self.updated = Some(updated);
+        self.hash = Some(hash.to_string());
+        self.size = Some(size);
+
+        self
+    }
+
+    pub fn build(mut self) -> Self {
+        if self.id.is_some() {
+            let base_url = "http://www.lotrointerface.com/downloads/";
+            self.info_url = Some(format!("{}info{}", base_url, self.id.unwrap()));
+            self.download_url = Some(format!("{}download{}", base_url, self.id.unwrap()));
         }
+        self
     }
 }
 

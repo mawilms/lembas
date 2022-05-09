@@ -199,7 +199,7 @@ impl Plugins {
                 let plugins = plugins
                     .iter()
                     .enumerate()
-                    .fold(column().spacing(5), |col, (i, p)| {
+                    .fold(column().padding([0, 13, 0, 0]).spacing(5), |col, (i, p)| {
                         col.push(p.view().map(move |msg| PluginMessage::Plugin(i, msg)))
                     });
 

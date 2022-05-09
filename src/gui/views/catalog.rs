@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use crate::core::Installer;
 use crate::core::{
     api::{Downloader, FeedDownloader},
-    config::{get_database_file_path, get_tmp_dir, read_existing_settings_file},
+    config::read_existing_settings_file,
     io::{cache, feed_url_parser::Plugin, FeedUrlParser},
-    PluginDataClass,
 };
 use crate::gui::style;
 use cache::Cache;
@@ -54,20 +52,18 @@ pub enum Message {
 
 impl Catalog {
     fn map_plugins_to_rows(plugins: &[Plugin]) -> Vec<PluginRow> {
-        let mut rows: Vec<PluginRow> = Vec::new();
+        let mut rows: Vec<PluginRow> = plugins
+            .iter()
+            .map(|element| {
+                PluginRow::new(
+                    element.id.unwrap_or_default(),
+                    &element.name,
+                    "",
+                    element.latest_version.as_deref().unwrap_or_default(),
+                )
+            })
+            .collect();
 
-        for plugin in plugins {
-            let row = PluginRow::new(
-                plugin.id,
-                &plugin.name,
-                &plugin.author,
-                &plugin.description,
-                &plugin.category,
-            )
-            .with_versions("", &plugin.version)
-            .with_information(&plugin.url);
-            rows.push(row);
-        }
         rows.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         rows
     }
@@ -106,6 +102,7 @@ impl Catalog {
                 Message::FeedLoaded(feed_content) => match feed_content {
                     Ok(content) => {
                         let plugins = FeedUrlParser::parse_response_xml(&content);
+                        //state.cache.insert_plugin(plugin);
                         let rows = Catalog::map_plugins_to_rows(&plugins);
                         state.plugins = rows.clone();
                         state.base_plugins = rows;
@@ -168,7 +165,7 @@ impl Catalog {
                 let plugins = plugins
                     .iter()
                     .enumerate()
-                    .fold(column().spacing(5), |col, (i, p)| {
+                    .fold(column().padding([0, 13, 0, 0]).spacing(5), |col, (i, p)| {
                         col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
                     });
 
@@ -227,9 +224,6 @@ impl Catalog {
 pub struct PluginRow {
     pub id: i32,
     pub title: String,
-    pub description: String,
-    pub author: String,
-    pub category: String,
     pub current_version: String,
     pub latest_version: String,
     pub status: String,
@@ -244,62 +238,47 @@ pub enum RowMessage {
 }
 
 impl PluginRow {
-    pub fn new(id: i32, title: &str, author: &str, description: &str, category: &str) -> Self {
+    pub fn new(id: i32, title: &str, current_version: &str, latest_version: &str) -> Self {
+        let base_url = "http://www.lotrointerface.com/downloads/";
+
         Self {
             id,
             title: title.to_string(),
-            author: author.to_string(),
-            description: description.to_string(),
-            category: category.to_string(),
-            current_version: String::new(),
-            latest_version: String::new(),
+            current_version: current_version.to_string(),
+            latest_version: latest_version.to_string(),
             status: "Install".to_string(),
-            download_url: String::new(),
+            download_url: format!("{}download{}", base_url, id),
         }
-    }
-
-    fn with_versions(mut self, current_version: &str, latest_version: &str) -> Self {
-        self.current_version = current_version.to_string();
-        self.latest_version = latest_version.to_string();
-
-        self
-    }
-
-    fn with_information(mut self, download_url: &str) -> Self {
-        self.download_url = download_url.to_string();
-
-        self
     }
 
     pub fn update(&mut self, message: RowMessage, cache: &Cache) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
-                    let tmp_dir = get_tmp_dir();
-                    Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-                    let cache_item =
-                        PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
-                            .with_id(plugin.id)
-                            .with_description(&plugin.description)
-                            .with_remote_information(
-                                &plugin.category,
-                                &plugin.latest_version,
-                                0,
-                                "",
-                            )
-                            .build();
+                // if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
+                //     let tmp_dir = get_tmp_dir();
+                //     Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
+                //     let cache_item =
+                //         PluginDataClass::new(&plugin.title, &plugin.author, &plugin.latest_version)
+                //             .with_id(plugin.id)
+                //             .with_description(&plugin.description)
+                //             .with_remote_information(
+                //                 &plugin.category,
+                //                 &plugin.latest_version,
+                //                 0,
+                //                 "",
+                //             )
+                //             .build();
 
-                    let database_path = get_database_file_path();
-                    if cache.insert_plugin(&cache_item).is_ok() {
-                        self.status = "Installed".to_string();
-                        self.current_version = plugin.latest_version;
-                    } else {
-                        self.status = "Installation failed".to_string();
-                    }
-                } else {
-                    debug!("Download failed");
-                    self.status = "Download failed".to_string();
-                }
+                //     if cache.insert_plugin(&cache_item).is_ok() {
+                //         self.status = "Installed".to_string();
+                //         self.current_version = plugin.latest_version;
+                //     } else {
+                //         self.status = "Installation failed".to_string();
+                //     }
+                // } else {
+                //     debug!("Download failed");
+                //     self.status = "Download failed".to_string();
+                // }
                 Command::none()
             }
 
