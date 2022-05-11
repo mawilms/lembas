@@ -70,20 +70,25 @@ impl Plugins {
     fn populate_plugin_rows(state: &State) -> Vec<PluginRow> {
         let mut plugins: Vec<PluginRow> = Vec::new();
 
-        let mut tmp_plugins: Vec<PluginDataClass> =
-            state.cache.get_plugins().values().cloned().collect();
+        let mut tmp_plugins: Vec<PluginDataClass> = state
+            .cache
+            .get_installed_plugins()
+            .values()
+            .cloned()
+            .collect();
         tmp_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         for plugin in tmp_plugins {
             plugins.push(PluginRow::new(
                 plugin.id.unwrap(),
                 &plugin.name,
-                &plugin.author,
+                &plugin.author.unwrap(),
                 &plugin.description.unwrap(),
-                &plugin.version,
+                &plugin.version.unwrap(),
                 &plugin.latest_version.unwrap(),
                 &plugin.download_url.unwrap(),
             ));
         }
+        println!("{:?}", plugins);
         plugins
     }
 

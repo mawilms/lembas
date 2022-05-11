@@ -35,7 +35,6 @@ impl Installer {
 
         let tmp_file_path = tmp_dir.join(&format!("{}_{}", plugin_id, plugin_title));
 
-        println!("{:?}", &tmp_file_path);
         fs::create_dir(&tmp_file_path)?;
 
         let cache_path = tmp_dir.join(&tmp_file_path).join("plugin.zip");
@@ -57,7 +56,6 @@ impl Installer {
                     .file_names()
                     .map(std::string::ToString::to_string)
                     .collect::<Vec<String>>();
-                println!("Welt");
 
                 Self::move_files(&tmp_file_path, &root_folder_name, &plugins_dir);
                 Ok(files)

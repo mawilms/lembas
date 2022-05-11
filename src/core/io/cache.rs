@@ -23,13 +23,14 @@ impl Cache {
             .pool
             .get()
             .expect("Error while creating a pooled connection");
+
         connection.execute(
             "
                 CREATE TABLE IF NOT EXISTS plugins (
                     id INTEGER PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,
-                    author TEXT NOT NULL,
-                    current_version TEXT NOT NULL,
+                    author TEXT,
+                    current_version TEXT,
                     plugin_id INTEGER,
                     description TEXT,
                     download_url TEXT,
@@ -93,6 +94,27 @@ impl Cache {
         Ok(())
     }
 
+    pub fn get_installed_plugins(&self) -> PluginCollection {
+        let mut plugins = HashMap::new();
+
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        let mut stmt = connection
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name
+            FROM plugins
+            WHERE installed=1
+            ORDER BY name;")
+            .unwrap();
+
+        for element in Cache::execute_stmt(&mut stmt, "") {
+            plugins.insert(element.name.clone(), element);
+        }
+
+        plugins
+    }
+
     pub fn get_plugins(&self) -> PluginCollection {
         let mut plugins = HashMap::new();
 
@@ -153,8 +175,8 @@ impl Cache {
             .query_map(query_params, |row| {
                 Ok(PluginDataClass {
                     name: row.get(0).unwrap(),
-                    author: row.get(1).unwrap(),
-                    version: row.get(2).unwrap(),
+                    author: Some(row.get(1).unwrap()),
+                    version: Some(row.get(2).unwrap()),
                     id: Some(row.get(3).unwrap()),
                     description: Some(row.get(4).unwrap()),
                     download_url: Some(row.get(5).unwrap()),
@@ -172,127 +194,5 @@ impl Cache {
         }
 
         all_plugins
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use r2d2_sqlite::SqliteConnectionManager;
-    use std::{
-        env,
-        fs::{create_dir_all, remove_dir_all},
-        path::PathBuf,
-    };
-    use uuid::Uuid;
-
-    fn setup() -> (Cache, PathBuf) {
-        let uuid = Uuid::new_v4().to_string();
-        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
-        let db_path = test_dir.join("db.sqlite3");
-
-        create_dir_all(&test_dir).unwrap();
-
-        let manager = SqliteConnectionManager::file(&db_path);
-        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
-
-        let cache = Cache::new(pool);
-        cache
-            .create_cache_db()
-            .expect("Failed to create a temporary db");
-
-        (cache, test_dir)
-    }
-
-    fn setup_with_items() -> (Cache, PathBuf) {
-        let uuid = Uuid::new_v4().to_string();
-        let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
-        let db_path = test_dir.join("db.sqlite3");
-
-        create_dir_all(&test_dir).expect("Error while running test setup");
-
-        let manager = SqliteConnectionManager::file(&db_path);
-        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
-
-        let cache = Cache::new(pool);
-        cache
-            .create_cache_db()
-            .expect("Failed to create a temporary db");
-
-        let data_class = Plugin::new("Hello World")
-            .with_id(1)
-            .with_author("Marius")
-            .with_current_version("0.1.0")
-            .with_description("Lorem ipsum")
-            .build();
-        cache
-            .insert_plugin(&data_class, 0)
-            .expect("Error while running test setup");
-
-        let data_class = Plugin::new("PetStable")
-            .with_author("Marius")
-            .with_current_version("0.1.0")
-            .with_id(2)
-            .with_description("Lorem ipsum")
-            .with_remote_information("", "1.1", 0, "", 0, "")
-            .build();
-        cache
-            .insert_plugin(&data_class, 1)
-            .expect("Error while running test setup");
-
-        (cache, test_dir)
-    }
-
-    fn teardown(cache: Cache, test_dir: PathBuf) {
-        drop(cache);
-        remove_dir_all(test_dir).expect("Error while running test teardown");
-    }
-
-    #[test]
-    fn insert_plugin() {
-        let (cache, test_dir) = setup();
-
-        let data_class = Plugin::new("PetStable")
-            .with_id(1)
-            .with_author("Marius")
-            .with_current_version("0.1.0")
-            .with_description("Lorem ipsum")
-            .build();
-        cache.insert_plugin(&data_class, 0).unwrap();
-
-        teardown(cache, test_dir);
-    }
-
-    #[test]
-    fn test_delete_plugin() {
-        let (cache, test_dir) = setup_with_items();
-
-        cache.delete_plugin("PetStable").unwrap();
-
-        teardown(cache, test_dir);
-    }
-
-    #[test]
-    fn get_one_plugin() {
-        let (cache, test_dir) = setup_with_items();
-
-        let plugin = cache.get_plugin("PetStable").unwrap().unwrap();
-
-        assert_eq!(plugin.name, "PetStable");
-
-        teardown(cache, test_dir);
-    }
-
-    #[test]
-    fn test_get_plugins() {
-        let (cache, test_dir) = setup_with_items();
-
-        let plugins = cache.get_plugins();
-
-        assert_eq!(plugins.keys().len(), 2);
-        assert!(plugins.contains_key("PetStable"));
-        assert!(plugins.contains_key("Hello World"));
-
-        teardown(cache, test_dir);
     }
 }

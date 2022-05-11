@@ -5,8 +5,8 @@ pub type PluginCollection = HashMap<String, PluginDataClass>;
 #[derive(Debug, Clone)]
 pub struct PluginDataClass {
     pub name: String,
-    pub author: String,
-    pub version: String,
+    pub author: Option<String>,
+    pub version: Option<String>,
     pub id: Option<i32>,
     pub description: Option<String>,
     pub download_url: Option<String>,
@@ -21,8 +21,8 @@ impl PluginDataClass {
     pub fn new(name: &str, author: &str, version: &str) -> Self {
         Self {
             name: name.to_string(),
-            author: author.to_string(),
-            version: version.to_string(),
+            author: Some(author.to_string()),
+            version: Some(version.to_string()),
             id: None,
             description: None,
             download_url: None,

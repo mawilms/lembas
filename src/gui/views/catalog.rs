@@ -103,7 +103,14 @@ impl Catalog {
                 Message::FeedLoaded(feed_content) => match feed_content {
                     Ok(content) => {
                         let plugins = FeedUrlParser::parse_response_xml(&content);
-                        //state.cache.insert_plugin(plugin);
+
+                        for plugin in &plugins {
+                            if let Ok(result) = state.cache.get_plugin(&plugin.name) {
+                                if result.is_none() {
+                                    state.cache.insert_plugin(plugin, 0).expect("Bla");
+                                }
+                            }
+                        }
                         let rows = Catalog::map_plugins_to_rows(&plugins);
                         state.plugins = rows.clone();
                         state.base_plugins = rows;
