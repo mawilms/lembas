@@ -158,6 +158,7 @@ impl Catalog {
                 let plugin_panel = row()
                     .width(Length::Fill)
                     .align_items(Alignment::Center)
+                    .padding([0, 13, 0, 0])
                     .push(plugin_name)
                     .push(current_version)
                     .push(latest_version)
@@ -255,19 +256,24 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage, cache: &Cache) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                if Installer::download(plugin.id, &plugin.title, &plugin.download_url).is_ok() {
-                    let tmp_dir = get_tmp_dir();
-                    Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-
-                    // if cache.insert_plugin(&cache_item).is_ok() {
-                    //     self.status = "Installed".to_string();
-                    //     self.current_version = plugin.latest_version;
-                    // } else {
-                    //     self.status = "Installation failed".to_string();
-                    // }
-                } else {
-                    debug!("Download failed");
-                    self.status = "Download failed".to_string();
+                match Installer::download(plugin.id, &plugin.title, &plugin.download_url) {
+                    Ok(_) => {
+                        if cache.mark_as_installed(plugin.id).is_ok() {
+                            Installer::delete_cache_folder(
+                                plugin.id,
+                                &plugin.title,
+                                &get_tmp_dir(),
+                            );
+                            self.status = "Installed".to_string();
+                            self.current_version = plugin.latest_version;
+                        } else {
+                            self.status = "Installation failed".to_string();
+                        }
+                    }
+                    Err(error) => {
+                        debug!("{:?}", error);
+                        self.status = "Download failed".to_string();
+                    }
                 }
                 Command::none()
             }

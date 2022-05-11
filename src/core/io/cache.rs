@@ -25,7 +25,7 @@ impl Cache {
             .expect("Error while creating a pooled connection");
         connection.execute(
             "
-                CREATE TABLE IF NOT EXISTS plugin (
+                CREATE TABLE IF NOT EXISTS plugins (
                     id INTEGER PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL,
                     author TEXT NOT NULL,
@@ -55,11 +55,27 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         connection.execute(
-            "INSERT INTO plugin (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
+            "INSERT INTO plugins (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
             ON CONFLICT (name)
             DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, updated_at=?12, hash=?13, installed=?14;",
         params![plugin.name, plugin.author, plugin.current_version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new()), plugin.updated.unwrap_or_default(), plugin.hash.as_deref().unwrap_or_default(), installed])?;
+
+        Ok(())
+    }
+
+    pub fn mark_as_installed(&self, plugin_id: i32) -> Result<(), Box<dyn Error>> {
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+        connection.execute(
+            "UPDATE plugins
+            SET installed = 1
+            WHERE
+                plugin_id=?1",
+            params![plugin_id],
+        )?;
 
         Ok(())
     }
@@ -70,7 +86,7 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         connection.execute(
-            "DELETE FROM plugin WHERE name=?1;",
+            "DELETE FROM plugins WHERE name=?1;",
             params![name.to_string()],
         )?;
 
@@ -85,7 +101,7 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         let mut stmt = connection
-            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin ORDER BY name;")
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugins ORDER BY name;")
             .unwrap();
 
         for element in Cache::execute_stmt(&mut stmt, "") {
@@ -101,7 +117,7 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         let mut stmt = connection
-            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugin WHERE name=?1;")
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugins WHERE name=?1;")
             .unwrap();
         let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
             Ok(PluginDataClass {

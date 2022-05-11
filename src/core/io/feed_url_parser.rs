@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use serde_xml_rs::from_str;
 
+use crate::gui::views::catalog::PluginRow as CatalogRow;
+
+
+
 #[derive(Debug, Default)]
 pub struct FeedUrlParser;
 
@@ -118,6 +122,12 @@ impl Plugin {
         }
         self
     }
+
+    // pub fn build_from_catalog_row(row: &CatalogRow) -> Self {
+    //     let plugin = Self::new(&row.title).with_id(row.id).with_author(row.);
+        
+    //     plugin
+    // }
 }
 
 #[allow(non_snake_case)]

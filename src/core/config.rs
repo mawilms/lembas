@@ -23,7 +23,7 @@ pub fn initialize_directories() {
     let settings_file_path = &storage_dir.join("settings.json");
 
     if !settings_file_path.exists() {
-        create_existing_settings_file(&settings_file_path);
+        create_existing_settings_file(settings_file_path);
     }
 }
 
