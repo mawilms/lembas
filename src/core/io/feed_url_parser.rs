@@ -1,8 +1,6 @@
 use serde::Deserialize;
 use serde_xml_rs::from_str;
 
-use crate::gui::views::catalog::PluginRow as CatalogRow;
-
 #[derive(Debug, Default)]
 pub struct FeedUrlParser;
 
@@ -37,59 +35,50 @@ fn convert_ui_to_plugin(ui_collection: &[Ui]) -> Vec<Plugin> {
     plugins
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Plugin {
     pub name: String,
-    pub id: Option<i32>,
-    pub author: Option<String>,
-    pub current_version: Option<String>,
-    pub latest_version: Option<String>,
-    pub updated: Option<i32>,
-    pub downloads: Option<i32>,
-    pub category: Option<String>,
-    pub description: Option<String>,
-    pub archive_name: Option<String>,
-    pub hash: Option<String>,
-    pub download_url: Option<String>,
-    pub info_url: Option<String>,
+    pub installed: i32,
+    pub id: i32,
+    pub author: String,
+    pub current_version: String,
+    pub latest_version: String,
+    pub updated: i32,
+    pub downloads: i32,
+    pub category: String,
+    pub description: String,
+    pub archive_name: String,
+    pub hash: String,
+    pub download_url: String,
+    pub info_url: String,
 }
 
 impl Plugin {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
-            id: None,
-            author: None,
-            current_version: None,
-            latest_version: None,
-            updated: None,
-            downloads: None,
-            category: None,
-            description: None,
-            archive_name: None,
-            hash: None,
-            download_url: None,
-            info_url: None,
+            installed: 0,
+            ..Default::default()
         }
     }
 
     pub fn with_id(mut self, plugin_id: i32) -> Self {
-        self.id = Some(plugin_id);
+        self.id = plugin_id;
         self
     }
 
     pub fn with_author(mut self, author: &str) -> Self {
-        self.author = Some(author.to_string());
+        self.author = author.to_string();
         self
     }
 
     pub fn with_description(mut self, description: &str) -> Self {
-        self.description = Some(description.to_string());
+        self.description = description.to_string();
         self
     }
 
     pub fn with_current_version(mut self, version: &str) -> Self {
-        self.current_version = Some(version.to_string());
+        self.current_version = version.to_string();
         self
     }
 
@@ -102,21 +91,21 @@ impl Plugin {
         updated: i32,
         hash: &str,
     ) -> Self {
-        self.category = Some(category.to_string());
-        self.latest_version = Some(latest_version.to_string());
-        self.downloads = Some(downloads);
-        self.archive_name = Some(archive_name.to_string());
-        self.updated = Some(updated);
-        self.hash = Some(hash.to_string());
+        self.category = category.to_string();
+        self.latest_version = latest_version.to_string();
+        self.downloads = downloads;
+        self.archive_name = archive_name.to_string();
+        self.updated = updated;
+        self.hash = hash.to_string();
 
         self
     }
 
     pub fn build(mut self) -> Self {
-        if self.id.is_some() {
+        if self.id != 0 {
             let base_url = "http://www.lotrointerface.com/downloads/";
-            self.info_url = Some(format!("{}info{}", base_url, self.id.unwrap()));
-            self.download_url = Some(format!("{}download{}", base_url, self.id.unwrap()));
+            self.info_url = format!("{}info{}", base_url, self.id);
+            self.download_url = format!("{}download{}", base_url, self.id);
         }
         self
     }

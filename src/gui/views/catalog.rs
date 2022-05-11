@@ -57,10 +57,10 @@ impl Catalog {
             .iter()
             .map(|element| {
                 PluginRow::new(
-                    element.id.unwrap_or_default(),
+                    element.id,
                     &element.name,
                     "",
-                    element.latest_version.as_deref().unwrap_or_default(),
+                    &element.latest_version,
                 )
             })
             .collect();

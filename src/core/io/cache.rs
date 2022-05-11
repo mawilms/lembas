@@ -55,12 +55,13 @@ impl Cache {
             .pool
             .get()
             .expect("Error while creating a pooled connection");
+
         connection.execute(
             "INSERT INTO plugins (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
             ON CONFLICT (name)
             DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, updated_at=?12, hash=?13, installed=?14;",
-        params![plugin.name, plugin.author, plugin.current_version, plugin.id.unwrap_or(0), plugin.description.as_ref().unwrap_or(&String::new()), plugin.download_url.as_ref().unwrap_or(&String::new()), plugin.info_url.as_ref().unwrap_or(&String::new()), plugin.category.as_ref().unwrap_or(&String::new()), plugin.latest_version.as_ref().unwrap_or(&String::new()), plugin.downloads.unwrap_or(0), plugin.archive_name.as_ref().unwrap_or(&String::new()), plugin.updated.unwrap_or_default(), plugin.hash.as_deref().unwrap_or_default(), installed])?;
+        params![plugin.name, plugin.author, plugin.current_version, plugin.id, plugin.description, plugin.download_url, plugin.info_url, plugin.category, plugin.latest_version, plugin.downloads, plugin.archive_name, plugin.updated, plugin.hash, installed])?;
 
         Ok(())
     }
@@ -133,27 +134,30 @@ impl Cache {
         plugins
     }
 
-    pub fn get_plugin(&self, name: &str) -> Result<Option<PluginDataClass>, Box<dyn Error>> {
+    pub fn get_plugin(&self, name: &str) -> Result<Option<Plugin>, Box<dyn Error>> {
         let connection = self
             .pool
             .get()
             .expect("Error while creating a pooled connection");
         let mut stmt = connection
-            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugins WHERE name=?1;")
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed FROM plugins WHERE name=?1;")
             .unwrap();
         let mut plugin_iter = stmt.query_map([name.to_string()], |row| {
-            Ok(PluginDataClass {
+            Ok(Plugin {
                 name: row.get(0).unwrap(),
                 author: row.get(1).unwrap(),
-                version: row.get(2).unwrap(),
-                id: Some(row.get(3).unwrap()),
-                description: Some(row.get(4).unwrap()),
-                download_url: Some(row.get(5).unwrap()),
-                info_url: Some(row.get(6).unwrap()),
-                category: Some(row.get(7).unwrap()),
-                latest_version: Some(row.get(8).unwrap()),
-                downloads: Some(row.get(9).unwrap()),
-                archive_name: Some(row.get(10).unwrap()),
+                current_version: row.get(2).unwrap(),
+                id: row.get(3).unwrap(),
+                description: row.get(4).unwrap(),
+                download_url: row.get(5).unwrap(),
+                info_url: row.get(6).unwrap(),
+                category: row.get(7).unwrap(),
+                latest_version: row.get(8).unwrap(),
+                downloads: row.get(9).unwrap(),
+                archive_name: row.get(10).unwrap(),
+                updated: row.get(11).unwrap(),
+                hash: row.get(12).unwrap(),
+                installed: row.get(13).unwrap(),
             })
         })?;
 

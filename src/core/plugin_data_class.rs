@@ -69,75 +69,75 @@ impl PluginDataClass {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::PluginDataClass;
+// #[cfg(test)]
+// mod tests {
+//     use super::PluginDataClass;
 
-    #[test]
-    fn base_class() {
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
+//     #[test]
+//     fn base_class() {
+//         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0").build();
 
-        assert_eq!(data_class.name, "Hello World");
-        assert_eq!(data_class.author, "Marius");
-        assert_eq!(data_class.version, "0.1.0");
-    }
+//         assert_eq!(data_class.name, "Hello World");
+//         assert_eq!(data_class.author, "Marius");
+//         assert_eq!(data_class.version, "0.1.0");
+//     }
 
-    #[test]
-    fn with_id() {
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
-            .with_id(1)
-            .build();
+//     #[test]
+//     fn with_id() {
+//         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+//             .with_id(1)
+//             .build();
 
-        assert_eq!(data_class.name, "Hello World");
-        assert_eq!(data_class.author, "Marius");
-        assert_eq!(data_class.version, "0.1.0");
-        assert_eq!(data_class.id, Some(1));
-        assert_eq!(
-            data_class.info_url,
-            Some(String::from(
-                "http://www.lotrointerface.com/downloads/info1"
-            ))
-        );
-        assert_eq!(
-            data_class.download_url,
-            Some(String::from(
-                "http://www.lotrointerface.com/downloads/download1"
-            ))
-        );
-    }
+//         assert_eq!(data_class.name, "Hello World");
+//         assert_eq!(data_class.author, "Marius");
+//         assert_eq!(data_class.version, "0.1.0");
+//         assert_eq!(data_class.id, Some(1));
+//         assert_eq!(
+//             data_class.info_url,
+//             Some(String::from(
+//                 "http://www.lotrointerface.com/downloads/info1"
+//             ))
+//         );
+//         assert_eq!(
+//             data_class.download_url,
+//             Some(String::from(
+//                 "http://www.lotrointerface.com/downloads/download1"
+//             ))
+//         );
+//     }
 
-    #[test]
-    fn with_description() {
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
-            .with_description("This is an example")
-            .build();
+//     #[test]
+//     fn with_description() {
+//         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+//             .with_description("This is an example")
+//             .build();
 
-        assert_eq!(data_class.name, "Hello World");
-        assert_eq!(data_class.author, "Marius");
-        assert_eq!(data_class.version, "0.1.0");
-        assert_eq!(
-            data_class.description,
-            Some(String::from("This is an example"))
-        );
-    }
+//         assert_eq!(data_class.name, "Hello World");
+//         assert_eq!(data_class.author, "Marius");
+//         assert_eq!(data_class.version, "0.1.0");
+//         assert_eq!(
+//             data_class.description,
+//             Some(String::from("This is an example"))
+//         );
+//     }
 
-    #[test]
-    fn with_remote_information() {
-        let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
-            .with_description("This is an example")
-            .with_remote_information("Skills", "0.2.0", 500, "hello.zip")
-            .build();
+//     #[test]
+//     fn with_remote_information() {
+//         let data_class = PluginDataClass::new("Hello World", "Marius", "0.1.0")
+//             .with_description("This is an example")
+//             .with_remote_information("Skills", "0.2.0", 500, "hello.zip")
+//             .build();
 
-        assert_eq!(data_class.name, "Hello World");
-        assert_eq!(data_class.author, "Marius");
-        assert_eq!(data_class.version, "0.1.0");
-        assert_eq!(
-            data_class.description,
-            Some(String::from("This is an example"))
-        );
-        assert_eq!(data_class.category, Some(String::from("Skills")));
-        assert_eq!(data_class.latest_version, Some(String::from("0.2.0")));
-        assert_eq!(data_class.downloads, Some(500));
-        assert_eq!(data_class.archive_name, Some(String::from("hello.zip")));
-    }
-}
+//         assert_eq!(data_class.name, "Hello World");
+//         assert_eq!(data_class.author, "Marius");
+//         assert_eq!(data_class.version, "0.1.0");
+//         assert_eq!(
+//             data_class.description,
+//             Some(String::from("This is an example"))
+//         );
+//         assert_eq!(data_class.category, Some(String::from("Skills")));
+//         assert_eq!(data_class.latest_version, Some(String::from("0.2.0")));
+//         assert_eq!(data_class.downloads, Some(500));
+//         assert_eq!(data_class.archive_name, Some(String::from("hello.zip")));
+//     }
+// }
