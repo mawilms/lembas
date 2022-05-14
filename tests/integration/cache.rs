@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use lembas::core::lotro_compendium::Plugin;
+    use lembas::core::{io::cache::DatabaseHandler, lotro_compendium::Plugin};
 
     use crate::database_fixtures;
 
