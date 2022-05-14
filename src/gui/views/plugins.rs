@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
-use crate::core::io::cache;
+use crate::core::io::cache::{self, DatabaseHandler};
 use crate::core::lotro_compendium::Plugin;
 use crate::core::Installer;
 use crate::gui::style;

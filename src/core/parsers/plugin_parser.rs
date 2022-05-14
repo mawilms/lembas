@@ -1,4 +1,3 @@
-use crate::core::PluginDataClass;
 use serde::Deserialize;
 use serde_xml_rs::from_reader;
 use std::{fs::File, path::Path};

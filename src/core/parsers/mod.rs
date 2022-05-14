@@ -1,2 +1,2 @@
-pub mod compendium_parser;
-pub mod plugin_parser;
+// pub mod compendium_parser;
+// pub mod plugin_parser;
