@@ -146,7 +146,7 @@ impl DatabaseHandler for Cache {
             .expect("Error while creating a pooled connection");
         connection.execute(
             "UPDATE plugins
-            SET installed = 1, current_version = 2
+            SET installed = 1, current_version = ?2
             WHERE
                 plugin_id=?1",
             params![plugin_id, version],
