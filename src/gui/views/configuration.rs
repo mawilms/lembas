@@ -9,8 +9,8 @@ pub struct Configuration {
     settings: SettingsFile,
 }
 
-impl Configuration {
-    pub fn new() -> Self {
+impl Default for Configuration {
+    fn default() -> Self {
         Self {
             description: "Enable Backup".to_string(),
             settings: read_existing_settings_file(),

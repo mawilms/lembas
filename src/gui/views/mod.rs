@@ -11,8 +11,8 @@ use super::views::plugins::PluginMessage;
 use crate::core::config::{
     get_database_file_path, initialize_directories, read_existing_settings_file,
 };
-use crate::core::io::Cache;
 use crate::core::io::cache::DatabaseHandler;
+use crate::core::io::Cache;
 use crate::core::lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser};
 use crate::gui::style;
 pub use about::About as AboutView;
@@ -82,7 +82,7 @@ impl State {
             plugins_view: PluginsView::new(cache.clone()),
             catalog_view: CatalogView::new(cache.clone()),
             about_view: AboutView::default(),
-            config_view: ConfigView::new(),
+            config_view: ConfigView::default(),
         }
     }
 }
