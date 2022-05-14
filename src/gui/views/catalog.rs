@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::core::config::get_plugins_dir;
 use crate::core::io::cache::DatabaseHandler;
 use crate::core::{config::get_tmp_dir, io::cache::Cache, lotro_compendium::Plugin, Installer};
 use crate::gui::style;
@@ -241,17 +242,17 @@ impl PluginRow {
     pub fn update(&mut self, message: RowMessage, cache: &Cache) -> Command<RowMessage> {
         match message {
             RowMessage::InstallPressed(plugin) => {
-                match Installer::download(plugin.id, &plugin.title, &plugin.download_url) {
+                let tmp_dir = get_tmp_dir();
+                let plugins_dir = get_plugins_dir();
+                let installer = Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
+
+                match installer.download(&plugin.download_url) {
                     Ok(_) => {
                         if cache
                             .mark_as_installed(plugin.id, &plugin.current_version)
                             .is_ok()
                         {
-                            Installer::delete_cache_folder(
-                                plugin.id,
-                                &plugin.title,
-                                &get_tmp_dir(),
-                            );
+                            installer.delete_cache_folder();
                             self.status = "Installed".to_string();
                             self.current_version = plugin.latest_version;
                         } else {

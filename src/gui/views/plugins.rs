@@ -342,14 +342,13 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::DeletePressed(plugin) => {
-                if let Ok(files) =
-                    Installer::download(plugin.id, &plugin.title, &plugin.download_url)
-                {
-                    let plugins_dir = get_plugins_dir();
-                    let tmp_dir = get_tmp_dir();
-                    let database_path = get_database_file_path();
-                    if let Ok(()) = Installer::delete(&files, &plugins_dir) {
-                        Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
+                let tmp_dir = get_tmp_dir();
+                let plugins_dir = get_plugins_dir();
+                let installer = Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
+
+                if let Ok(files) = installer.download(&plugin.download_url) {
+                    if let Ok(()) = installer.delete(&files) {
+                        installer.delete_cache_folder();
                         if cache.delete_plugin(&plugin.title).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
