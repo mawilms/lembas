@@ -66,6 +66,24 @@ impl Cache {
         Ok(())
     }
 
+    pub fn sync_plugins(&self, plugins: &[Plugin]) -> Result<(), Box<dyn Error>> {
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+
+        for plugin in plugins {
+            connection.execute(
+                "INSERT INTO plugins (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+                ON CONFLICT (name)
+                DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, updated_at=?12, hash=?13;",
+            params![plugin.name, plugin.author, plugin.current_version, plugin.id, plugin.description, plugin.download_url, plugin.info_url, plugin.category, plugin.latest_version, plugin.downloads, plugin.archive_name, plugin.updated, plugin.hash])?;
+        }
+
+        Ok(())
+    }
+
     pub fn mark_as_installed(&self, plugin_id: i32) -> Result<(), Box<dyn Error>> {
         let connection = self
             .pool
@@ -95,7 +113,7 @@ impl Cache {
         Ok(())
     }
 
-    pub fn get_installed_plugins(&self) -> PluginCollection {
+    pub fn get_installed_plugins(&self) -> HashMap<String, Plugin> {
         let mut plugins = HashMap::new();
 
         let connection = self
@@ -103,7 +121,7 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         let mut stmt = connection
-            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed
             FROM plugins
             WHERE installed=1
             ORDER BY name;")
@@ -116,7 +134,7 @@ impl Cache {
         plugins
     }
 
-    pub fn get_plugins(&self) -> PluginCollection {
+    pub fn get_plugins(&self) -> HashMap<String, Plugin> {
         let mut plugins = HashMap::new();
 
         let connection = self
@@ -124,7 +142,7 @@ impl Cache {
             .get()
             .expect("Error while creating a pooled connection");
         let mut stmt = connection
-            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name FROM plugins ORDER BY name;")
+            .prepare("SELECT name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash, installed FROM plugins ORDER BY name;")
             .unwrap();
 
         for element in Cache::execute_stmt(&mut stmt, "") {
@@ -164,7 +182,7 @@ impl Cache {
         Ok(plugin_iter.next().transpose()?)
     }
 
-    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<PluginDataClass> {
+    fn execute_stmt(stmt: &mut Statement, params: &str) -> Vec<Plugin> {
         let mut all_plugins = Vec::new();
 
         let empty_params = params![];
@@ -177,18 +195,21 @@ impl Cache {
 
         let plugin_iter = stmt
             .query_map(query_params, |row| {
-                Ok(PluginDataClass {
+                Ok(Plugin {
                     name: row.get(0).unwrap(),
-                    author: Some(row.get(1).unwrap()),
-                    version: Some(row.get(2).unwrap()),
-                    id: Some(row.get(3).unwrap()),
-                    description: Some(row.get(4).unwrap()),
-                    download_url: Some(row.get(5).unwrap()),
-                    info_url: Some(row.get(6).unwrap()),
-                    category: Some(row.get(7).unwrap()),
-                    latest_version: Some(row.get(8).unwrap()),
-                    downloads: Some(row.get(9).unwrap()),
-                    archive_name: Some(row.get(10).unwrap()),
+                    author: row.get(1).unwrap(),
+                    current_version: row.get(2).unwrap(),
+                    id: row.get(3).unwrap(),
+                    description: row.get(4).unwrap(),
+                    download_url: row.get(5).unwrap(),
+                    info_url: row.get(6).unwrap(),
+                    category: row.get(7).unwrap(),
+                    latest_version: row.get(8).unwrap(),
+                    downloads: row.get(9).unwrap(),
+                    archive_name: row.get(10).unwrap(),
+                    updated: row.get(11).unwrap(),
+                    hash: row.get(12).unwrap(),
+                    installed: row.get(13).unwrap(),
                 })
             })
             .unwrap();

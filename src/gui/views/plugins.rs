@@ -4,6 +4,7 @@ use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
 use crate::core::io::cache;
+use crate::core::io::feed_url_parser::Plugin;
 use crate::core::{Installer, PluginDataClass};
 use crate::gui::style;
 use cache::Cache;
@@ -70,7 +71,7 @@ impl Plugins {
     fn populate_plugin_rows(state: &State) -> Vec<PluginRow> {
         let mut plugins: Vec<PluginRow> = Vec::new();
 
-        let mut tmp_plugins: Vec<PluginDataClass> = state
+        let mut tmp_plugins: Vec<Plugin> = state
             .cache
             .get_installed_plugins()
             .values()
@@ -79,16 +80,15 @@ impl Plugins {
         tmp_plugins.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         for plugin in tmp_plugins {
             plugins.push(PluginRow::new(
-                plugin.id.unwrap(),
+                plugin.id,
                 &plugin.name,
-                &plugin.author.unwrap(),
-                &plugin.description.unwrap(),
-                &plugin.version.unwrap(),
-                &plugin.latest_version.unwrap(),
-                &plugin.download_url.unwrap(),
+                &plugin.author,
+                &plugin.description,
+                &plugin.current_version,
+                &plugin.latest_version,
+                &plugin.download_url,
             ));
         }
-        println!("{:?}", plugins);
         plugins
     }
 

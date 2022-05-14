@@ -55,14 +55,7 @@ impl Catalog {
     fn map_plugins_to_rows(plugins: &[Plugin]) -> Vec<PluginRow> {
         let mut rows: Vec<PluginRow> = plugins
             .iter()
-            .map(|element| {
-                PluginRow::new(
-                    element.id,
-                    &element.name,
-                    "",
-                    &element.latest_version,
-                )
-            })
+            .map(|element| PluginRow::new(element.id, &element.name, "", &element.latest_version))
             .collect();
 
         rows.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
@@ -94,11 +87,17 @@ impl Catalog {
                     .update(msg, &*state.cache)
                     .map(move |msg| Message::Catalog(index, msg)),
                 Message::LoadPlugins => {
-                    let settings = read_existing_settings_file();
-                    Command::perform(
-                        FeedDownloader::fetch_feed_content(settings.feed_url),
-                        Message::FeedLoaded,
-                    )
+                    let plugins = state
+                        .cache
+                        .get_plugins()
+                        .values()
+                        .cloned()
+                        .collect::<Vec<Plugin>>();
+                    let rows = Catalog::map_plugins_to_rows(&plugins);
+                    state.plugins = rows.clone();
+                    state.base_plugins = rows;
+
+                    Command::none()
                 }
                 Message::FeedLoaded(feed_content) => match feed_content {
                     Ok(content) => {

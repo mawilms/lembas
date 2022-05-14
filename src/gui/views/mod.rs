@@ -3,13 +3,16 @@ pub mod catalog;
 pub mod configuration;
 pub mod plugins;
 
-use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::{env, thread};
 
 use super::views::plugins::PluginMessage;
-use crate::core::config::{get_database_file_path, get_plugins_dir, read_existing_settings_file, initialize_directories};
-use crate::core::io::Cache;
+use crate::core::config::{
+    get_database_file_path, get_plugins_dir, initialize_directories, read_existing_settings_file,
+};
+use crate::core::io::{Cache, FeedUrlParser};
+use crate::core::{Downloader, FeedDownloader};
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
@@ -23,6 +26,7 @@ use iced::{
 };
 pub use plugins::Plugins as PluginsView;
 use r2d2_sqlite::SqliteConnectionManager;
+use tokio::task;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -242,18 +246,29 @@ impl Lembas {
     pub async fn init_application() -> State {
         let database_path = get_database_file_path();
         // let plugins_dir = get_plugins_dir();
-        // let settings = read_existing_settings_file();
+        let settings = read_existing_settings_file();
         initialize_directories();
 
         let manager = SqliteConnectionManager::file(&database_path);
         let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
 
-        let cache = Cache::new(pool);
+        let cache = Cache::new(pool.clone());
 
         cache.create_cache_db().expect("Unable to create cache db");
         // Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
         //     .await
         //     .unwrap();
+
+        task::spawn(async {
+            let cache = Cache::new(pool);
+            let result = FeedDownloader::fetch_feed_content(settings.feed_url).await;
+            if let Ok(content) = result {
+                let plugins = FeedUrlParser::parse_response_xml(&content);
+                if let Err(err) = cache.sync_plugins(&plugins) {
+                    log::debug!("Error while syncing the plugins during startup. {}", err);
+                }
+            }
+        });
 
         State::new(&Arc::new(cache))
     }
