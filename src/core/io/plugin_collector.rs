@@ -1,35 +1,53 @@
+use globset::{Glob, GlobMatcher};
 use std::{
     error::Error,
     path::{Path, PathBuf},
 };
-
-use globset::Glob;
 use walkdir::WalkDir;
 
-pub fn collect_all_compendium_files(
-    plugins_directory: &Path,
-) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let compendium_glob = Glob::new("*.plugincompendium")?.compile_matcher();
-
-    let content: Vec<PathBuf> = WalkDir::new(&plugins_directory)
-        .into_iter()
-        .filter(|element| compendium_glob.is_match(element.as_ref().unwrap().path()))
-        .map(|element| element.unwrap().into_path())
-        .collect();
-
-    Ok(content)
+pub struct PluginCollector {
+    compendium_glob: GlobMatcher,
+    plugin_glob: GlobMatcher,
 }
 
-pub fn collect_all_plugin_files(plugins_directory: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let plugin_glob = Glob::new("*.plugin")?.compile_matcher();
+impl Default for PluginCollector {
+    fn default() -> Self {
+        Self {
+            compendium_glob: Glob::new("*.plugincompendium").unwrap().compile_matcher(),
+            plugin_glob: Glob::new("*.plugin").unwrap().compile_matcher(),
+        }
+    }
+}
 
-    let content: Vec<PathBuf> = WalkDir::new(&plugins_directory)
-        .into_iter()
-        .filter(|element| plugin_glob.is_match(element.as_ref().unwrap().path()))
-        .map(|element| element.unwrap().into_path())
-        .collect();
+impl PluginCollector {
+    pub fn collect_compendium_files(
+        &self,
+        plugins_directory: &Path,
+    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+        let content: Vec<PathBuf> = WalkDir::new(&plugins_directory)
+            .into_iter()
+            .filter(|element| {
+                self.compendium_glob
+                    .is_match(element.as_ref().unwrap().path())
+            })
+            .map(|element| element.unwrap().into_path())
+            .collect();
 
-    Ok(content)
+        Ok(content)
+    }
+
+    pub fn collect_plugin_files(
+        &self,
+        plugins_directory: &Path,
+    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+        let content: Vec<PathBuf> = WalkDir::new(&plugins_directory)
+            .into_iter()
+            .filter(|element| self.plugin_glob.is_match(element.as_ref().unwrap().path()))
+            .map(|element| element.unwrap().into_path())
+            .collect();
+
+        Ok(content)
+    }
 }
 
 #[cfg(test)]
@@ -66,10 +84,11 @@ mod tests {
     }
 
     #[test]
-    fn collect_all_compendium_files_positive() {
+    fn collect_compendium_files_positive() {
         let test_dir = setup();
 
-        let result = collect_all_compendium_files(&test_dir).unwrap();
+        let collector = PluginCollector::default();
+        let result = collector.collect_compendium_files(&test_dir).unwrap();
 
         assert_eq!(result.len(), 6);
 
@@ -77,10 +96,11 @@ mod tests {
     }
 
     #[test]
-    fn collect_all_plugin_files_positive() {
+    fn collect_plugin_files_positive() {
         let test_dir = setup();
 
-        let result = collect_all_plugin_files(&test_dir).unwrap();
+        let collector = PluginCollector::default();
+        let result = collector.collect_plugin_files(&test_dir).unwrap();
 
         assert_eq!(result.len(), 12);
 
