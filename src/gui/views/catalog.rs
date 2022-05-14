@@ -1,17 +1,20 @@
 use std::sync::Arc;
 
 use crate::core::{
-    api::{Downloader, FeedDownloader},
     config::{get_tmp_dir, read_existing_settings_file},
     io::{cache, feed_url_parser::Plugin, FeedUrlParser},
+    lotro_compendium::{Downloader, FeedDownloader},
     Installer,
 };
 use crate::gui::style;
 use cache::Cache;
-use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{
     alignment::{Horizontal, Vertical},
     Alignment, Command, Length,
+};
+use iced::{
+    pure::{button, column, container, row, scrollable, text, text_input, Element},
+    Row,
 };
 use log::debug;
 
@@ -132,6 +135,27 @@ impl Catalog {
         }
     }
 
+    fn build_plugins_scrollable(plugins: &'_ [PluginRow]) -> Element<'_, Message> {
+        if plugins.is_empty() {
+            row()
+                .height(Length::Fill)
+                .push(text("Loading plugins..."))
+                .align_items(Alignment::Center)
+                .into()
+        } else {
+            let plugins_column = plugins
+                .iter()
+                .enumerate()
+                .fold(column().padding([0, 13, 0, 0]).spacing(5), |col, (i, p)| {
+                    col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
+                });
+            scrollable(plugins_column)
+                .scrollbar_width(10)
+                .style(style::Scrollable)
+                .into()
+        }
+    }
+
     pub fn view(&self) -> Element<Message> {
         match self {
             Catalog::Loaded(State {
@@ -170,16 +194,7 @@ impl Catalog {
                     .push(latest_version)
                     .push(upgrade);
 
-                let plugins = plugins
-                    .iter()
-                    .enumerate()
-                    .fold(column().padding([0, 13, 0, 0]).spacing(5), |col, (i, p)| {
-                        col.push(p.view().map(move |msg| Message::Catalog(i, msg)))
-                    });
-
-                let plugins_scrollable = scrollable(plugins)
-                    .scrollbar_width(10)
-                    .style(style::Scrollable);
+                let plugins_scrollable = Catalog::build_plugins_scrollable(plugins);
 
                 let content = column()
                     .width(Length::Fill)
@@ -264,7 +279,10 @@ impl PluginRow {
             RowMessage::InstallPressed(plugin) => {
                 match Installer::download(plugin.id, &plugin.title, &plugin.download_url) {
                     Ok(_) => {
-                        if cache.mark_as_installed(plugin.id).is_ok() {
+                        if cache
+                            .mark_as_installed(plugin.id, &plugin.current_version)
+                            .is_ok()
+                        {
                             Installer::delete_cache_folder(
                                 plugin.id,
                                 &plugin.title,

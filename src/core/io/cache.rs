@@ -1,4 +1,3 @@
-use crate::core::{PluginCollection, PluginDataClass};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
@@ -84,17 +83,17 @@ impl Cache {
         Ok(())
     }
 
-    pub fn mark_as_installed(&self, plugin_id: i32) -> Result<(), Box<dyn Error>> {
+    pub fn mark_as_installed(&self, plugin_id: i32, version: &str) -> Result<(), Box<dyn Error>> {
         let connection = self
             .pool
             .get()
             .expect("Error while creating a pooled connection");
         connection.execute(
             "UPDATE plugins
-            SET installed = 1
+            SET installed = 1, current_version = 2
             WHERE
                 plugin_id=?1",
-            params![plugin_id],
+            params![plugin_id, version],
         )?;
 
         Ok(())

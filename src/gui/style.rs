@@ -8,6 +8,8 @@ pub const BACKGROUND_COLOR: Color = Color::from_rgb(0.27, 0.16, 0.11);
 pub const NAVIGATION_COLOR: Color = Color::from_rgb(0.2, 0.11, 0.07);
 pub const ROW_COLOR_PRIMARY: Color = Color::from_rgb(0.55, 0.44, 0.27);
 
+pub const BLA: Color = Color::from_rgb(1.0, 0.0, 0.0);
+
 pub enum PrimaryButton {
     Enabled,
     Disabled,
@@ -96,6 +98,17 @@ impl container::StyleSheet for Content {
 
 pub struct NavigationContainer;
 impl container::StyleSheet for NavigationContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(NAVIGATION_COLOR)),
+            text_color: Some(Color::WHITE),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct BlaContainer;
+impl container::StyleSheet for BlaContainer {
     fn style(&self) -> container::Style {
         container::Style {
             background: Some(Background::Color(NAVIGATION_COLOR)),

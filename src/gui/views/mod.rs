@@ -3,16 +3,16 @@ pub mod catalog;
 pub mod configuration;
 pub mod plugins;
 
+use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::{env, thread};
 
 use super::views::plugins::PluginMessage;
 use crate::core::config::{
-    get_database_file_path, get_plugins_dir, initialize_directories, read_existing_settings_file,
+    get_database_file_path, initialize_directories, read_existing_settings_file,
 };
 use crate::core::io::{Cache, FeedUrlParser};
-use crate::core::{Downloader, FeedDownloader};
+use crate::core::lotro_compendium::{Downloader, FeedDownloader};
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
@@ -245,8 +245,6 @@ impl Lembas {
 
     pub async fn init_application() -> State {
         let database_path = get_database_file_path();
-        // let plugins_dir = get_plugins_dir();
-        let settings = read_existing_settings_file();
         initialize_directories();
 
         let manager = SqliteConnectionManager::file(&database_path);
@@ -260,6 +258,7 @@ impl Lembas {
         //     .unwrap();
 
         task::spawn(async {
+            let settings = read_existing_settings_file();
             let cache = Cache::new(pool);
             let result = FeedDownloader::fetch_feed_content(settings.feed_url).await;
             if let Ok(content) = result {

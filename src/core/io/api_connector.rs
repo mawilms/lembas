@@ -1,5 +1,4 @@
-use super::FeedUrlParser;
-use crate::core::{config::read_existing_settings_file, PluginCollection, PluginDataClass};
+use crate::core::{config::read_existing_settings_file, PluginCollection};
 use log::debug;
 use std::collections::HashMap;
 
