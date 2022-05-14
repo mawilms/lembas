@@ -1,11 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::{
-    config::{get_tmp_dir, read_existing_settings_file},
-    io::cache::Cache,
-    lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser, Plugin},
-    Installer,
-};
+use crate::core::{config::get_tmp_dir, io::cache::Cache, lotro_compendium::Plugin, Installer};
 use crate::gui::style;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{
@@ -46,7 +41,6 @@ pub enum Message {
     CatalogInputChanged(String),
     Catalog(usize, RowMessage),
     LoadPlugins,
-    FeedLoaded(Result<String, String>),
     RetryPressed,
 }
 
@@ -98,36 +92,9 @@ impl Catalog {
 
                     Command::none()
                 }
-                Message::FeedLoaded(feed_content) => match feed_content {
-                    Ok(content) => {
-                        let plugins = FeedUrlParser::parse_response_xml(&content);
-
-                        for plugin in &plugins {
-                            if let Ok(result) = state.cache.get_plugin(&plugin.name) {
-                                if result.is_none() {
-                                    state.cache.insert_plugin(plugin, 0).expect("Bla");
-                                }
-                            }
-                        }
-                        let rows = Catalog::map_plugins_to_rows(&plugins);
-                        state.plugins = rows.clone();
-                        state.base_plugins = rows;
-                        Command::none()
-                    }
-                    Err(_) => Command::none(),
-                },
                 Message::RetryPressed => Command::none(),
             },
-            Catalog::NoInternet(_) => match message {
-                Message::RetryPressed => {
-                    let settings = read_existing_settings_file();
-                    Command::perform(
-                        FeedDownloader::fetch_feed_content(settings.feed_url),
-                        Message::FeedLoaded,
-                    )
-                }
-                _ => Command::none(),
-            },
+            Catalog::NoInternet(_) => Command::none(),
         }
     }
 
