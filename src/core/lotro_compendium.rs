@@ -166,9 +166,8 @@ struct Ui {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::fs;
-
-    use crate::core::io::FeedUrlParser;
 
     #[test]
     fn parse_response() {

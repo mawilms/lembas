@@ -1,9 +1,8 @@
+use crate::core::lotro_compendium::Plugin;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
 use std::{collections::HashMap, error::Error, sync::Arc};
-
-use super::feed_url_parser::Plugin;
 
 #[derive(Debug, Clone)]
 pub struct Cache {

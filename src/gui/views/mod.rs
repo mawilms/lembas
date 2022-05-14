@@ -11,8 +11,8 @@ use super::views::plugins::PluginMessage;
 use crate::core::config::{
     get_database_file_path, initialize_directories, read_existing_settings_file,
 };
-use crate::core::io::{Cache, FeedUrlParser};
-use crate::core::lotro_compendium::{Downloader, FeedDownloader};
+use crate::core::io::Cache;
+use crate::core::lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser};
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};

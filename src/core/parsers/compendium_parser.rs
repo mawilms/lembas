@@ -2,7 +2,7 @@
 //! information about the specific plugin that gets installed. Not every information is in the compendium file.
 //! Often there is a second file which has the `.plugin` extension which contains the rest.
 use super::plugin_parser::parse_plugin_file;
-use crate::core::{io::feed_url_parser::Plugin, PluginDataClass};
+use crate::core::lotro_compendium::Plugin;
 use serde::Deserialize;
 use serde_xml_rs::from_reader;
 use std::{

@@ -2,19 +2,15 @@ use std::sync::Arc;
 
 use crate::core::{
     config::{get_tmp_dir, read_existing_settings_file},
-    io::{cache, feed_url_parser::Plugin, FeedUrlParser},
-    lotro_compendium::{Downloader, FeedDownloader},
+    io::cache::Cache,
+    lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser, Plugin},
     Installer,
 };
 use crate::gui::style;
-use cache::Cache;
+use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{
     alignment::{Horizontal, Vertical},
     Alignment, Command, Length,
-};
-use iced::{
-    pure::{button, column, container, row, scrollable, text, text_input, Element},
-    Row,
 };
 use log::debug;
 

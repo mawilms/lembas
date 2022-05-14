@@ -4,8 +4,8 @@ use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
 use crate::core::io::cache;
-use crate::core::io::feed_url_parser::Plugin;
-use crate::core::{Installer, PluginDataClass};
+use crate::core::lotro_compendium::Plugin;
+use crate::core::Installer;
 use crate::gui::style;
 use cache::Cache;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};

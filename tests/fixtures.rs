@@ -1,5 +1,5 @@
 pub mod database_fixtures {
-    use lembas::core::io::{feed_url_parser::Plugin, Cache};
+    use lembas::core::{io::Cache, lotro_compendium::Plugin};
     use r2d2_sqlite::SqliteConnectionManager;
     use std::{
         env,
