@@ -39,7 +39,6 @@ impl Installer {
         }
 
         let bytes = reqwest::blocking::get(download_url)?.bytes()?;
-        println!("{:?}", bytes);
 
         Ok(bytes)
     }
