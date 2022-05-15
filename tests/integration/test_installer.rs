@@ -18,7 +18,7 @@ mod tests {
 
         let result = directory
             .into_iter()
-            .map(|file| file.unwrap().file_name().to_str().unwrap().to_string())
+            .map(|file| file.unwrap().file_name().into_string().unwrap())
             .collect::<Vec<String>>();
 
         assert_eq!(result, vec!["Munkey", "plugin.zip"]);
