@@ -149,6 +149,3 @@ impl Installer {
         copy(&self.plugins_dir, &tmp_backup_path, &options).unwrap();
     }
 }
-
-#[cfg(test)]
-mod tests {}
