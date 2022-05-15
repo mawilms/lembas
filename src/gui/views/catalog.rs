@@ -244,21 +244,29 @@ impl PluginRow {
             RowMessage::InstallPressed(plugin) => {
                 let tmp_dir = get_tmp_dir();
                 let plugins_dir = get_plugins_dir();
-                let installer = Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
+                let mut installer =
+                    Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
 
                 match installer.download(&plugin.download_url) {
-                    Ok(_) => {
-                        if cache
-                            .mark_as_installed(plugin.id, &plugin.current_version)
-                            .is_ok()
-                        {
-                            installer.delete_cache_folder();
-                            self.status = "Installed".to_string();
-                            self.current_version = plugin.latest_version;
-                        } else {
+                    Ok(content) => match installer.install(&content) {
+                        Ok(root_folder_name) => {
+                            installer.move_files(&root_folder_name);
+                            if cache
+                                .mark_as_installed(plugin.id, &plugin.current_version)
+                                .is_ok()
+                            {
+                                installer.delete_cache_folder();
+                                self.status = "Installed".to_string();
+                                self.current_version = plugin.latest_version;
+                            } else {
+                                self.status = "Installation failed".to_string();
+                            }
+                        }
+                        Err(e) => {
+                            debug!("{:?}", e);
                             self.status = "Installation failed".to_string();
                         }
-                    }
+                    },
                     Err(error) => {
                         debug!("{:?}", error);
                         self.status = "Download failed".to_string();

@@ -1,6 +1,6 @@
+use bytes::Bytes;
 use chrono::offset::Utc;
 use chrono::DateTime;
-use dirs::home_dir;
 use fs_extra::{
     self,
     dir::{copy, CopyOptions},
@@ -14,11 +14,12 @@ use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
-use super::config::{get_plugins_dir, read_existing_settings_file};
+use super::config::read_existing_settings_file;
 
 pub struct Installer {
-    plugins_dir: PathBuf,
-    tmp_file_path: PathBuf,
+    pub plugins_dir: PathBuf,
+    pub tmp_file_path: PathBuf,
+    pub files: Vec<String>,
 }
 
 impl Installer {
@@ -26,26 +27,31 @@ impl Installer {
         Self {
             plugins_dir: plugins_dir.to_path_buf(),
             tmp_file_path: tmp_dir.join(&format!("{}_{}", plugin_id, plugin_title)),
+            files: Vec::new(),
         }
     }
 
-    pub fn download(&self, download_url: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    pub fn download(&self, download_url: &str) -> Result<Bytes, Box<dyn Error>> {
         let settings = read_existing_settings_file();
 
         if settings.backup_enabled {
             self.backup_plugin_folder();
         }
 
-        let response = reqwest::blocking::get(download_url)?;
+        let bytes = reqwest::blocking::get(download_url)?.bytes()?;
+        println!("{:?}", bytes);
 
+        Ok(bytes)
+    }
+
+    pub fn install(&mut self, content: &Bytes) -> Result<String, Box<dyn Error>> {
         fs::create_dir(&self.tmp_file_path)?;
 
         let cache_path = &self.tmp_file_path.join("plugin.zip");
         match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
-                let content = response.bytes()?;
-                file.write_all(&content)?;
+                file.write_all(content)?;
                 let file = OpenOptions::new()
                     .write(true)
                     .read(true)
@@ -55,20 +61,19 @@ impl Installer {
                 zip::ZipArchive::extract(&mut zip_archive, &self.tmp_file_path)?;
                 let root_folder_name = zip_archive.by_index(0).unwrap().name().to_string();
 
-                let files = zip_archive
+                self.files = zip_archive
                     .file_names()
                     .map(std::string::ToString::to_string)
                     .collect::<Vec<String>>();
 
-                self.move_files(&root_folder_name);
-                Ok(files)
+                Ok(root_folder_name)
             }
         }
     }
 
-    pub fn delete(&self, files: &[String]) -> Result<(), Box<dyn Error>> {
-        let root_name = files[0].split('/').next().unwrap();
-        for file in files {
+    pub fn delete(&self) -> Result<(), Box<dyn Error>> {
+        let root_name = self.files[0].split('/').next().unwrap();
+        for file in &self.files {
             let path = self.plugins_dir.join(file);
             if let Ok(md) = metadata(&path) {
                 if md.is_dir() {
@@ -86,7 +91,7 @@ impl Installer {
         Ok(())
     }
 
-    fn move_files(&self, folder_name: &str) {
+    pub fn move_files(&self, folder_name: &str) {
         let tmp_folder = fs::read_dir(&self.tmp_file_path.join(&folder_name)).unwrap();
         fs::remove_file(&self.tmp_file_path.join("plugin.zip")).unwrap();
 

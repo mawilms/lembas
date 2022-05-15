@@ -347,7 +347,7 @@ impl PluginRow {
                 let installer = Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
 
                 if let Ok(files) = installer.download(&plugin.download_url) {
-                    if let Ok(()) = installer.delete(&files) {
+                    if let Ok(()) = installer.delete() {
                         installer.delete_cache_folder();
                         if cache.delete_plugin(&plugin.title).is_ok() {
                             self.status = "Deleted".to_string();
