@@ -1,8 +1,9 @@
-use crate::core::lotro_compendium::Plugin;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
 use std::{collections::HashMap, error::Error, sync::Arc};
+
+use crate::core::Plugin;
 
 pub trait DatabaseHandler {
     fn insert_plugin(&self, plugin: &Plugin, installed: i32) -> Result<(), Box<dyn Error>>;

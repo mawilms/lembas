@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use crate::core::Plugin;
 use crate::core::config::get_plugins_dir;
 use crate::core::io::cache::DatabaseHandler;
-use crate::core::{config::get_tmp_dir, io::cache::Cache, lotro_compendium::Plugin, Installer};
+use crate::core::{config::get_tmp_dir, io::cache::Cache, Installer};
 use crate::gui::style;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{
