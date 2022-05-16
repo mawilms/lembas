@@ -75,27 +75,29 @@ pub mod database_fixtures {
 }
 
 pub mod installer_fixtures {
-    use std::{env, fs::create_dir_all, path::PathBuf};
+    use std::{
+        env,
+        fs::create_dir_all,
+        path::{Path, PathBuf},
+    };
 
     use lembas::core::Installer;
     use uuid::Uuid;
 
-    pub fn setup_dirs() -> PathBuf {
+    pub fn setup_dirs() -> (PathBuf, PathBuf, PathBuf) {
         let uuid = Uuid::new_v4().to_string();
         let test_dir = env::temp_dir().join(format!("lembas_test_{}", &uuid[..7]));
-
-        create_dir_all(&test_dir).unwrap();
-
-        test_dir
-    }
-
-    pub fn installer_fixture() -> Installer {
-        let test_dir = self::setup_dirs();
         let tmp_dir = test_dir.join("tmp");
         let plugins_dir = test_dir.join("plugins");
+
+        create_dir_all(&test_dir).unwrap();
         create_dir_all(&tmp_dir).unwrap();
         create_dir_all(&plugins_dir).unwrap();
 
-        Installer::new(&tmp_dir, &plugins_dir, 1, "Hello World")
+        (test_dir, tmp_dir, plugins_dir)
+    }
+
+    pub fn installer_fixture(tmp_dir: &Path, plugins_dir: &Path) -> Installer {
+        Installer::new(tmp_dir, plugins_dir, 1, "Hello World")
     }
 }

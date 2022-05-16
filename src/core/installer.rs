@@ -72,20 +72,8 @@ impl Installer {
 
     pub fn delete(&self) -> Result<(), Box<dyn Error>> {
         let root_name = self.files[0].split('/').next().unwrap();
-        for file in &self.files {
-            let path = self.plugins_dir.join(file);
-            if let Ok(md) = metadata(&path) {
-                if md.is_dir() {
-                    fs::remove_dir_all(&path)?;
-                } else {
-                    fs::remove_file(&path)?;
-                }
-            }
-        }
 
-        if self.plugins_dir.read_dir()?.next().is_none() {
-            fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
-        }
+        fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
 
         Ok(())
     }
