@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::core::Plugin;
 use crate::core::config::get_plugins_dir;
 use crate::core::io::cache::DatabaseHandler;
+use crate::core::Plugin;
 use crate::core::{config::get_tmp_dir, io::cache::Cache, Installer};
 use crate::gui::style;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
@@ -51,7 +51,14 @@ impl Catalog {
     fn map_plugins_to_rows(plugins: &[Plugin]) -> Vec<PluginRow> {
         let mut rows: Vec<PluginRow> = plugins
             .iter()
-            .map(|element| PluginRow::new(element.id, &element.name, "", &element.latest_version))
+            .map(|element| {
+                PluginRow::new(
+                    element.id,
+                    &element.name,
+                    &element.current_version,
+                    &element.latest_version,
+                )
+            })
             .collect();
 
         rows.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
@@ -253,7 +260,7 @@ impl PluginRow {
                         Ok(root_folder_name) => {
                             installer.move_files(&root_folder_name);
                             if cache
-                                .mark_as_installed(plugin.id, &plugin.current_version)
+                                .mark_as_installed(plugin.id, &plugin.latest_version)
                                 .is_ok()
                             {
                                 installer.delete_cache_folder();
@@ -300,9 +307,18 @@ impl PluginRow {
                         .push(text(&self.title).width(Length::FillPortion(6)))
                         .push(text(&self.current_version).width(Length::FillPortion(3)))
                         .push(text(&self.latest_version).width(Length::FillPortion(3)))
-                        .push(if &plugin.status == "Installed" {
+                        .push(if plugin.current_version.is_empty() {
                             button(
-                                text(&plugin.status)
+                                text("Install")
+                                    .width(Length::Fill)
+                                    .horizontal_alignment(Horizontal::Center),
+                            )
+                            .on_press(RowMessage::InstallPressed(plugin))
+                            .style(style::PrimaryButton::Enabled)
+                            .width(Length::FillPortion(2))
+                        } else if plugin.current_version == plugin.latest_version {
+                            button(
+                                text("Installed")
                                     .width(Length::Fill)
                                     .horizontal_alignment(Horizontal::Center),
                             )
@@ -311,7 +327,7 @@ impl PluginRow {
                             .width(Length::FillPortion(2))
                         } else {
                             button(
-                                text(&plugin.status)
+                                text("Update")
                                     .width(Length::Fill)
                                     .horizontal_alignment(Horizontal::Center),
                             )

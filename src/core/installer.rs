@@ -5,16 +5,17 @@ use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
+use log::debug;
 use std::{
     error::Error,
-    fs::{File, OpenOptions},
+    fs::{create_dir_all, File, OpenOptions},
     path::PathBuf,
 };
 use std::{fs, io::prelude::*};
 use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
-use super::config::read_existing_settings_file;
+use super::config::{get_plugins_backup_dir, read_existing_settings_file};
 
 pub struct Installer {
     pub plugins_dir: PathBuf,
@@ -37,7 +38,6 @@ impl Installer {
         if settings.backup_enabled {
             self.backup_plugin_folder();
         }
-
         let bytes = reqwest::blocking::get(download_url)?.bytes()?;
 
         Ok(bytes)
@@ -56,9 +56,9 @@ impl Installer {
                     .read(true)
                     .open(&cache_path)
                     .unwrap();
-                let mut zip_archive = zip::ZipArchive::new(file).unwrap();
+                let mut zip_archive = zip::ZipArchive::new(file)?;
                 zip::ZipArchive::extract(&mut zip_archive, &self.tmp_file_path)?;
-                let root_folder_name = zip_archive.by_index(0).unwrap().name().to_string();
+                let root_folder_name = zip_archive.by_index(0)?.name().to_string();
 
                 self.files = zip_archive
                     .file_names()
@@ -79,7 +79,14 @@ impl Installer {
     }
 
     pub fn move_files(&self, folder_name: &str) {
-        let tmp_folder = fs::read_dir(&self.tmp_file_path.join(&folder_name)).unwrap();
+        let tmp_folder = fs::read_dir(&self.tmp_file_path.join(&folder_name))
+            .map_err(|_| {
+                debug!(
+                    "Error while reading tmp folder with the name {}",
+                    &self.tmp_file_path.join(&folder_name).to_str().unwrap()
+                );
+            })
+            .unwrap();
         fs::remove_file(&self.tmp_file_path.join("plugin.zip")).unwrap();
 
         if !&self.plugins_dir.join(&folder_name).exists() {
@@ -102,7 +109,8 @@ impl Installer {
                 )
                 .unwrap();
             } else {
-                let options = fs_extra::file::CopyOptions::new();
+                let mut options = fs_extra::file::CopyOptions::new();
+                options.overwrite = true;
                 fs_extra::file::move_file(
                     &self.tmp_file_path.join(&folder_name).join(&file_str),
                     &self.plugins_dir.join(&folder_name).join(&file_str),
@@ -118,10 +126,10 @@ impl Installer {
     }
 
     fn backup_plugin_folder(&self) {
-        let backup_path = &self.plugins_dir.join("PluginsBackup");
+        let backup_path = get_plugins_backup_dir();
 
         if !backup_path.exists() {
-            create_dir(&backup_path).unwrap();
+            create_dir_all(&backup_path).unwrap();
         }
 
         let options = CopyOptions::new();
@@ -131,7 +139,7 @@ impl Installer {
         let datetime = datetime.format("%Y_%m_%d_%H%M%S").to_string();
 
         let tmp_backup_path = &backup_path.join(format!("{}_backup", datetime));
-        create_dir(&tmp_backup_path).unwrap();
+        create_dir_all(&tmp_backup_path).unwrap();
 
         copy(&self.plugins_dir, &tmp_backup_path, &options).unwrap();
     }

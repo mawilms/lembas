@@ -25,6 +25,7 @@ use iced::{
     window::Settings as Window,
     Alignment, Command, Length, Settings, Space,
 };
+use log::debug;
 pub use plugins::Plugins as PluginsView;
 use r2d2_sqlite::SqliteConnectionManager;
 use tokio::task;
@@ -259,6 +260,7 @@ impl Lembas {
         //     .unwrap();
 
         task::spawn(async {
+            debug!("Started fetching plugins from lotrocompendium");
             let settings = read_existing_settings_file();
             let cache = Cache::new(pool);
             let result = FeedDownloader::fetch_feed_content(settings.feed_url).await;
@@ -268,6 +270,7 @@ impl Lembas {
                     log::debug!("Error while syncing the plugins during startup. {}", err);
                 }
             }
+            debug!("Finished fetching plugins from lotrocompendium");
         });
 
         State::new(&Arc::new(cache))

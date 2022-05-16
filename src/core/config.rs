@@ -35,6 +35,14 @@ pub fn get_plugins_dir() -> PathBuf {
         .join("Plugins")
 }
 
+pub fn get_plugins_backup_dir() -> PathBuf {
+    home_dir()
+        .expect("Couldn't find your home directory")
+        .join("Documents")
+        .join("The Lord of the Rings Online")
+        .join("Plugins_Backup")
+}
+
 pub fn get_storage_dir() -> PathBuf {
     data_dir().unwrap().join("lembas")
 }

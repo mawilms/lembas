@@ -1,3 +1,4 @@
+use log::debug;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{params, Statement};
@@ -103,6 +104,27 @@ impl Cache {
 
         all_plugins
     }
+
+    fn update_plugin_version(
+        &self,
+        plugin_id: i32,
+        latest_version: &str,
+    ) -> Result<(), rusqlite::Error> {
+        let connection = self
+            .pool
+            .get()
+            .expect("Error while creating a pooled connection");
+
+        connection.execute(
+            "UPDATE plugins
+            SET latest_version = ?2
+            WHERE
+                plugin_id=?1",
+            params![plugin_id, latest_version],
+        )?;
+
+        Ok(())
+    }
 }
 
 impl DatabaseHandler for Cache {
@@ -123,18 +145,17 @@ impl DatabaseHandler for Cache {
     }
 
     fn sync_plugins(&self, plugins: &[Plugin]) -> Result<(), Box<dyn Error>> {
-        let connection = self
-            .pool
-            .get()
-            .expect("Error while creating a pooled connection");
+        let database_plugins = self.get_plugins();
 
         for plugin in plugins {
-            connection.execute(
-                "INSERT INTO plugins (name, author, current_version, plugin_id, description, download_url, info_url, category, latest_version, downloads, archive_name, updated_at, hash)
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
-                ON CONFLICT (name)
-                DO UPDATE SET name=?1, author=?2, current_version=?3, plugin_id=?4, description=?5, download_url=?6, info_url=?7, category=?8, latest_version=?9, downloads=?10, archive_name=?11, updated_at=?12, hash=?13;",
-            params![plugin.name, plugin.author, plugin.current_version, plugin.id, plugin.description, plugin.download_url, plugin.info_url, plugin.category, plugin.latest_version, plugin.downloads, plugin.archive_name, plugin.updated, plugin.hash])?;
+            if database_plugins.contains_key(&plugin.name) {
+                let database_plugin = database_plugins.get(&plugin.name).unwrap();
+                if plugin.latest_version != database_plugin.latest_version {
+                    self.update_plugin_version(plugin.id, &database_plugin.latest_version).map_err(|_|{
+                        debug!("Error while updating the latest version of plugin {} to version {}", plugin.name, plugin.latest_version);
+                    }).unwrap();
+                }
+            }
         }
 
         Ok(())
