@@ -6,13 +6,13 @@ use fs_extra::{
     dir::{copy, CopyOptions},
 };
 use log::debug;
+use std::time::SystemTime;
 use std::{
     error::Error,
     fs::{create_dir_all, File, OpenOptions},
     path::PathBuf,
 };
 use std::{fs, io::prelude::*};
-use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
 use super::config::{get_plugins_backup_dir, read_existing_settings_file};
@@ -27,7 +27,11 @@ impl Installer {
     pub fn new(tmp_dir: &Path, plugins_dir: &Path, plugin_id: i32, plugin_title: &str) -> Self {
         Self {
             plugins_dir: plugins_dir.to_path_buf(),
-            tmp_file_path: tmp_dir.join(&format!("{}_{}", plugin_id, plugin_title)),
+            tmp_file_path: tmp_dir.join(&format!(
+                "{}_{}",
+                plugin_id,
+                plugin_title.replace(' ', "_")
+            )),
             files: Vec::new(),
         }
     }
@@ -44,9 +48,14 @@ impl Installer {
     }
 
     pub fn install(&mut self, content: &Bytes) -> Result<String, Box<dyn Error>> {
+        if self.tmp_file_path.exists() {
+            fs::remove_dir_all(&self.tmp_file_path).unwrap();
+        }
+
         fs::create_dir(&self.tmp_file_path)?;
 
         let cache_path = &self.tmp_file_path.join("plugin.zip");
+
         match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
@@ -58,7 +67,15 @@ impl Installer {
                     .unwrap();
                 let mut zip_archive = zip::ZipArchive::new(file)?;
                 zip::ZipArchive::extract(&mut zip_archive, &self.tmp_file_path)?;
-                let root_folder_name = zip_archive.by_index(0)?.name().to_string();
+                let root_folder_name = zip_archive
+                    .by_index(0)?
+                    .name()
+                    .to_string()
+                    .replace(' ', "_")
+                    .split('/')
+                    .next()
+                    .unwrap()
+                    .to_string();
 
                 self.files = zip_archive
                     .file_names()

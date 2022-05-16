@@ -147,13 +147,19 @@ impl DatabaseHandler for Cache {
     fn sync_plugins(&self, plugins: &[Plugin]) -> Result<(), Box<dyn Error>> {
         let database_plugins = self.get_plugins();
 
-        for plugin in plugins {
-            if database_plugins.contains_key(&plugin.name) {
-                let database_plugin = database_plugins.get(&plugin.name).unwrap();
-                if plugin.latest_version != database_plugin.latest_version {
-                    self.update_plugin_version(plugin.id, &database_plugin.latest_version).map_err(|_|{
-                        debug!("Error while updating the latest version of plugin {} to version {}", plugin.name, plugin.latest_version);
-                    }).unwrap();
+        if database_plugins.is_empty() {
+            for plugin in plugins {
+                self.insert_plugin(plugin, 0).unwrap();
+            }
+        } else {
+            for plugin in plugins {
+                if database_plugins.contains_key(&plugin.name) {
+                    let database_plugin = database_plugins.get(&plugin.name).unwrap();
+                    if plugin.latest_version != database_plugin.latest_version {
+                        self.update_plugin_version(plugin.id, &database_plugin.latest_version).map_err(|_|{
+                            debug!("Error while updating the latest version of plugin {} to version {}", plugin.name, plugin.latest_version);
+                        }).unwrap();
+                    }
                 }
             }
         }
