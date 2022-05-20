@@ -89,7 +89,6 @@ impl Installer {
 
     pub fn delete(&self) -> Result<(), Box<dyn Error>> {
         let root_name = self.files[0].split('/').next().unwrap();
-        println!("{}", root_name);
 
         fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
 
