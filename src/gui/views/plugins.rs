@@ -108,14 +108,11 @@ impl Plugins {
                     Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
                 }
                 PluginMessage::UpdateAllPressed => {
-                    for i in 0..=state.plugins.len() {
-                        if state.plugins[i].current_version != state.plugins[i].latest_version
-                            && !state.plugins[i].latest_version.is_empty()
-                        {
-                            let test = state.plugins[i].clone();
-                            state.plugins[i].update(RowMessage::UpdatePressed(test), &*state.cache);
-                        }
-                    }
+                    // for (index, element) in state.plugins.iter_mut().enumerate() {
+                    //     if element.current_version != element.latest_version {
+                    //         state.plugins[index].update(RowMessage::UpdatePressed(bla), &*state.cache);
+                    //     }
+                    // }
                     Command::none()
                 }
                 PluginMessage::LoadPlugins => {
@@ -305,40 +302,44 @@ impl PluginRow {
                 (Event::Nothing, Command::none())
             }
             RowMessage::UpdatePressed(plugin) => {
-                // if let Ok(files) =
-                //     Installer::download(plugin.id, &plugin.title, &plugin.download_url)
-                // {
-                //     let plugins_dir = get_plugins_dir();
-                //     let tmp_dir = get_tmp_dir();
-                //     if Installer::delete(&files, &plugins_dir).is_ok() {
-                //         Installer::delete_cache_folder(plugin.id, &plugin.title, &tmp_dir);
-                //         let cache_item = PluginDataClass::new(
-                //             &plugin.title,
-                //             &plugin.author,
-                //             &plugin.current_version,
-                //         )
-                //         .with_id(plugin.id)
-                //         .with_description(&plugin.description)
-                //         .with_remote_information("", &plugin.latest_version, 0, "")
-                //         .build();
+                let tmp_dir = get_tmp_dir();
+                let plugins_dir = get_plugins_dir();
+                let mut installer =
+                    Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
 
-                //         let database_path = get_database_file_path();
-                //         if cache.insert_plugin(&cache_item).is_ok() {
-                //             self.status = "Updated".to_string();
-                //             (Event::Synchronize, Command::none())
-                //         } else {
-                //             self.status = "Update failed".to_string();
-                //             (Event::Nothing, Command::none())
-                //         }
-                //     } else {
-                //         self.status = "Installation failed".to_string();
-                //         (Event::Nothing, Command::none())
-                //     }
-                // } else {
-                //     self.status = "Download failed".to_string();
-                //     (Event::Nothing, Command::none())
-                // }
-                (Event::Nothing, Command::none())
+                if let Ok(bytes) = installer.download(&plugin.download_url) {
+                    if let Ok(root_folder_name) = installer.install(&bytes) {
+                        if installer.delete().is_ok() {
+                            if cache.delete_plugin(&plugin.title).is_ok() {
+                                installer.move_files(&root_folder_name);
+                                if cache
+                                    .mark_as_installed(plugin.id, &plugin.latest_version)
+                                    .is_ok()
+                                {
+                                    installer.delete_cache_folder();
+                                    self.status = "Updated".to_string();
+                                    self.current_version = plugin.latest_version;
+                                    (Event::Synchronize, Command::none())
+                                } else {
+                                    self.status = "Update failed".to_string();
+                                    (Event::Nothing, Command::none())
+                                }
+                            } else {
+                                self.status = "Update failed".to_string();
+                                (Event::Nothing, Command::none())
+                            }
+                        } else {
+                            self.status = "Update failed".to_string();
+                            (Event::Nothing, Command::none())
+                        }
+                    } else {
+                        self.status = "Update failed".to_string();
+                        (Event::Nothing, Command::none())
+                    }
+                } else {
+                    self.status = "Update failed".to_string();
+                    (Event::Nothing, Command::none())
+                }
             }
             RowMessage::DeletePressed(plugin) => {
                 let tmp_dir = get_tmp_dir();
@@ -348,9 +349,14 @@ impl PluginRow {
 
                 if let Ok(bytes) = installer.download(&plugin.download_url) {
                     if installer.install(&bytes).is_ok() {
-                        if cache.delete_plugin(&plugin.title).is_ok() {
-                            self.status = "Deleted".to_string();
-                            (Event::Synchronize, Command::none())
+                        if installer.delete().is_ok() {
+                            if cache.delete_plugin(&plugin.title).is_ok() {
+                                self.status = "Deleted".to_string();
+                                (Event::Synchronize, Command::none())
+                            } else {
+                                self.status = "Delete failed".to_string();
+                                (Event::Nothing, Command::none())
+                            }
                         } else {
                             self.status = "Delete failed".to_string();
                             (Event::Nothing, Command::none())

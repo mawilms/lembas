@@ -47,7 +47,7 @@ impl Installer {
         Ok(bytes)
     }
 
-    pub fn install(&mut self, content: &Bytes) -> Result<String, Box<dyn Error>> {
+    pub fn install(&mut self, bytes: &Bytes) -> Result<String, Box<dyn Error>> {
         if self.tmp_file_path.exists() {
             fs::remove_dir_all(&self.tmp_file_path).unwrap();
         }
@@ -59,7 +59,7 @@ impl Installer {
         match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
-                file.write_all(content)?;
+                file.write_all(bytes)?;
                 let file = OpenOptions::new()
                     .write(true)
                     .read(true)

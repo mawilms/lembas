@@ -22,7 +22,7 @@ exclude = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { version = "^0", features = ["tokio", "image", "pure"] }
+iced = { version = "^0", features = ["tokio", "image", "pure", "wgpu"] }
 reqwest = { version = "^0", features = ["blocking", "json"] }
 bytes = "^1"
 zip = "^0"
