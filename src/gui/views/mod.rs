@@ -178,7 +178,7 @@ impl Application for Lembas {
                 let mut image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
                 image_path.push("resources/assets/bread_light.png");
 
-                let row_bla = column()
+                let sidebar = column()
                     .spacing(20)
                     .align_items(Alignment::Center)
                     .push(
@@ -192,7 +192,7 @@ impl Application for Lembas {
                     .push(about_btn)
                     .push(settings_btn);
 
-                let navigation_container = container(row_bla)
+                let navigation_container = container(sidebar)
                     .width(Length::Shrink)
                     .height(Length::Fill)
                     .padding(25)
