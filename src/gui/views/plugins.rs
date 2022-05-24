@@ -343,11 +343,11 @@ impl PluginRow {
             RowMessage::DeletePressed(plugin) => {
                 let tmp_dir = get_tmp_dir();
                 let plugins_dir = get_plugins_dir();
-                let installer = Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
+                let mut installer =
+                    Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
 
-                if installer.download(&plugin.download_url).is_ok() {
-                    if let Ok(()) = installer.delete() {
-                        installer.delete_cache_folder();
+                if let Ok(bytes) = installer.download(&plugin.download_url) {
+                    if installer.install(&bytes).is_ok() {
                         if cache.delete_plugin(&plugin.title).is_ok() {
                             self.status = "Deleted".to_string();
                             (Event::Synchronize, Command::none())
