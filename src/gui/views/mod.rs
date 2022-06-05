@@ -5,23 +5,30 @@ pub mod plugins;
 
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use super::views::plugins::PluginMessage;
-use crate::core::io::cache::create_cache_db;
-use crate::core::io::Synchronizer;
-use crate::core::Config;
+use crate::core::config::{
+    get_database_file_path, initialize_directories, read_existing_settings_file,
+};
+use crate::core::io::cache::DatabaseHandler;
+use crate::core::io::Cache;
+use crate::core::lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser};
 use crate::gui::style;
 pub use about::About as AboutView;
 pub use catalog::{Catalog as CatalogView, Message as CatalogMessage};
 pub use configuration::{Configuration as ConfigView, Message as ConfigMessage};
-use dirs::cache_dir;
-use dirs::data_dir;
-use dirs::home_dir;
+
+use iced::pure::{button, column, container, image, row, text, Application, Element};
 use iced::{
-    button, window::Settings as Window, Align, Application, Button, Clipboard, Column, Command,
-    Container, Element, HorizontalAlignment, Length, Row, Settings, Space, Text, VerticalAlignment,
+    alignment::{Horizontal, Vertical},
+    window::Settings as Window,
+    Alignment, Command, Length, Settings, Space,
 };
+use log::debug;
 pub use plugins::Plugins as PluginsView;
+use r2d2_sqlite::SqliteConnectionManager;
+use tokio::task;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -42,23 +49,16 @@ impl Default for View {
 #[derive(Debug, Clone)]
 pub enum Lembas {
     Loading,
-    Loaded(State),
+    Loaded(Box<State>),
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
-    config: Config,
     view: View,
     plugins_view: PluginsView,
     catalog_view: CatalogView,
     about_view: AboutView,
     config_view: ConfigView,
-
-    input_value: String,
-    plugins_btn: button::State,
-    catalog_btn: button::State,
-    about_btn: button::State,
-    settings_btn: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -77,19 +77,13 @@ pub enum Message {
 }
 
 impl State {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(cache: &Arc<Cache>) -> Self {
         Self {
-            config: config.clone(),
             view: View::default(),
-            plugins_view: PluginsView::new(config.clone()),
-            catalog_view: CatalogView::new(config.clone()),
+            plugins_view: PluginsView::new(cache.clone()),
+            catalog_view: CatalogView::new(cache.clone()),
             about_view: AboutView::default(),
-            config_view: ConfigView::new(config),
-            input_value: "".to_string(),
-            plugins_btn: button::State::default(),
-            catalog_btn: button::State::default(),
-            about_btn: button::State::default(),
-            settings_btn: button::State::default(),
+            config_view: ConfigView::default(),
         }
     }
 }
@@ -110,11 +104,11 @@ impl Application for Lembas {
         format!("Lembas {}", VERSION)
     }
 
-    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match self {
             Lembas::Loading => {
                 if let Message::Loaded(state) = message {
-                    *self = Lembas::Loaded(state);
+                    *self = Lembas::Loaded(Box::new(state));
                 }
                 Command::none()
             }
@@ -154,87 +148,72 @@ impl Application for Lembas {
         }
     }
 
-    fn view(&mut self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         match self {
             Lembas::Loading => loading_data(),
-            Lembas::Loaded(State {
-                config: _,
-                view,
-                plugins_view,
-                catalog_view,
-                about_view,
-                config_view,
-                input_value: _,
-                plugins_btn,
-                catalog_btn,
-                about_btn,
-                settings_btn,
-            }) => {
-                let plugins_btn = Button::new(plugins_btn, Text::new("My Plugins"))
-                    .on_press(Message::PluginsPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
-                let catalog_btn = Button::new(catalog_btn, Text::new("Catalog"))
+            Lembas::Loaded(state) => {
+                let plugins_btn =
+                    button(text("My Plugins").horizontal_alignment(Horizontal::Center))
+                        .on_press(Message::PluginsPressed)
+                        .width(Length::Units(100))
+                        .padding(5)
+                        .style(style::PrimaryButton::Enabled);
+                let catalog_btn = button(text("Catalog").horizontal_alignment(Horizontal::Center))
                     .on_press(Message::CatalogPressed)
+                    .width(Length::Units(100))
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
-                let divider = Space::new(Length::Fill, Length::Shrink);
-                let about_btn = Button::new(about_btn, Text::new("About"))
+                let about_btn = button(text("About").horizontal_alignment(Horizontal::Center))
                     .on_press(Message::AboutPressed)
+                    .width(Length::Units(100))
                     .padding(5)
                     .style(style::PrimaryButton::Enabled);
-                let settings_btn = Button::new(settings_btn, Text::new("Settings"))
-                    .on_press(Message::SettingsPressed)
-                    .padding(5)
-                    .style(style::PrimaryButton::Enabled);
+                let settings_btn =
+                    button(text("Settings").horizontal_alignment(Horizontal::Center))
+                        .on_press(Message::SettingsPressed)
+                        .width(Length::Units(100))
+                        .padding(5)
+                        .style(style::PrimaryButton::Enabled);
 
-                let row = Row::new()
-                    .width(Length::Fill)
-                    .align_items(Align::Center)
-                    .spacing(10)
+                let mut image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                image_path.push("resources/assets/bread_light.png");
+
+                let sidebar = column()
+                    .spacing(20)
+                    .align_items(Alignment::Center)
+                    .push(
+                        image(image_path)
+                            .width(Length::Units(85))
+                            .height(Length::Units(85)),
+                    )
                     .push(plugins_btn)
                     .push(catalog_btn)
-                    .push(divider)
+                    .push(Space::new(Length::Shrink, Length::Fill))
                     .push(about_btn)
                     .push(settings_btn);
 
-                let navigation_container = Container::new(row)
-                    .width(Length::Fill)
-                    .padding(10)
+                let navigation_container = container(sidebar)
+                    .width(Length::Shrink)
+                    .height(Length::Fill)
+                    .padding(25)
                     .style(style::NavigationContainer);
 
-                match view {
+                match state.view {
                     View::Plugins => {
-                        let main_container = plugins_view.view().map(Message::PluginAction);
-                        Column::new()
-                            .width(Length::Fill)
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        let main_container = state.plugins_view.view().map(Message::PluginAction);
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::Catalog => {
-                        let main_container = catalog_view.view().map(Message::CatalogAction);
-                        Column::new()
-                            .width(Length::Fill)
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        let main_container = state.catalog_view.view().map(Message::CatalogAction);
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::About => {
-                        let main_container = about_view.view();
-                        Column::new()
-                            .width(Length::Fill)
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        let main_container = state.about_view.view();
+                        row().push(navigation_container).push(main_container).into()
                     }
                     View::Configuration => {
-                        let main_container = config_view.view().map(Message::ConfigAction);
-                        Column::new()
-                            .width(Length::Fill)
-                            .push(navigation_container)
-                            .push(main_container)
-                            .into()
+                        let main_container = state.config_view.view().map(Message::ConfigAction);
+                        row().push(navigation_container).push(main_container).into()
                     }
                 }
             }
@@ -267,35 +246,42 @@ impl Lembas {
     }
 
     pub async fn init_application() -> State {
-        let paths = Paths {
-            plugins: home_dir()
-                .expect("Couldn't find your home directory")
-                .join("Documents")
-                .join("The Lord of the Rings Online")
-                .join("Plugins"),
-            settings: data_dir().unwrap().join("lembas"),
-            cache: cache_dir().unwrap().join("lembas"),
-        };
-        let config = Config::new(paths);
+        let database_path = get_database_file_path();
+        initialize_directories();
 
-        create_cache_db(&config.db_file_path).expect("Unable to create cache db");
-        Synchronizer::synchronize_application(
-            &config.plugins_dir,
-            &config.db_file_path,
-            &config.application_settings.feed_url,
-        )
-        .await
-        .unwrap();
+        let manager = SqliteConnectionManager::file(&database_path);
+        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
 
-        State::new(&config)
+        let cache = Cache::new(pool.clone());
+
+        cache.create_cache_db().expect("Unable to create cache db");
+        // Synchronizer::synchronize_application(&plugins_dir, &database_path, &settings.feed_url)
+        //     .await
+        //     .unwrap();
+
+        task::spawn(async {
+            debug!("Started fetching plugins from lotrocompendium");
+            let settings = read_existing_settings_file();
+            let cache = Cache::new(pool);
+            let result = FeedDownloader::fetch_feed_content(settings.feed_url).await;
+            if let Ok(content) = result {
+                let plugins = FeedUrlParser::parse_response_xml(&content);
+                if let Err(err) = cache.sync_plugins(&plugins) {
+                    log::debug!("Error while syncing the plugins during startup. {}", err);
+                }
+            }
+            debug!("Finished fetching plugins from lotrocompendium");
+        });
+
+        State::new(&Arc::new(cache))
     }
 }
 
 fn loading_data<'a>() -> Element<'a, Message> {
-    Container::new(
-        Text::new("Plugins loading...")
-            .horizontal_alignment(HorizontalAlignment::Center)
-            .vertical_alignment(VerticalAlignment::Center)
+    container(
+        text("Plugins loading...")
+            .horizontal_alignment(Horizontal::Center)
+            .vertical_alignment(Vertical::Center)
             .size(20),
     )
     .width(Length::Fill)
@@ -304,10 +290,4 @@ fn loading_data<'a>() -> Element<'a, Message> {
     .center_x()
     .style(style::Content)
     .into()
-}
-
-pub struct Paths {
-    pub plugins: PathBuf,
-    pub settings: PathBuf,
-    pub cache: PathBuf,
 }

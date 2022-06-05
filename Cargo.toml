@@ -1,10 +1,8 @@
-#cargo-features = ["strip"]
-
 [package]
 name = "lembas"
 version = "0.3.1"
 authors = ["Marius Wilms <info@mariuswilms.dev>"]
-edition = "2018"
+edition = "2021"
 license = "GPL-3.0-only"
 readme = "README.md"
 repository = "https://github.com/mawilms/lembas"
@@ -19,17 +17,18 @@ exclude = [
     "tests/*",
 ]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-iced = { version = "^0", features = ["glow", "tokio"] }
+iced = { version = "^0", features = ["tokio", "image", "pure", "wgpu"] }
 reqwest = { version = "^0", features = ["blocking", "json"] }
+bytes = "^1"
 zip = "^0"
 serde = { version = "^1", features = ["derive"] }
 serde_json = "^1"
 serde-xml-rs = "^0"
-dirs = "^3"
+dirs = "^4"
 rusqlite = { version = "^0", features = ["bundled"] }
+r2d2 = "^0"
+r2d2_sqlite = "^0"
 futures = "^0"
 tokio = { version = "^1", features = ["full"]}
 image = "^0"
@@ -39,14 +38,11 @@ globset = "^0"
 chrono = "^0"
 log = { version = "^0", features = ["max_level_debug", "release_max_level_off"] }
 env_logger = "^0"
-uuid = { version = "^0", features = ["v4"] }
+uuid = { version = "^1", features = ["v4"] }
 walkdir = "^2"
 regex = "^1"
 itertools = "^0"
-
-[dev-dependencies]
-mockall = "^0"
-mockall_double = "^0"
+async-trait = "^0"
 
 [build-dependencies]
 embed-resource = "^1"
@@ -57,5 +53,5 @@ winapi = "^0"
 [profile.release]
 opt-level = "s"
 lto = true
-#strip = "symbols"# Currently only useable for nightly --> 
+strip = "symbols"
 codegen-units = 1
