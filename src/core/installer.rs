@@ -15,7 +15,12 @@ use std::{
 use std::{fs, io::prelude::*};
 use std::{fs::metadata, path::Path};
 
-use super::config::{get_plugins_backup_dir, read_existing_settings_file};
+use crate::gui::views::plugins::{Event, PluginRow};
+
+use super::{
+    config::{get_plugins_backup_dir, read_existing_settings_file},
+    io::{cache::DatabaseHandler, Cache},
+};
 
 pub struct Installer {
     pub plugins_dir: PathBuf,
@@ -33,6 +38,43 @@ impl Installer {
                 plugin_title.replace(' ', "_")
             )),
             files: Vec::new(),
+        }
+    }
+
+    pub fn run_installation(
+        &mut self,
+        cache: &Cache,
+        plugin: &PluginRow,
+    ) -> (Event, String, String) {
+        if let Ok(bytes) = self.download(&plugin.download_url) {
+            if let Ok(root_folder_name) = self.install(&bytes) {
+                if self.delete().is_ok() {
+                    if cache.delete_plugin(&plugin.title).is_ok() {
+                        self.move_files(&root_folder_name);
+                        if cache
+                            .mark_as_installed(plugin.id, &plugin.latest_version)
+                            .is_ok()
+                        {
+                            self.delete_cache_folder();
+                            (
+                                Event::Synchronize,
+                                "Updated".to_string(),
+                                plugin.latest_version.clone(),
+                            )
+                        } else {
+                            (Event::Nothing, "Update failed".to_string(), String::new())
+                        }
+                    } else {
+                        (Event::Nothing, "Update failed".to_string(), String::new())
+                    }
+                } else {
+                    (Event::Nothing, "Update failed".to_string(), String::new())
+                }
+            } else {
+                (Event::Nothing, "Update failed".to_string(), String::new())
+            }
+        } else {
+            (Event::Nothing, "Update failed".to_string(), String::new())
         }
     }
 

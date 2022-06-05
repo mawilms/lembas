@@ -9,6 +9,7 @@ use crate::gui::style;
 use cache::Cache;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{alignment::Horizontal, Alignment, Command, Length, Space};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -108,11 +109,17 @@ impl Plugins {
                     Command::perform(Self::refresh_db(), PluginMessage::DbRefreshed)
                 }
                 PluginMessage::UpdateAllPressed => {
-                    // for (index, element) in state.plugins.iter_mut().enumerate() {
-                    //     if element.current_version != element.latest_version {
-                    //         state.plugins[index].update(RowMessage::UpdatePressed(bla), &*state.cache);
-                    //     }
-                    // }
+                    let tmp_dir = get_tmp_dir();
+                    let plugins_dir = get_plugins_dir();
+                    for element in &state.plugins {
+                        if element.current_version != element.latest_version {
+                            debug!("Update plugin: {}", element.title);
+                            let mut installer =
+                                Installer::new(&tmp_dir, &plugins_dir, element.id, &element.title);
+                            installer.run_installation(&state.cache, element);
+                            debug!("Update finished: {}", element.title);
+                        }
+                    }
                     Command::none()
                 }
                 PluginMessage::LoadPlugins => {
@@ -307,38 +314,13 @@ impl PluginRow {
                 let mut installer =
                     Installer::new(&tmp_dir, &plugins_dir, plugin.id, &plugin.title);
 
-                if let Ok(bytes) = installer.download(&plugin.download_url) {
-                    if let Ok(root_folder_name) = installer.install(&bytes) {
-                        if installer.delete().is_ok() {
-                            if cache.delete_plugin(&plugin.title).is_ok() {
-                                installer.move_files(&root_folder_name);
-                                if cache
-                                    .mark_as_installed(plugin.id, &plugin.latest_version)
-                                    .is_ok()
-                                {
-                                    installer.delete_cache_folder();
-                                    self.status = "Updated".to_string();
-                                    self.current_version = plugin.latest_version;
-                                    (Event::Synchronize, Command::none())
-                                } else {
-                                    self.status = "Update failed".to_string();
-                                    (Event::Nothing, Command::none())
-                                }
-                            } else {
-                                self.status = "Update failed".to_string();
-                                (Event::Nothing, Command::none())
-                            }
-                        } else {
-                            self.status = "Update failed".to_string();
-                            (Event::Nothing, Command::none())
-                        }
-                    } else {
-                        self.status = "Update failed".to_string();
-                        (Event::Nothing, Command::none())
+                match installer.run_installation(cache, &plugin) {
+                    (Event::Synchronize, status, latest_version) => {
+                        self.latest_version = latest_version;
+                        self.status = status;
+                        (Event::Synchronize, Command::none())
                     }
-                } else {
-                    self.status = "Update failed".to_string();
-                    (Event::Nothing, Command::none())
+                    _ => (Event::Nothing, Command::none()),
                 }
             }
             RowMessage::DeletePressed(plugin) => {
