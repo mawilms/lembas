@@ -1,105 +1,199 @@
+use bytes::Bytes;
 use chrono::offset::Utc;
 use chrono::DateTime;
-use dirs::home_dir;
 use fs_extra::{
     self,
     dir::{copy, CopyOptions},
 };
+use log::debug;
+use std::time::SystemTime;
 use std::{
     error::Error,
-    fs::{File, OpenOptions},
+    fs::{create_dir_all, File, OpenOptions},
+    path::PathBuf,
 };
 use std::{fs, io::prelude::*};
-use std::{fs::create_dir, time::SystemTime};
 use std::{fs::metadata, path::Path};
 
-pub struct Installer;
+use crate::gui::views::plugins::{Event, PluginRow};
+
+use super::{
+    config::{get_plugins_backup_dir, read_existing_settings_file},
+    io::{cache::DatabaseHandler, Cache},
+};
+
+pub struct Installer {
+    pub plugins_dir: PathBuf,
+    pub tmp_file_path: PathBuf,
+    pub files: Vec<String>,
+}
 
 impl Installer {
-    pub fn download(
-        plugin_id: i32,
-        plugin_title: &str,
-        download_url: &str,
-        plugins_dir: &Path,
-        cache_dir: &Path,
-        backup_enabled: bool,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
-        if backup_enabled {
-            Self::back_plugin_folder(plugins_dir);
+    pub fn new(tmp_dir: &Path, plugins_dir: &Path, plugin_id: i32, plugin_title: &str) -> Self {
+        Self {
+            plugins_dir: plugins_dir.to_path_buf(),
+            tmp_file_path: tmp_dir.join(&format!(
+                "{}_{}",
+                plugin_id,
+                plugin_title.replace(' ', "_")
+            )),
+            files: Vec::new(),
         }
-        let response = reqwest::blocking::get(download_url)?;
+    }
 
-        let tmp_file_path = cache_dir.join(&format!("{}_{}", plugin_id, plugin_title));
+    pub fn run_installation(
+        &mut self,
+        cache: &Cache,
+        plugin: &PluginRow,
+    ) -> (Event, String, String) {
+        if let Ok(bytes) = self.download(&plugin.download_url) {
+            if let Ok(root_folder_name) = self.install(&bytes) {
+                if self.delete().is_ok() {
+                    if cache.delete_plugin(&plugin.title).is_ok() {
+                        self.move_files(&root_folder_name);
+                        if cache
+                            .mark_as_installed(plugin.id, &plugin.latest_version)
+                            .is_ok()
+                        {
+                            self.delete_cache_folder();
+                            (
+                                Event::Synchronize,
+                                "Updated".to_string(),
+                                plugin.latest_version.clone(),
+                            )
+                        } else {
+                            (Event::Nothing, "Update failed".to_string(), String::new())
+                        }
+                    } else {
+                        (Event::Nothing, "Update failed".to_string(), String::new())
+                    }
+                } else {
+                    (Event::Nothing, "Update failed".to_string(), String::new())
+                }
+            } else {
+                (Event::Nothing, "Update failed".to_string(), String::new())
+            }
+        } else {
+            (Event::Nothing, "Update failed".to_string(), String::new())
+        }
+    }
 
-        fs::create_dir(&tmp_file_path)?;
+    pub fn download(&self, download_url: &str) -> Result<Bytes, Box<dyn Error>> {
+        let settings = read_existing_settings_file();
 
-        let cache_path = cache_dir
-            .join(&format!("{}_{}", plugin_id, plugin_title))
-            .join("plugin.zip");
+        if settings.backup_enabled {
+            self.backup_plugin_folder();
+        }
+        let bytes = reqwest::blocking::get(download_url)?.bytes()?;
+
+        Ok(bytes)
+    }
+
+    pub fn install(&mut self, bytes: &Bytes) -> Result<String, Box<dyn Error>> {
+        if self.tmp_file_path.exists() {
+            fs::remove_dir_all(&self.tmp_file_path).unwrap();
+        }
+
+        fs::create_dir(&self.tmp_file_path)?;
+
+        let cache_path = &self.tmp_file_path.join("plugin.zip");
+
         match File::create(&cache_path) {
             Err(why) => panic!("couldn't create {}", why),
             Ok(mut file) => {
-                let content = response.bytes()?;
-                file.write_all(&content)?;
+                file.write_all(bytes)?;
                 let file = OpenOptions::new()
                     .write(true)
                     .read(true)
                     .open(&cache_path)
                     .unwrap();
-                let mut zip_archive = zip::ZipArchive::new(file).unwrap();
-                zip::ZipArchive::extract(&mut zip_archive, &tmp_file_path)?;
-                let root_folder_name = zip_archive.by_index(0).unwrap().name().to_string();
+                let mut zip_archive = zip::ZipArchive::new(file)?;
+                zip::ZipArchive::extract(&mut zip_archive, &self.tmp_file_path)?;
+                let root_folder_name = zip_archive
+                    .by_index(0)?
+                    .name()
+                    .to_string()
+                    .replace(' ', "_")
+                    .split('/')
+                    .next()
+                    .unwrap()
+                    .to_string();
 
-                let files = zip_archive
+                self.files = zip_archive
                     .file_names()
                     .map(std::string::ToString::to_string)
                     .collect::<Vec<String>>();
 
-                Self::move_files(&tmp_file_path, &root_folder_name, plugins_dir);
-                Ok(files)
+                Ok(root_folder_name)
             }
         }
     }
 
-    pub fn delete(files: &[String], plugins_dir: &Path) -> Result<(), Box<dyn Error>> {
-        let root_name = files[0].split('/').next().unwrap();
-        for file in files {
-            let path = plugins_dir.join(file);
-            if let Ok(md) = metadata(&path) {
-                if md.is_dir() {
-                    fs::remove_dir_all(&path)?;
-                } else {
-                    fs::remove_file(&path)?;
-                }
-            }
+    pub fn delete(&self) -> Result<(), Box<dyn Error>> {
+        let root_name = self.files[0].split('/').next().unwrap();
+        let plugin_name = &self.files[0]
+            .split('/')
+            .into_iter()
+            .map(std::string::ToString::to_string)
+            .collect::<Vec<String>>()[1];
+
+        fs::remove_dir_all(&self.plugins_dir.join(&root_name).join(&plugin_name))?;
+
+        let plugin_path = self
+            .plugins_dir
+            .join(root_name)
+            .join(&format!("{}.plugin", plugin_name));
+
+        if plugin_path.exists() {
+            fs::remove_file(
+                self.plugins_dir
+                    .join(root_name)
+                    .join(&format!("{}.plugin", plugin_name)),
+            )?;
         }
 
-        if plugins_dir.read_dir()?.next().is_none() {
-            fs::remove_dir_all(&plugins_dir.join(root_name))?;
+        let plugin_name = format!("{}.plugincompendium", plugin_name);
+        if self.plugins_dir.join(root_name).join(&plugin_name).exists() {
+            fs::remove_file(self.plugins_dir.join(root_name).join(plugin_name))?;
+        }
+
+        if fs::read_dir(&self.plugins_dir.join(root_name))?
+            .next()
+            .is_none()
+        {
+            fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
         }
 
         Ok(())
     }
 
-    fn move_files(tmp_path: &Path, folder_name: &str, plugins_dir: &Path) {
-        let tmp_folder = fs::read_dir(&tmp_path.join(&folder_name)).unwrap();
-        fs::remove_file(&tmp_path.join("plugin.zip")).unwrap();
+    pub fn move_files(&self, folder_name: &str) {
+        let tmp_folder = fs::read_dir(&self.tmp_file_path.join(&folder_name))
+            .map_err(|_| {
+                debug!(
+                    "Error while reading tmp folder with the name {}",
+                    &self.tmp_file_path.join(&folder_name).to_str().unwrap()
+                );
+            })
+            .unwrap();
+        fs::remove_file(&self.tmp_file_path.join("plugin.zip")).unwrap();
 
-        if !&plugins_dir.join(&folder_name).exists() {
-            fs::create_dir_all(&plugins_dir.join(&folder_name)).unwrap();
+        if !&self.plugins_dir.join(&folder_name).exists() {
+            fs::create_dir_all(&self.plugins_dir.join(&folder_name)).unwrap();
         }
 
         for file in tmp_folder {
             let file_str = file.unwrap().file_name().into_string().unwrap();
 
-            let md = metadata(&tmp_path.join(&folder_name).join(&file_str)).unwrap();
+            let md = metadata(&self.tmp_file_path.join(&folder_name).join(&file_str)).unwrap();
+
             if md.is_dir() {
                 let mut options = fs_extra::dir::CopyOptions::new();
                 options.overwrite = true;
                 options.copy_inside = true;
                 fs_extra::dir::move_dir(
-                    &tmp_path.join(&folder_name).join(&file_str),
-                    &plugins_dir.join(folder_name),
+                    &self.tmp_file_path.join(&folder_name).join(&file_str),
+                    &self.plugins_dir.join(folder_name),
                     &options,
                 )
                 .unwrap();
@@ -107,8 +201,8 @@ impl Installer {
                 let mut options = fs_extra::file::CopyOptions::new();
                 options.overwrite = true;
                 fs_extra::file::move_file(
-                    &tmp_path.join(&folder_name).join(&file_str),
-                    &plugins_dir.join(&folder_name).join(&file_str),
+                    &self.tmp_file_path.join(&folder_name).join(&file_str),
+                    &self.plugins_dir.join(&folder_name).join(&file_str),
                     &options,
                 )
                 .unwrap();
@@ -116,21 +210,15 @@ impl Installer {
         }
     }
 
-    pub fn delete_cache_folder(plugin_id: i32, plugin_title: &str, cache_dir: &Path) {
-        let tmp_file_path = cache_dir.join(format!("{}_{}", plugin_id, plugin_title));
-
-        fs::remove_dir_all(tmp_file_path).unwrap();
+    pub fn delete_cache_folder(&self) {
+        fs::remove_dir_all(&self.tmp_file_path).unwrap();
     }
 
-    fn back_plugin_folder(plugins_dir: &Path) {
-        let backup_path = home_dir()
-            .expect("Couldn't find your home directory")
-            .join("Documents")
-            .join("The Lord of the Rings Online")
-            .join("PluginsBackup");
+    fn backup_plugin_folder(&self) {
+        let backup_path = get_plugins_backup_dir();
 
         if !backup_path.exists() {
-            create_dir(&backup_path).unwrap();
+            create_dir_all(&backup_path).unwrap();
         }
 
         let options = CopyOptions::new();
@@ -140,11 +228,8 @@ impl Installer {
         let datetime = datetime.format("%Y_%m_%d_%H%M%S").to_string();
 
         let tmp_backup_path = &backup_path.join(format!("{}_backup", datetime));
-        create_dir(&tmp_backup_path).unwrap();
+        create_dir_all(&tmp_backup_path).unwrap();
 
-        copy(&plugins_dir, &tmp_backup_path, &options).unwrap();
+        copy(&self.plugins_dir, &tmp_backup_path, &options).unwrap();
     }
 }
-
-#[cfg(test)]
-mod tests {}
