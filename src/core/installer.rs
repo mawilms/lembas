@@ -131,8 +131,38 @@ impl Installer {
 
     pub fn delete(&self) -> Result<(), Box<dyn Error>> {
         let root_name = self.files[0].split('/').next().unwrap();
+        let plugin_name = &self.files[0]
+            .split('/')
+            .into_iter()
+            .map(std::string::ToString::to_string)
+            .collect::<Vec<String>>()[1];
 
-        fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
+        fs::remove_dir_all(&self.plugins_dir.join(&root_name).join(&plugin_name))?;
+
+        let plugin_path = self
+            .plugins_dir
+            .join(root_name)
+            .join(&format!("{}.plugin", plugin_name));
+
+        if plugin_path.exists() {
+            fs::remove_file(
+                self.plugins_dir
+                    .join(root_name)
+                    .join(&format!("{}.plugin", plugin_name)),
+            )?;
+        }
+
+        let plugin_name = format!("{}.plugincompendium", plugin_name);
+        if self.plugins_dir.join(root_name).join(&plugin_name).exists() {
+            fs::remove_file(self.plugins_dir.join(root_name).join(plugin_name))?;
+        }
+
+        if fs::read_dir(&self.plugins_dir.join(root_name))?
+            .next()
+            .is_none()
+        {
+            fs::remove_dir_all(&self.plugins_dir.join(root_name))?;
+        }
 
         Ok(())
     }
