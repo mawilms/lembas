@@ -4,13 +4,16 @@ use crate::core::config::{
     get_database_file_path, get_plugins_dir, get_tmp_dir, read_existing_settings_file,
 };
 use crate::core::io::cache::{self, DatabaseHandler};
+use crate::core::lotro_compendium::{Downloader, FeedDownloader, FeedUrlParser};
 use crate::core::{Installer, Plugin};
 use crate::gui::style;
 use cache::Cache;
 use iced::pure::{button, column, container, row, scrollable, text, text_input, Element};
 use iced::{alignment::Horizontal, Alignment, Command, Length, Space};
 use log::debug;
+use r2d2_sqlite::SqliteConnectionManager;
 use serde::{Deserialize, Serialize};
+use tokio::task;
 
 #[derive(Debug, Clone)]
 pub enum Plugins {
@@ -52,19 +55,23 @@ impl Plugins {
     }
 
     async fn refresh_db() -> Result<(), ApplicationError> {
-        let plugins_dir = get_plugins_dir();
-        // let local_plugins =
-        //     Synchronizer::search_local(&plugins_dir).map_err(|_| ApplicationError::Synchronize);
-
         let database_path = get_database_file_path();
-        let settings = read_existing_settings_file();
-        // Synchronizer::compare_local_state(
-        //     &local_plugins.unwrap(),
-        //     &database_path,
-        //     &settings.feed_url,
-        // )
-        // .await;
+        let manager = SqliteConnectionManager::file(&database_path);
+        let pool = r2d2::Pool::new(manager).expect("Error while creating a database pool");
 
+        task::spawn(async {
+            debug!("Started fetching plugins from lotrocompendium");
+            let settings = read_existing_settings_file();
+            let cache = Cache::new(pool);
+            let result = FeedDownloader::fetch_feed_content(settings.feed_url).await;
+            if let Ok(content) = result {
+                let plugins = FeedUrlParser::parse_response_xml(&content);
+                if let Err(err) = cache.sync_plugins(&plugins) {
+                    log::debug!("Error while syncing the plugins during startup. {}", err);
+                }
+            }
+            debug!("Finished fetching plugins from lotrocompendium");
+        });
         Ok(())
     }
 
