@@ -13,6 +13,18 @@ use std::{
     io::Read,
 };
 
+#[cfg(target_os = "windows")]
+pub fn get_home_dir() -> PathBuf {
+    home_dir().expect("Couldn't find your home directory")
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_lotro_home_dir() -> PathBuf {
+    let home = home_dir().expect("Couldn't find your home directory");
+    home.join(".steam/steam/steamapps/compatdata/212500/pfx/dosdevices/")
+        .join(r"c:/users/steamuser")
+}
+
 pub fn initialize_directories() {
     let storage_dir = get_storage_dir();
 
@@ -28,16 +40,14 @@ pub fn initialize_directories() {
 }
 
 pub fn get_plugins_dir() -> PathBuf {
-    home_dir()
-        .expect("Couldn't find your home directory")
+    get_lotro_home_dir()
         .join("Documents")
         .join("The Lord of the Rings Online")
         .join("Plugins")
 }
 
 pub fn get_plugins_backup_dir() -> PathBuf {
-    home_dir()
-        .expect("Couldn't find your home directory")
+    get_lotro_home_dir()
         .join("Documents")
         .join("The Lord of the Rings Online")
         .join("Plugins_Backup")
