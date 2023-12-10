@@ -1,7 +1,15 @@
-<script>
-    import {Plugin} from "../lib/plugin";
-    import ProgressBar from "../components/Progressbar.svelte";
+<script lang="ts">
     import "../app.css";
+    import {Plugin} from "$lib/plugin";
+    import ProgressBar from "../components/Progressbar.svelte";
+    import {Greet} from '$lib/wailsjs/go/main/App'
+
+    let resultText: string = "Please enter your name below 👇"
+    let name: string
+
+    function greet(): void {
+        Greet(name).then(result => resultText = result)
+    }
 
     const plugins = [
         new Plugin("RaidGuy", "1.90", "1.90"),

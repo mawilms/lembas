@@ -15,7 +15,7 @@ func DownloadPackageInformation() ([]models.RemotePlugin, error) {
 	content, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 
-	plugins, err := ParseFeed(content)
+	plugins, err := ParseFeed(string(content))
 
 	return plugins, err
 }

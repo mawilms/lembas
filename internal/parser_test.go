@@ -7,7 +7,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	xmlContent := []byte(`<pluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	xmlContent := `<pluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Id>366</Id>
   <Name>Bevy o Bars</Name>
   <Version>2.321</Version>
@@ -23,7 +23,7 @@ func TestParse(t *testing.T) {
     <dependency>367</dependency>
     <dependency>575</dependency>
   </dependencies>
-</pluginConfig>`)
+</pluginConfig>`
 
 	config, err := ParseConfig(xmlContent)
 	if err != nil {
@@ -47,8 +47,8 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseFavorites(t *testing.T) {
-	content := []byte(`<Favorites>
-	<ui>
+	content := `<Favorites>
+	<Ui>
 	<UID>1126</UID>
 	<UIName>AltHolic</UIName>
 	<UIAuthorName>homeopatix</UIAuthorName>
@@ -83,8 +83,8 @@ func TestParseFavorites(t *testing.T) {
 	<UIFileURL>
 	http://www.lotrointerface.com/downloads/download1218
 	</UIFileURL>
-	</ui>
-</Favorites>`)
+	</Ui>
+</Favorites>`
 
 	plugins, err := ParseFeed(content)
 	if err != nil {

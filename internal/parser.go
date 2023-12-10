@@ -27,10 +27,10 @@ type pluginConfig struct {
 	Dependencies dependencies `xml:"dependencies"`
 }
 
-func ParseConfig(content []byte) (models.InstalledPlugin, error) {
+func ParseConfig(content string) (models.InstalledPlugin, error) {
 	var pluginConfig pluginConfig
 
-	err := xml.Unmarshal(content, &pluginConfig)
+	err := xml.Unmarshal([]byte(content), &pluginConfig)
 	if err != nil {
 		return models.InstalledPlugin{}, err
 	}
@@ -63,7 +63,7 @@ func mapPluginConfigToInstalledPlugin(config *pluginConfig) models.InstalledPlug
 }
 
 type favorite struct {
-	Ui []ui `xml:"ui"`
+	Ui []ui `xml:"Ui"`
 }
 
 type ui struct {
@@ -79,10 +79,10 @@ type ui struct {
 	Url              string `xml:"UIFileURL"`
 }
 
-func ParseFeed(content []byte) ([]models.RemotePlugin, error) {
+func ParseFeed(content string) ([]models.RemotePlugin, error) {
 	var favorite favorite
 
-	decoder := xml.NewDecoder(bytes.NewReader(content))
+	decoder := xml.NewDecoder(bytes.NewReader([]byte(content)))
 	decoder.Strict = false
 
 	err := decoder.Decode(&favorite)
