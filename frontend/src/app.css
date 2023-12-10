@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    background-color: rgb(36, 21, 18);
+    text-align: center;
+    color: white;
+    overflow: hidden;
+}
+
+body {
+    margin: 0;
+}
+
+#app {
+    height: 100vh;
+    text-align: center;
+}

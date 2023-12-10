@@ -1,6 +1,6 @@
 <script lang="ts">
-    import {Greet} from '../wailsjs/go/main/App.js'
-    import Plugins from "./pages/Plugins.svelte";
+    import "../app.css";
+    import {Greet} from '$lib/wailsjs/go/main/App'
 
     let resultText: string = "Please enter your name below 👇"
     let name: string
@@ -15,10 +15,12 @@
         <div class="flex space-x-8 items-center">
             <h1>Lembas</h1>
             <ul class="flex border-solid border-2 border-primary rounded-xl overflow-hidden">
-                <li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
-                       href="#">My Plugins</a></li>
-                <li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
-                       href="#">Catalog</a></li>
+                <li>
+                    <a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
+                       href="/">My Plugins</a></li>
+                <li>
+                    <a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
+                       href="/catalog">Catalog</a></li>
             </ul>
         </div>
         <div>
@@ -30,6 +32,7 @@
     </nav>
 
     <div class="px-8">
-        <Plugins/>
+        <slot />
     </div>
+
 </main>

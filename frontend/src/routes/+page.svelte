@@ -1,6 +1,7 @@
 <script>
     import {Plugin} from "../lib/plugin";
-    import ProgressBar from "../components/ProgressBar.svelte";
+    import ProgressBar from "../components/Progressbar.svelte";
+    import "../app.css";
 
     const plugins = [
         new Plugin("RaidGuy", "1.90", "1.90"),
