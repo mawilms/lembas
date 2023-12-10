@@ -6,10 +6,10 @@ import (
 	"net/http"
 )
 
-func DownloadPackageInformation() ([]models.RemotePlugin, error) {
+func DownloadPackageInformation() ([]models.RemotePluginModel, error) {
 	response, err := http.Get("https://api.lotrointerface.com/fav/plugincompendium.xml")
 	if err != nil {
-		return make([]models.RemotePlugin, 0), err
+		return make([]models.RemotePluginModel, 0), err
 	}
 
 	content, err := io.ReadAll(response.Body)

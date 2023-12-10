@@ -3,14 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/mawilms/lembas/internal"
 )
 
 type App struct {
-	ctx context.Context
+	ctx       context.Context
+	datastore internal.DatastoreInterface
 }
 
-func NewApp() *App {
-	return &App{}
+func NewApp(datastore internal.DatastoreInterface) *App {
+	return &App{datastore: datastore}
 }
 
 func (a *App) startup(ctx context.Context) {

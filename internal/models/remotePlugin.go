@@ -1,6 +1,6 @@
 package models
 
-type RemotePlugin struct {
+type RemotePluginModel struct {
 	Id               int
 	Name             string
 	Author           string
