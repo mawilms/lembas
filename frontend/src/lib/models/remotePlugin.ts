@@ -3,14 +3,14 @@ export class RemotePlugin {
     name: string;
     author: string;
     version: string;
-    lastUpdated: number;
+    lastUpdated: string;
     totalDownloads: number;
     category: string;
     description: string;
     filename: string;
     url: string;
 
-    constructor(id: number, name: string, author: string, version: string, lastUpdated: number, totalDownloads: number, category: string, description: string, filename: string, url: string) {
+    constructor(id: number, name: string, author: string, version: string, lastUpdated: string, totalDownloads: number, category: string, description: string, filename: string, url: string) {
         this.id = id;
         this.name = name;
         this.author = author;
