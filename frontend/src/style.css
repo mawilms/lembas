@@ -1,7 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 html {
-    background-color: rgba(27, 38, 54, 1);
+    background-color: rgb(36, 21, 18);
     text-align: center;
     color: white;
+    overflow: hidden;
 }
 
 body {
