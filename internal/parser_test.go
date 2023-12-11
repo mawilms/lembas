@@ -25,8 +25,8 @@ func TestParseFavorites(t *testing.T) {
 	<UIFileURL>
 	http://www.lotrointerface.com/downloads/download1126
 	</UIFileURL>
-	</ui>
-	<ui>
+	</Ui>
+	<Ui>
 	<UID>1218</UID>
 	<UIName>Festival Buddy II</UIName>
 	<UIAuthorName>b414213562</UIAuthorName>
