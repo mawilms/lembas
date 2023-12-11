@@ -8,7 +8,7 @@ import (
 
 func TestParseFavorites(t *testing.T) {
 	content := []byte(`<Favorites>
-	<ui>
+	<Ui>
 	<UID>1126</UID>
 	<UIName>AltHolic</UIName>
 	<UIAuthorName>homeopatix</UIAuthorName>
@@ -25,8 +25,8 @@ func TestParseFavorites(t *testing.T) {
 	<UIFileURL>
 	http://www.lotrointerface.com/downloads/download1126
 	</UIFileURL>
-	</ui>
-	<ui>
+	</Ui>
+	<Ui>
 	<UID>1218</UID>
 	<UIName>Festival Buddy II</UIName>
 	<UIAuthorName>b414213562</UIAuthorName>
@@ -43,7 +43,7 @@ func TestParseFavorites(t *testing.T) {
 	<UIFileURL>
 	http://www.lotrointerface.com/downloads/download1218
 	</UIFileURL>
-	</ui>
+	</Ui>
 </Favorites>`)
 
 	plugins, err := ParseFeed(content)

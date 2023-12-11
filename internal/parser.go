@@ -19,7 +19,7 @@ type favorite struct {
 		Description      string `xml:"UIDescription"`
 		FileName         string `xml:"UIFile"`
 		Url              string `xml:"UIFileURL"`
-	} `xml:"ui"`
+	} `xml:"Ui"`
 }
 
 func ParseFeed(content []byte) ([]models.RemotePluginModel, error) {

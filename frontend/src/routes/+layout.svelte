@@ -1,13 +1,5 @@
 <script lang="ts">
     import "../app.css";
-    import {Greet} from '$lib/wailsjs/go/main/App'
-
-    let resultText: string = "Please enter your name below 👇"
-    let name: string
-
-    function greet(): void {
-        Greet(name).then(result => resultText = result)
-    }
 </script>
 
 <main class="h-screen overflow-hidden">
