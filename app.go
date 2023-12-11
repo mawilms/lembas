@@ -24,8 +24,12 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-func (a *App) FetchRemotePlugins() []models.RemotePlugin {
-	var plugins []models.RemotePlugin
+func (a *App) InstallPlugin(url string) {
+	fmt.Println(url)
+}
+
+func (a *App) FetchRemotePlugins() []models.RemotePluginModel {
+	var plugins []models.RemotePluginModel
 
 	plugins, err := internal.DownloadPackageInformation()
 	if err != nil {

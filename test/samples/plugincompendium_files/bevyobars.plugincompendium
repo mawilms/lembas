@@ -1,0 +1,17 @@
+<pluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>366</Id>
+  <Name>Bevy o Bars</Name>
+  <CurrentVersion>2.321</CurrentVersion>
+  <Author>MrJackdaw</Author>
+  <InfoUrl>http://www.lotrointerface.com/downloads/info366</InfoUrl>
+  <DownloadUrl>http://www.lotrointerface.com/downloads/download366</DownloadUrl>
+  <descriptors>
+    <descriptor>JackdawPlugins\BevyOBars2.plugin</descriptor>
+    <descriptor>JackdawPlugins\BevyOBars2AutoLoader.plugin</descriptor>
+  </descriptors>
+  <dependencies>
+    <dependency>0</dependency>
+    <dependency>367</dependency>
+    <dependency>575</dependency>
+  </dependencies>
+</pluginConfig>

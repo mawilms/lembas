@@ -1,6 +1,6 @@
 <script lang="ts">
     import "../../app.css";
-    import {FetchRemotePlugins} from "$lib/wailsjs/go/main/App";
+    import {FetchRemotePlugins, InstallPlugin} from "$lib/wailsjs/go/main/App";
     import {BrowserOpenURL} from "$lib/wailsjs/runtime/runtime"
     import {RemotePlugin} from "$lib/models/remotePlugin";
 
@@ -11,9 +11,9 @@
         for (let i = 0; i < result.length; i++) {
             const element = result[i]
             const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString()
-            const downloadUrl = `https://www.lotrointerface.com/downloads/info${element.Id}-${element.Name}.html`
+            const infoUrl = `https://www.lotrointerface.com/downloads/info${element.Id}-${element.Name}.html`
 
-            tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, downloadUrl))
+            tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url))
         }
 
         plugins = tmpArray
@@ -60,7 +60,7 @@
                         <div class="flex justify-between mt-4">
                             <button class="bg-primary text-dark-brown py-1 px-2 rounded-xl overflow-hidden" on:click={() => openUrl(plugin.url)}>Open website</button>
                             <div class="flex space-x-4">
-                                <button class="bg-primary text-dark-brown py-1 px-2 rounded-xl overflow-hidden">Install/Update</button>
+                                <button class="bg-primary text-dark-brown py-1 px-2 rounded-xl overflow-hidden" on:click={() => InstallPlugin(plugin.downloadUrl)}>Install/Update</button>
                                 <button class="bg-primary text-dark-brown py-1 px-2 rounded-xl overflow-hidden">Remove</button>
                             </div>
                         </div>
