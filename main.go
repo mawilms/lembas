@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"github.com/mawilms/lembas/internal"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -12,7 +13,12 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	datastore := internal.Datastore{
+		Path: "Bla", // TODO: Set home dir for database
+	}
+	datastore.New()
+
+	app := NewApp(datastore)
 
 	err := wails.Run(&options.App{
 		Title:  "lembas",
