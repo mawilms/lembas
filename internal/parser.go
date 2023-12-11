@@ -69,7 +69,7 @@ type pluginConfig struct {
 	}
 }
 
-func (v *pluginConfig) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (v *pluginConfig) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
 	var descriptors []string
 	var dependencies []int
 
@@ -107,12 +107,6 @@ func (v *pluginConfig) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 					v.InfoUrl = string(data)
 				} else if startElementName == "DownloadUrl" {
 					v.DownloadUrl = string(data)
-				} else if startElementName == "descriptors" || startElementName == "Descriptors" {
-					bla := 5
-					_ = bla
-				} else if startElementName == "dependencies" || startElementName == "Dependencies" {
-					bla := 5
-					_ = bla
 				} else if startElementName == "descriptor" {
 					descriptors = append(descriptors, string(data))
 				} else if startElementName == "dependency" {
@@ -125,47 +119,6 @@ func (v *pluginConfig) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 		}
 	}
 }
-
-type versionVariation string
-
-func (v *versionVariation) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	for {
-		token, err := d.Token()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-		if data, ok := token.(xml.CharData); ok {
-			if start.Name.Local == "CurrentVersion" || start.Name.Local == "Version" {
-				*v = versionVariation(data)
-			}
-		}
-	}
-}
-
-//type descriptors struct {
-//	Descriptor []string `xml:"descriptor"`
-//}
-//
-//func (desc *descriptors) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-//	for {
-//		token, err := d.Token()
-//		if err != nil {
-//			if err == io.EOF {
-//				return nil
-//			}
-//			return err
-//		}
-//		if data, ok := token.(xml.CharData); ok {
-//			if start.Name.Local == "Descriptors" || start.Name.Local == "descriptors" {
-//				*desc = descriptors{}
-//				_ = data
-//			}
-//		}
-//	}
-//}
 
 func ParsePluginConfig(content []byte) (models.LocalPluginModel, error) {
 	var pluginConfig pluginConfig

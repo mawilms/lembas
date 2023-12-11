@@ -62,14 +62,6 @@ func (d downloader) DownloadPlugin(url string) (models.DatastoreEntryModel, erro
 		defer dstFile.Close()
 
 		archiveFile, err := file.Open()
-		//if err != nil {
-		//	return models.DatastoreEntryModel{
-		//		Plugin: models.LocalPluginModel{},
-		//		Files:  nil,
-		//	}, err
-		//}
-		//defer archiveFile.Close()
-
 		archiveFileContent, _ := io.ReadAll(archiveFile)
 		dstFile.Write(archiveFileContent)
 
@@ -81,12 +73,10 @@ func (d downloader) DownloadPlugin(url string) (models.DatastoreEntryModel, erro
 			}, err
 		}
 
-		//archiveFileContent, _ := io.ReadAll(archiveFile)
 		if strings.Contains(file.Name, ".plugincompendium") {
 			hasPluginCompendiumFile = true
 			model, _ = ParsePluginConfig(archiveFileContent)
 		}
-
 		if strings.Contains(file.Name, ".plugin") && !hasPluginCompendiumFile {
 			model, _ = ParseFallbackConfig(archiveFileContent)
 		}
@@ -98,14 +88,4 @@ func (d downloader) DownloadPlugin(url string) (models.DatastoreEntryModel, erro
 		Plugin: model,
 		Files:  files,
 	}, nil
-}
-
-func containsFile(files []string, pattern string) (bool, string) {
-	for _, file := range files {
-		if strings.Contains(file, pattern) {
-			return true, file
-		}
-	}
-
-	return false, ""
 }
