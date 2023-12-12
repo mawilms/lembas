@@ -25,11 +25,10 @@ func DownloadPackageInformation() ([]models.RemotePluginModel, error) {
 	return plugins, err
 }
 
-type downloader struct {
-	Path string
-}
+func DownloadPlugin(url string) (models.DatastoreEntryModel, error) {
+	tmpDir, err := os.MkdirTemp("", "lembas")
+	defer os.RemoveAll(tmpDir)
 
-func (d downloader) DownloadPlugin(url string) (models.DatastoreEntryModel, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return models.DatastoreEntryModel{}, err
@@ -43,7 +42,7 @@ func (d downloader) DownloadPlugin(url string) (models.DatastoreEntryModel, erro
 	hasPluginCompendiumFile := false
 	model := models.LocalPluginModel{}
 	for _, file := range archive.File {
-		path := filepath.Join(d.Path, file.Name)
+		path := filepath.Join(tmpDir, file.Name)
 
 		if file.FileInfo().IsDir() {
 			os.MkdirAll(path, os.ModePerm)

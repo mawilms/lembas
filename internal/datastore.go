@@ -9,7 +9,7 @@ import (
 )
 
 type DatastoreInterface interface {
-	Store() error
+	Store(model models.DatastoreEntryModel) error
 	Get() ([]models.LocalPluginModel, error)
 	GetById(id string) (models.LocalPluginModel, error)
 	DeleteById(id string) error
@@ -38,7 +38,7 @@ type Datastore struct {
 }
 
 func (d Datastore) New() {
-
+	// TODO: Initialize datastore
 }
 
 func (d Datastore) Open() (models.DatastoreModel, error) {
@@ -76,7 +76,9 @@ func (d Datastore) Open() (models.DatastoreModel, error) {
 	return model, nil
 }
 
-func (d Datastore) Store() error {
+func (d Datastore) Store(model models.DatastoreEntryModel) error {
+	// TODO: Write logic and test
+
 	return nil
 }
 

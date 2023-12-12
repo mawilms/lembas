@@ -9,11 +9,12 @@ import (
 
 type App struct {
 	ctx       context.Context
+	settings  settings
 	datastore internal.DatastoreInterface
 }
 
-func NewApp(datastore internal.DatastoreInterface) *App {
-	return &App{datastore: datastore}
+func NewApp(settings settings, datastore internal.DatastoreInterface) *App {
+	return &App{settings: settings, datastore: datastore}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -26,6 +27,10 @@ func (a *App) Greet(name string) string {
 
 func (a *App) InstallPlugin(url string) {
 	fmt.Println(url)
+
+	entry, _ := internal.DownloadPlugin(url)
+
+	_ = a.datastore.Store(entry)
 }
 
 func (a *App) FetchRemotePlugins() []models.RemotePluginModel {

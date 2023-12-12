@@ -13,12 +13,16 @@ import (
 var assets embed.FS
 
 func main() {
+	settings := settings{
+		MainDirectoryPath: "",
+	}
+
 	datastore := internal.Datastore{
 		Path: "Bla", // TODO: Set home dir for database
 	}
 	datastore.New()
 
-	app := NewApp(datastore)
+	app := NewApp(settings, datastore)
 
 	err := wails.Run(&options.App{
 		Title:  "lembas",
