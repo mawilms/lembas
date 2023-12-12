@@ -94,6 +94,46 @@ func TestDatastore_Open(t *testing.T) {
 }
 
 func TestDatastore_Store(t *testing.T) {
+	filename, teardownTestCase := setupTestCase(t)
+	defer teardownTestCase(t)
+
+	entry := models.DatastoreEntryModel{
+		Plugin: models.LocalPluginModel{
+			Id:             1,
+			Name:           "OtherPlugin",
+			CurrentVersion: "1.0",
+			LatestVersion:  "1.0",
+			Author:         "OtherAuthor",
+			Description:    "Hello World",
+			InfoUrl:        "example.com",
+			DownloadUrl:    "example.com",
+			Descriptors:    []string{},
+			Dependencies:   []int{},
+		},
+		Files: []string{
+			"PengorosPlugins\\Utils\\Class.lua",
+			"PengorosPlugins\\Utils\\FontMetrics.lua",
+		},
+	}
+
+	store := Datastore{
+		Path: filename,
+	}
+
+	plugins, _ := store.Get()
+	if len(plugins) != 1 {
+		t.Errorf("Expected length of datastore content is 1, got %v", len(plugins))
+	}
+
+	err := store.Store(entry)
+	if err != nil {
+		t.Error("Unable to store the plugin in the datastore")
+	}
+
+	plugins, _ = store.Get()
+	if len(plugins) != 2 {
+		t.Errorf("Expected length of datastore content is 2, got %v", len(plugins))
+	}
 }
 
 func TestDatastore_Get(t *testing.T) {

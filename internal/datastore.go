@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"github.com/mawilms/lembas/internal/models"
 	"os"
+	"strings"
 )
 
 type DatastoreInterface interface {
-	Store() error
+	Store(model models.DatastoreEntryModel) error
 	Get() ([]models.LocalPluginModel, error)
 	GetById(id string) (models.LocalPluginModel, error)
 	DeleteById(id string) error
@@ -38,7 +39,7 @@ type Datastore struct {
 }
 
 func (d Datastore) New() {
-
+	// TODO: Initialize datastore
 }
 
 func (d Datastore) Open() (models.DatastoreModel, error) {
@@ -76,7 +77,26 @@ func (d Datastore) Open() (models.DatastoreModel, error) {
 	return model, nil
 }
 
-func (d Datastore) Store() error {
+func (d Datastore) Store(entry models.DatastoreEntryModel) error {
+	store, _ := d.Open()
+
+	identifier := fmt.Sprintf("%v-%v", strings.ToLower(entry.Plugin.Name), strings.ToLower(entry.Plugin.Author))
+	_, ok := store[identifier]
+	if !ok {
+		store[identifier] = entry
+	} else {
+		return errors.New("entry already exists")
+	}
+	file, err := json.MarshalIndent(store, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(d.Path, file, 0644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

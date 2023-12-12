@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"github.com/mawilms/lembas/internal/models"
+	"io"
+	"strconv"
 	"strings"
 )
 
@@ -52,19 +54,70 @@ func mapFavoritesToRemotePlugins(favorite *favorite) []models.RemotePluginModel 
 }
 
 type pluginConfig struct {
-	Id          int    `xml:"Id"`
-	Name        string `xml:"Name"`
-	Version     string `xml:"CurrentVersion"`
-	Author      string `xml:"Author"`
-	Description string `xml:"Description"`
-	InfoUrl     string `xml:"InfoUrl"`
-	DownloadUrl string `xml:"DownloadUrl"`
+	Id          int
+	Name        string
+	Version     string
+	Author      string
+	Description string
+	InfoUrl     string
+	DownloadUrl string
 	Descriptors struct {
-		Descriptor []string `xml:"descriptor"`
-	} `xml:"descriptors"`
+		Descriptor []string
+	}
 	Dependencies struct {
-		Id []int `xml:"dependency"`
-	} `xml:"dependencies"`
+		Id []int
+	}
+}
+
+func (v *pluginConfig) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
+	var descriptors []string
+	var dependencies []int
+
+	for {
+		token, err := d.Token()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		if se, ok := token.(xml.StartElement); ok {
+			token, err = d.Token()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
+			}
+			if data, ok := token.(xml.CharData); ok {
+				startElementName := se.Name.Local
+				if startElementName == "Id" {
+					value, _ := strconv.Atoi(string(data))
+					v.Id = value
+				} else if startElementName == "Name" {
+					v.Name = string(data)
+				} else if startElementName == "Version" || startElementName == "CurrentVersion" {
+					v.Version = string(data)
+				} else if startElementName == "Author" {
+					v.Author = string(data)
+				} else if startElementName == "Description" {
+					v.Description = string(data)
+				} else if startElementName == "InfoUrl" {
+					v.InfoUrl = string(data)
+				} else if startElementName == "DownloadUrl" {
+					v.DownloadUrl = string(data)
+				} else if startElementName == "descriptor" {
+					descriptors = append(descriptors, string(data))
+				} else if startElementName == "dependency" {
+					value, _ := strconv.Atoi(string(data))
+					dependencies = append(dependencies, value)
+				}
+			}
+			v.Descriptors = struct{ Descriptor []string }{Descriptor: descriptors}
+			v.Dependencies = struct{ Id []int }{Id: dependencies}
+		}
+	}
 }
 
 func ParsePluginConfig(content []byte) (models.LocalPluginModel, error) {
@@ -93,7 +146,7 @@ func mapPluginConfigToLocalPlugin(config *pluginConfig) models.LocalPluginModel 
 	return models.LocalPluginModel{
 		Id:             config.Id,
 		Name:           config.Name,
-		CurrentVersion: config.Version,
+		CurrentVersion: string(config.Version),
 		Author:         config.Author,
 		Description:    strings.Trim(strings.Trim(config.Description, "\n"), "\t"),
 		InfoUrl:        config.InfoUrl,

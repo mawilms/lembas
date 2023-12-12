@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PluginConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Id>1126</Id>
+  <Name>AltHolic</Name>
+  <Version>4.40</Version>
+  <Author>Homeopatix</Author>
+ <Description>
+DESCRIPTION (Francais)
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AltHolic est un petit plugin pour avoir une vision rapide de vos alts
+Affiche l'equipement, le porte-monnaie, le coffre, le sac a dos et le stockage partage de vos alts
+Vous devez pressez la touche alt pour deplacer l'icone
+Pressez la touche shift sur l'icone pour afficher les options
+
+DESCRIPTION (English)
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AltHolic is a small plugin to have a quick view of your alts
+Displays the equipment, wallet, vault, backpack and shared storage of your alts
+You must press the alt key to move the icon
+Press the shift key on the icon to display the options
+
+DESCRIPTION (Deutsche)
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AltHolic ist ein kleines Plugin, mit dem Sie schnell einen Uberblick uber Ihre Alts erhalten
+Zeigt die Ausrustung, die Brieftasche, den Tresor, den Rucksack und die gemeinsame Aufbewahrung
+Ihrer Alts anSie mussen die Alt-Taste drucken, um das Symbol zu verschieben
+Drucken Sie die Umschalttaste auf dem Symbol, um die Optionen anzuzeigen
+
+LIST OF ALL COMMANDS
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+(French)
+Raccourci disponible
+/Alt show -- montre la fenetre
+/Alt hide -- cache la fenetre
+/Alt esc - active ou desactive la touche escape
+/Alt options -- affiche la fenetre d'option
+/Alt delete all -- Efface toutes les entrees
+/Alt delete NomDuPerso -- Efface NomDuPerso
+/Alt toggle - Basculer la fenetre
+/Alt icon - Affiche ou masque l'icone
+/Alt optionsbar -- affiche la fenetre d'option de la barre
+
+(English)
+Shortcut available
+/Alt show - show the window
+/Alt hide - hide the window
+/Alt esc - activate or deactivate the escape key
+/Alt options -- display the options panel
+/Alt delete all -- Delete all entries
+/Alt delete CharacterName -- Delete CharacterName
+/Alt toggle - Toggle window
+/Alt icon - Display or hide the icon
+/Alt optionsbar -- display the options panel for the bar
+
+(Deutsche)
+Verknupfung verfugbar
+/Alt show - zeige das Fenster
+/Alt Hide - Verstecke das Fenster
+/Alt esc - Aktivieren oder deaktivieren Sie die Escape-Taste
+/Alt options -- Zeigen Sie das Optionsfeld an
+/Alt delete all -- Loschen Sie alle Eintrage
+/Alt delete Charaktername -- Loschen Charaktername
+/Alt toggle - Fenster umschalten
+/Alt icon - Symbol ein-oder ausblenden
+/Alt optionsbar -- zeige das Optionsfeld fur die Leiste an
+</Description>
+  <InfoUrl>http://www.lotrointerface.com/downloads/info1126</InfoUrl>
+  <DownloadUrl>http://www.lotrointerface.com/downloads/download1126</DownloadUrl>
+  <Descriptors>
+    <descriptor>Homeopatix\AltHolic.plugin</descriptor>
+  </Descriptors>
+</PluginConfig>

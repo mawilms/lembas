@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"github.com/mawilms/lembas/internal"
+	"github.com/mawilms/lembas/internal/settings"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -18,7 +19,7 @@ func main() {
 	}
 	datastore.New()
 
-	app := NewApp(datastore)
+	app := NewApp(settings.New(), datastore)
 
 	err := wails.Run(&options.App{
 		Title:  "lembas",
