@@ -18,7 +18,7 @@
         <div>
             <ul class="flex space-x-4 border-solid border-2 border-primary rounded-xl overflow-hidden">
                 <li><a class="block text-primary  py-2 px-4" href="#">About</a></li>
-                <li><a class="block text-primary  py-2 px-4" href="#">Settings</a></li>
+                <li><a class="block text-primary  py-2 px-4" href="/settings">Settings</a></li>
             </ul>
         </div>
     </nav>

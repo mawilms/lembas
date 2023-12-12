@@ -19,7 +19,9 @@ func main() {
 	}
 	datastore.New()
 
-	app := NewApp(settings.New(), datastore)
+	s, _ := settings.New()
+
+	app := NewApp(s, datastore)
 
 	err := wails.Run(&options.App{
 		Title:  "lembas",

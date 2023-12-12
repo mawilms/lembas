@@ -26,6 +26,10 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
+func (a *App) SaveSettings(pluginDirectory string) {
+	fmt.Println(pluginDirectory)
+}
+
 func (a *App) InstallPlugin(url string) {
 	fmt.Println(url)
 
