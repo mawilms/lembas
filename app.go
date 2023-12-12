@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/models"
+	"github.com/mawilms/lembas/internal/settings"
 )
 
 type App struct {
 	ctx       context.Context
-	settings  settings
+	settings  settings.Settings
 	datastore internal.DatastoreInterface
 }
 
-func NewApp(settings settings, datastore internal.DatastoreInterface) *App {
+func NewApp(settings settings.Settings, datastore internal.DatastoreInterface) *App {
 	return &App{settings: settings, datastore: datastore}
 }
 
