@@ -61,8 +61,6 @@
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
 	};
-
-
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
@@ -92,17 +90,17 @@
 						<p class="w-1/5 text-center text-gold hover:bg-gold-transparent p-2">Installed</p>
 					</div>
 				</div>
+
 				<div id="details-{index}" class="hidden p-4 bg-dark-brown">
 					<p>{plugin.description}</p>
 					<div class="flex justify-end space-x-8 mt-4">
-						<button class="text-primary py-1 px-1 hover:bg-primary-transparent"
+						<button class="text-primary p-1 hover:bg-primary-transparent"
 										on:click={() => openUrl(plugin.url)}>Open website
 						</button>
-						<button class="text-primary py-1 px-1 hover:bg-primary-transparent"
+						<button class="text-primary p-1 hover:bg-primary-transparent"
 										on:click={() => InstallPlugin(plugin.downloadUrl)}>Install/Update
 						</button>
-						<button class="text-primary py-1 px-1 hover:bg-primary-transparent">Remove</button>
-
+						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
 					</div>
 				</div>
 			</li>

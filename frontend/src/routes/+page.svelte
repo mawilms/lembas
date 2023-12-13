@@ -1,62 +1,67 @@
 <script lang="ts">
-    import "../app.css";
-    import {Plugin} from "$lib/plugin";
-    import ProgressBar from "../components/Progressbar.svelte";
+	import '../app.css';
+	import { Plugin } from '$lib/plugin';
 
-    const plugins = [
-        new Plugin("RaidGuy", "1.90", "1.90"),
-        new Plugin("Potions", "1.00", "1.02"),
-    ]
+	const plugins = [
+		new Plugin('RaidGuy', '1.90', '1.90'),
+		new Plugin('Potions', '1.00', '1.02')
+	];
 
-    const refreshPage = () => {
-        console.log("Refresh")
-    }
+	// const labelDocument = document.getElementById('plugin-labels')!;
+	// const pluginListDocument = document.getElementById('plugin-list')!;
+	//
+	// labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
-    const updateAll = () => {
-        console.log("Update all")
-    }
+	const refreshPage = () => {
+		console.log('Refresh');
+	};
+
+	const updateAll = () => {
+		console.log('Update all');
+	};
 </script>
 
+<div class="h-full text-left space-y-4 overflow-hidden">
+	<div class="flex items-center">
+		<div class="flex w-3/4">
+			<div class="flex space-x-2">
+				<button class="text-primary p-1 hover:bg-primary-transparent"
+								on:click={refreshPage}>Refresh
+				</button>
+				<button class="text-primary p-1 hover:bg-primary-transparent"
+								on:click={updateAll}>Update all
+				</button>
+			</div>
+			<p class="ml-16 m-1">2 plugins installed</p>
+		</div>
+		<input class="grow p-2 text-gold bg-light-brown focus:outline-none" type="text"
+					 placeholder="Search for a plugin...">
+	</div>
 
-<div class="my-4">
-    <div class="flex">
-        <div class="flex w-3/4">
-            <div class="flex space-x-2">
-                <button class="text-primary active:bg-primary-transparent hover:bg-primary-transparent py-1 px-4"
-                        on:click={refreshPage}>Refresh
-                </button>
-                <button class="text-primary active:bg-primary-transparent hover:bg-primary-transparent py-1 px-4"
-                        on:click={updateAll}>Update all
-                </button>
-            </div>
-            <p class="ml-24 py-2 px-4">2 plugins installed</p>
-        </div>
-        <input class="grow px-2 text-black" type="text" placeholder="Search for a plugin...">
-    </div>
+	<div id="plugin-labels" class="flex text-left mx-2">
+		<p class="w-1/2 px-2">Plugin</p>
+		<div class="flex w-1/2">
+			<p class="w-1/3 px-2">Current Version</p>
+			<p class="w-1/3 px-2">Latest Version</p>
+			<p class="w-1/3 px-2 text-center">Update</p>
+		</div>
+	</div>
+
+
+	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
+		{#each plugins as plugin}
+			<li class="flex bg-light-brown">
+				<p class="w-1/2 p-2">{plugin.name}</p>
+				<div class="flex w-1/2">
+					<p class="w-1/3 p-2">{plugin.currentVersion}</p>
+					<p class="w-1/3 p-2">{plugin.latestVersion}</p>
+					<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
+						{#if plugin.currentVersion < plugin.latestVersion}
+							<button>Update</button>
+						{/if}
+					</p>
+				</div>
+			</li>
+		{/each}
+	</ul>
 </div>
-
-<div class="flex text-left mx-2">
-    <p class="w-1/3">Plugin</p>
-    <p class="w-1/3">Current Version</p>
-    <p class="w-1/4">Latest Version</p>
-    <p class="w-1/4">Update</p>
-</div>
-
-<div class="text-left mt-2">
-    <ul class="overflow-y-auto space-y-2 h-96">
-        {#each plugins as plugin}
-            <li class="flex bg-light-brown p-2">
-                <p class="w-1/3">{plugin.name}</p>
-                <p class="w-1/3">{plugin.currentVersion}</p>
-                <p class="w-1/4">{plugin.latestVersion}</p>
-                <p class="w-1/4">
-                    {#if plugin.currentVersion < plugin.latestVersion}
-                        <button>Update</button>
-                    {/if}
-                </p>
-            </li>
-        {/each}
-    </ul>
-</div>
-
-<ProgressBar/>
