@@ -31,8 +31,6 @@ func (a *App) SaveSettings(pluginDirectory string) {
 }
 
 func (a *App) InstallPlugin(url string) {
-	fmt.Println(url)
-
 	entry, _ := internal.DownloadPlugin(url)
 
 	_ = a.datastore.Store(entry)
