@@ -3,22 +3,22 @@
 </script>
 
 <main class="h-full">
-	<nav class="flex justify-between items-center bg-light-brown py-4 px-8 h-20">
+	<nav class="flex justify-between items-center bg-light-brown py-4 px-8">
 		<div class="flex space-x-8 items-center">
 			<h1>Lembas</h1>
-			<ul class="flex border-solid border-2 border-primary rounded-xl overflow-hidden">
+			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
 				<li>
-					<a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
+					<a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2"
 						 href="/">My Plugins</a></li>
 				<li>
-					<a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-4"
+					<a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2"
 						 href="/catalog">Catalog</a></li>
 			</ul>
 		</div>
 		<div>
-			<ul class="flex space-x-4 border-solid border-2 border-primary rounded-xl overflow-hidden">
-				<li><a class="block text-primary  py-2 px-4" href="#">About</a></li>
-				<li><a class="block text-primary  py-2 px-4" href="/settings">Settings</a></li>
+			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
+				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2" href="#">About</a></li>
+				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2" href="/settings">Settings</a></li>
 			</ul>
 		</div>
 	</nav>
