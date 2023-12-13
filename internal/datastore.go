@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mawilms/lembas/internal/models"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -38,8 +39,17 @@ type Datastore struct {
 	Path string
 }
 
-func (d Datastore) New() {
-	// TODO: Initialize datastore
+func NewDatastore(dataDirectory string) Datastore {
+	datastorePath := filepath.Join(dataDirectory, "datastore.json")
+	file, err := os.OpenFile(datastorePath, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return Datastore{}
+	}
+	defer file.Close()
+
+	return Datastore{
+		Path: datastorePath,
+	}
 }
 
 func (d Datastore) Open() (models.DatastoreModel, error) {

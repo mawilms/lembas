@@ -20,7 +20,8 @@ func New() (Settings, error) {
 		DataDirectory:   dataDirectory,
 	}
 
-	if _, err := os.Stat(filepath.Join(dataDirectory, "settings.json")); os.IsNotExist(err) {
+	_, err := os.Stat(filepath.Join(dataDirectory, "settings.json"))
+	if err == nil {
 		err := settings.Store()
 		if err != nil {
 			return Settings{}, err

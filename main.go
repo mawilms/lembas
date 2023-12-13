@@ -14,12 +14,8 @@ import (
 var assets embed.FS
 
 func main() {
-	datastore := internal.Datastore{
-		Path: "Bla", // TODO: Set home dir for database
-	}
-	datastore.New()
-
 	s, _ := settings.New()
+	datastore := internal.NewDatastore(s.DataDirectory)
 
 	app := NewApp(s, datastore)
 
