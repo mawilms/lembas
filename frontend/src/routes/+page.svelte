@@ -3,7 +3,6 @@
 	import { LocalPlugin } from '$lib/models/localPlugin';
 	import { GetInstalledPlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { setContext } from 'svelte';
 	//import { createRelationship } from '$lib/state/pluginRelationship';
 
 	class ToggleState {
@@ -17,15 +16,15 @@
 
 	let plugins: LocalPlugin[] = [];
 	let toggleState = new ToggleState('');
-	let pluginRelationship = new Map<string, string>();
 
 	GetInstalledPlugins().then(result => {
 		let tmpPlugins: LocalPlugin[] = [];
+		let relationship = new Map<string,string>();
 
 		for (let i = 0; i < result.length; i++) {
 			const element = result[i];
 			tmpPlugins.push(new LocalPlugin(element.Id, element.Name, element.Author, element.Description, element.CurrentVersion, element.LatestVersion, element.InfoUrl));
-			pluginRelationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion)
+			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion)
 		}
 
 		plugins = tmpPlugins;
@@ -34,9 +33,6 @@
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-		setContext("relationship", pluginRelationship)
-		//createRelationship(pluginRelationship)
 	});
 
 	const refreshPage = () => {

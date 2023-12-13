@@ -3,13 +3,11 @@
 	import { FetchRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
 	import { RemotePlugin } from '$lib/models/remotePlugin';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { getContext } from 'svelte';
-	//import { pluginRelationship } from '$lib/state/pluginRelationship';
 
 	let plugins: RemotePlugin[] = [];
 
 	FetchRemotePlugins().then(result => {
-		const relationship: Map<string, string> = getContext('relationship');
+		const relationship: Map<string, string> = new Map<string, string>();
 		let tmpArray: RemotePlugin[] = [];
 
 		for (let i = 0; i < result.length; i++) {
