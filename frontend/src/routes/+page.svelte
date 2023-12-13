@@ -33,6 +33,7 @@
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+		return tmpPlugins
 	});
 
 	const refreshPage = () => {

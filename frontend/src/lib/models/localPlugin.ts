@@ -1,18 +1,18 @@
 export class LocalPlugin {
-	id: number
-	name: string
-	author: string
-	description: string
-	currentVersion: string
-	latestVersion: string
-	infoUrl: string
-	downloadUrl: string
+	id: number;
+	name: string;
+	author: string;
+	description: string;
+	currentVersion: string;
+	latestVersion: string;
+	infoUrl: string;
+	downloadUrl: string;
 
 	constructor(id: number, name: string, author: string, description: string, currentVersion: string, latestVersion: string, infoUrl: string) {
 		if (id !== -1) {
-			this.downloadUrl = `http://www.lotrointerface.com/downloads/download${id}`
+			this.downloadUrl = `http://www.lotrointerface.com/downloads/download${id}`;
 		} else {
-			this.downloadUrl = ""
+			this.downloadUrl = '';
 		}
 
 		this.id = id;

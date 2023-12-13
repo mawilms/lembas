@@ -85,20 +85,20 @@
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
 				<li>
 					<a class:pluginsTabActive
-						 class="block text-primary focus:bg-primary-transparent hover:bg-primary-transparent py-2 px-2 {plugins_tab_active_class}"
+						 class="block text-primary hover:bg-primary-transparent p-2 {plugins_tab_active_class}"
 						 href="/" on:click={togglePluginsTab}>My Plugins</a></li>
 				<li>
 					<a class:catalogTabActive
-						 class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2 {catalog_tab_active_class}"
+						 class="block text-primary hover:bg-primary-transparent p-2 {catalog_tab_active_class}"
 						 href="/catalog" on:click={toggleCatalogTab}>Catalog</a></li>
 			</ul>
 		</div>
 		<div>
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
-				<li><a class:aboutTabActive class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2 {about_tab_active_class}"
+				<li><a class:aboutTabActive class="block text-primary hover:bg-primary-transparent p-2 {about_tab_active_class}"
 							 href="/about" on:click={toggleAboutTab}>About</a>
 				</li>
-				<li><a class:settingsTabActive class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2 {settings_tab_active_class}"
+				<li><a class:settingsTabActive class="block text-primary hover:bg-primary-transparent p-2 {settings_tab_active_class}"
 							 href="/settings" on:click={toggleSettingsTab}>Settings</a></li>
 			</ul>
 		</div>
