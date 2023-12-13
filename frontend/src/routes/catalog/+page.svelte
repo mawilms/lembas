@@ -35,25 +35,29 @@
 
 <div class="text-left my-4 space-y-4">
     <div class="flex mx-2 space-x-4">
-        <p class="w-1/6">Name</p>
-        <p class="w-1/6">Version</p>
-        <p class="w-1/6">Author</p>
-        <p class="w-1/6">Downloads</p>
-        <p class="w-1/6">Latest Release</p>
-        <p class="w-1/6">Status</p>
+        <p class="w-1/3">Name</p>
+        <div class="flex w-2/3">
+        <p class="w-1/5">Version</p>
+        <p class="w-1/5">Author</p>
+        <p class="w-1/5">Downloads</p>
+        <p class="w-1/5">Latest Release</p>
+        <p class="w-1/5 text-center">Status</p>
+        </div>
     </div>
 
     <div>
-        <ul class="overflow-y-auto space-y-2 h-96">
+        <ul class="space-y-2 h-96">
             {#each plugins as plugin, index}
                 <li id="plugin-{index}" class="bg-light-brown p-2">
                     <div class="flex space-x-4" on:click={() => toggleDetails(index)}>
-                        <p class="w-1/6">{plugin.name}</p>
-                        <p class="w-1/6">{plugin.version}</p>
-                        <p class="w-1/6">{plugin.author}</p>
-                        <p class="w-1/6">{plugin.totalDownloads}</p>
-                        <p class="w-1/6">{plugin.lastUpdated}</p>
-                        <p class="w-1/6 text-gold">Installed</p>
+                        <p class="w-1/3">{plugin.name}</p>
+                        <div class="flex w-2/3">
+                        <p class="w-1/5">{plugin.version}</p>
+                        <p class="w-1/5">{plugin.author}</p>
+                        <p class="w-1/5">{plugin.totalDownloads}</p>
+                        <p class="w-1/5">{plugin.lastUpdated}</p>
+                        <p class="w-1/5 text-center text-gold">Installed</p>
+                        </div>
                     </div>
                     <div id="details-{index}" class="hidden mt-2 p-4 bg-dark-brown">
                         <p>{plugin.description}</p>
