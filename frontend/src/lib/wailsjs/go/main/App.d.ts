@@ -4,6 +4,8 @@ import {models} from '../models';
 
 export function FetchRemotePlugins():Promise<Array<models.RemotePluginModel>>;
 
+export function GetInstalledPlugins():Promise<Array<models.LocalPluginModel>>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function InstallPlugin(arg1:string):Promise<void>;

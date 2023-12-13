@@ -1,12 +1,19 @@
 <script lang="ts">
     import "../app.css";
     import {Plugin} from "$lib/plugin";
+    // import {LocalPlugin} from "$lib/models/localPlugin";
+		import {GetInstalledPlugins} from "$lib/wailsjs/go/main/App"
     import ProgressBar from "../components/Progressbar.svelte";
 
     const plugins = [
         new Plugin("RaidGuy", "1.90", "1.90"),
         new Plugin("Potions", "1.00", "1.02"),
     ]
+
+    GetInstalledPlugins().then(result => {
+        // let tmpPlugins: LocalPlugin[] = []
+        console.log(result)
+    })
 
     const refreshPage = () => {
         console.log("Refresh")

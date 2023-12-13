@@ -39,17 +39,22 @@ type Datastore struct {
 	Path string
 }
 
-func NewDatastore(dataDirectory string) Datastore {
+func NewDatastore(dataDirectory string) (Datastore, error) {
 	datastorePath := filepath.Join(dataDirectory, "datastore.json")
 	file, err := os.OpenFile(datastorePath, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return Datastore{}
+		return Datastore{}, err
 	}
 	defer file.Close()
 
+	_, err = file.Write([]byte("{}"))
+	if err != nil {
+		return Datastore{}, err
+	}
+
 	return Datastore{
 		Path: datastorePath,
-	}
+	}, nil
 }
 
 func (d Datastore) Open() (models.DatastoreModel, error) {

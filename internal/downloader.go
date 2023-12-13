@@ -25,10 +25,7 @@ func DownloadPackageInformation() ([]models.RemotePluginModel, error) {
 	return plugins, err
 }
 
-func DownloadPlugin(url string) (models.DatastoreEntryModel, error) {
-	tmpDir, err := os.MkdirTemp("", "lembas")
-	defer os.RemoveAll(tmpDir)
-
+func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return models.DatastoreEntryModel{}, err
@@ -42,7 +39,7 @@ func DownloadPlugin(url string) (models.DatastoreEntryModel, error) {
 	hasPluginCompendiumFile := false
 	model := models.LocalPluginModel{}
 	for _, file := range archive.File {
-		path := filepath.Join(tmpDir, file.Name)
+		path := filepath.Join(pluginDirectory, file.Name)
 
 		if file.FileInfo().IsDir() {
 			os.MkdirAll(path, os.ModePerm)

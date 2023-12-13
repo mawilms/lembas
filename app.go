@@ -14,8 +14,11 @@ type App struct {
 	datastore internal.DatastoreInterface
 }
 
-func NewApp(settings settings.Settings, datastore internal.DatastoreInterface) *App {
-	return &App{settings: settings, datastore: datastore}
+func NewApp() *App {
+	s, _ := settings.New()
+	datastore, _ := internal.NewDatastore(s.DataDirectory)
+
+	return &App{settings: s, datastore: datastore}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -31,9 +34,15 @@ func (a *App) SaveSettings(pluginDirectory string) {
 }
 
 func (a *App) InstallPlugin(url string) {
-	entry, _ := internal.DownloadPlugin(url)
+	entry, _ := internal.DownloadPlugin(url, a.settings.PluginDirectory)
 
-	_ = a.datastore.Store(entry)
+	a.datastore.Store(entry)
+}
+
+func (a *App) GetInstalledPlugins() []models.LocalPluginModel {
+	plugins, _ := a.datastore.Get()
+
+	return plugins
 }
 
 func (a *App) FetchRemotePlugins() []models.RemotePluginModel {
