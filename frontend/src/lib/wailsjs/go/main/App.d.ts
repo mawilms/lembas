@@ -7,3 +7,5 @@ export function FetchRemotePlugins():Promise<Array<models.RemotePluginModel>>;
 export function Greet(arg1:string):Promise<string>;
 
 export function InstallPlugin(arg1:string):Promise<void>;
+
+export function SaveSettings(arg1:string):Promise<void>;
