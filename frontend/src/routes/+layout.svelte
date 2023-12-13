@@ -1,5 +1,10 @@
 <script lang="ts">
 	import '../app.css';
+	import { setContext } from 'svelte';
+
+	let pluginRelationship = new Map<string, string>();
+
+	setContext("relationship", pluginRelationship)
 </script>
 
 <main class="h-full">
@@ -17,8 +22,10 @@
 		</div>
 		<div>
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
-				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2" href="#">About</a></li>
-				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2" href="/settings">Settings</a></li>
+				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2" href="#">About</a>
+				</li>
+				<li><a class="block text-primary active:bg-primary-transparent hover:bg-primary-transparent py-2 px-2"
+							 href="/settings">Settings</a></li>
 			</ul>
 		</div>
 	</nav>

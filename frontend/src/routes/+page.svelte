@@ -1,23 +1,43 @@
 <script lang="ts">
-	import "../app.css";
-	import {Plugin} from "$lib/plugin";
-	// import {LocalPlugin} from "$lib/models/localPlugin";
-	import {GetInstalledPlugins} from "$lib/wailsjs/go/main/App"
+	import '../app.css';
+	import { LocalPlugin } from '$lib/models/localPlugin';
+	import { GetInstalledPlugins } from '$lib/wailsjs/go/main/App';
+	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
+	import { setContext } from 'svelte';
+	//import { createRelationship } from '$lib/state/pluginRelationship';
 
-	const plugins = [
-		new Plugin('RaidGuy', '1.90', '1.90'),
-		new Plugin('Potions', '1.00', '1.02')
-	];
+	class ToggleState {
+		toggledItemId;
+		isToggled = false;
 
-	// const labelDocument = document.getElementById('plugin-labels')!;
-	// const pluginListDocument = document.getElementById('plugin-list')!;
-	//
-	// labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+		constructor(itemId: string) {
+			this.toggledItemId = itemId;
+		}
+	}
+
+	let plugins: LocalPlugin[] = [];
+	let toggleState = new ToggleState('');
+	let pluginRelationship = new Map<string, string>();
 
 	GetInstalledPlugins().then(result => {
-		// let tmpPlugins: LocalPlugin[] = []
-		console.log(result)
-	})
+		let tmpPlugins: LocalPlugin[] = [];
+
+		for (let i = 0; i < result.length; i++) {
+			const element = result[i];
+			tmpPlugins.push(new LocalPlugin(element.Id, element.Name, element.Author, element.Description, element.CurrentVersion, element.LatestVersion, element.InfoUrl));
+			pluginRelationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion)
+		}
+
+		plugins = tmpPlugins;
+
+		const labelDocument = document.getElementById('plugin-labels')!;
+		const pluginListDocument = document.getElementById('plugin-list')!;
+
+		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+
+		setContext("relationship", pluginRelationship)
+		//createRelationship(pluginRelationship)
+	});
 
 	const refreshPage = () => {
 		console.log('Refresh');
@@ -25,6 +45,34 @@
 
 	const updateAll = () => {
 		console.log('Update all');
+	};
+
+	const toggleDetails = (index: number) => {
+		if (toggleState.isToggled) {
+			let element = document.getElementById(toggleState.toggledItemId)!;
+
+			element.classList.add('hidden');
+			toggleState.isToggled = false;
+
+			if (`details-${index}` !== toggleState.toggledItemId) {
+				toggleState = new ToggleState(`details-${index}`);
+				element = document.getElementById(toggleState.toggledItemId)!;
+				element.classList.remove('hidden');
+				toggleState.isToggled = true;
+			}
+
+		} else {
+			if (`details-${index}` !== toggleState.toggledItemId || `details-${index}` === toggleState.toggledItemId && !toggleState.isToggled) {
+				toggleState = new ToggleState(`details-${index}`);
+				const element = document.getElementById(toggleState.toggledItemId)!;
+				element.classList.remove('hidden');
+				toggleState.isToggled = true;
+			}
+		}
+	};
+
+	const openUrl = (url: string) => {
+		BrowserOpenURL(url);
 	};
 </script>
 
@@ -56,17 +104,29 @@
 
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#each plugins as plugin}
-			<li class="flex bg-light-brown">
-				<p class="w-1/2 p-2">{plugin.name}</p>
-				<div class="flex w-1/2">
-					<p class="w-1/3 p-2">{plugin.currentVersion}</p>
-					<p class="w-1/3 p-2">{plugin.latestVersion}</p>
-					<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
-						{#if plugin.currentVersion < plugin.latestVersion}
-							<button>Update</button>
-						{/if}
-					</p>
+		{#each plugins as plugin, index}
+			<li id="plugin-{index}" class="block bg-light-brown">
+				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
+					<p class="w-1/2 p-2">{plugin.name}</p>
+					<div class="flex w-1/2">
+						<p class="w-1/3 p-2">{plugin.currentVersion}</p>
+						<p class="w-1/3 p-2">{plugin.latestVersion}</p>
+						<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
+							{#if plugin.currentVersion !== plugin.latestVersion}
+								<button>Update</button>
+							{/if}
+						</p>
+					</div>
+				</div>
+
+				<div id="details-{index}" class="hidden p-4 bg-dark-brown">
+					<p>{plugin.description}</p>
+					<div class="flex justify-end space-x-8 mt-4 mr-4">
+						<button class="text-primary p-1 hover:bg-primary-transparent"
+										on:click={() => openUrl(plugin.infoUrl)}>Open website
+						</button>
+						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
+					</div>
 				</div>
 			</li>
 		{/each}
