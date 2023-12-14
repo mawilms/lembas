@@ -10,14 +10,14 @@ export function GetInstalledPlugins() {
   return window['go']['main']['App']['GetInstalledPlugins']();
 }
 
-export function Greet(arg1) {
-  return window['go']['main']['App']['Greet'](arg1);
-}
-
 export function InstallPlugin(arg1) {
   return window['go']['main']['App']['InstallPlugin'](arg1);
 }
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function UpdatePlugins(arg1) {
+  return window['go']['main']['App']['UpdatePlugins'](arg1);
 }
