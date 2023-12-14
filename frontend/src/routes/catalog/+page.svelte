@@ -6,6 +6,12 @@
 	import { pluginStore } from '$lib/store';
 	import { get } from 'svelte/store';
 
+	const installPlugin = (plugin: RemotePlugin) => {
+		if (!plugin.isInstalled) {
+			InstallPlugin(plugin.downloadUrl);
+		}
+	};
+
 	const fetchRemotePlugin = async () => {
 		const fetchedPlugins = await FetchRemotePlugins();
 		const relationship = get(pluginStore);
@@ -34,7 +40,7 @@
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	})
+	});
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
@@ -79,7 +85,7 @@
 								<p class="w-1/5 p-2 text-center">Installed</p>
 							{:else}
 								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-									 on:click={() => InstallPlugin(plugin.downloadUrl)}>Install</p>
+									 on:click={() => installPlugin(plugin)}>Install</p>
 							{/if}
 						</div>
 					</div>

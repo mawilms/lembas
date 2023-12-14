@@ -10,19 +10,19 @@ import (
 func setupTestCase(t *testing.T) (string, func(t *testing.T)) {
 	jsonContent := []byte(`{
   "altholic-homeopatix": {
-    "information": {
-      "id": 1,
-      "name": "AltHolic",
-      "currentVersion": "1.2",
-      "latestVersion": "1.5",
-      "author": "Homeopatix",
-      "description": "Hello World",
-      "infoUrl": "example.com",
-      "downloadUrl": "example.com",
-      "descriptors": [],
-      "dependencies": []
+    "Plugin": {
+      "Id": 1,
+      "Name": "AltHolic",
+      "CurrentVersion": "1.2",
+      "LatestVersion": "1.5",
+      "Author": "Homeopatix",
+      "Description": "Hello World",
+      "InfoUrl": "example.com",
+      "DownloadUrl": "example.com",
+      "Descriptors": [],
+      "Dependencies": []
     },
-    "files": [
+    "Files": [
       "PengorosPlugins\\Utils\\Class.lua",
       "PengorosPlugins\\Utils\\FontMetrics.lua"
     ]

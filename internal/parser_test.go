@@ -84,6 +84,7 @@ func TestParsePluginConfig(t *testing.T) {
 		Id:             366,
 		Name:           "Bevy o Bars",
 		CurrentVersion: "2.321",
+		LatestVersion:  "2.321",
 		Author:         "MrJackdaw",
 		InfoUrl:        "http://www.lotrointerface.com/downloads/info366",
 		DownloadUrl:    "http://www.lotrointerface.com/downloads/download366",
