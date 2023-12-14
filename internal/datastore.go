@@ -11,9 +11,9 @@ import (
 )
 
 type DatastoreInterface interface {
+	Open() (models.DatastoreModel, error)
 	Store(model models.DatastoreEntryModel) error
 	Get() ([]models.LocalPluginModel, error)
-	GetById(id string) (models.LocalPluginModel, error)
 	DeleteById(id string) error
 }
 
@@ -133,19 +133,6 @@ func (d Datastore) Get() ([]models.LocalPluginModel, error) {
 	}
 
 	return plugins, nil
-}
-
-func (d Datastore) GetById(id string) (models.LocalPluginModel, error) {
-	data, err := d.Open()
-	if err != nil {
-		return models.LocalPluginModel{}, err
-	}
-	entry, isOk := data[id]
-	if !isOk {
-		return models.LocalPluginModel{}, errors.New(fmt.Sprintf("Model with given id %v doesn't exist", id))
-	}
-
-	return entry.Plugin, nil
 }
 
 func (d Datastore) DeleteById(id string) error {

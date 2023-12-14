@@ -33,9 +33,11 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 	body, _ := io.ReadAll(response.Body)
 
-	archive, _ := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	_ = err
 
-	var files []string
+	pluginsMap := make(map[string]struct{})
+
 	hasPluginCompendiumFile := false
 	model := models.LocalPluginModel{}
 	for _, file := range archive.File {
@@ -72,16 +74,42 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		if strings.Contains(file.Name, ".plugincompendium") {
 			hasPluginCompendiumFile = true
 			model, _ = ParsePluginConfig(archiveFileContent)
+			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
 		if strings.Contains(file.Name, ".plugin") && !hasPluginCompendiumFile {
 			model, _ = ParseFallbackConfig(archiveFileContent)
+			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
 
-		files = append(files, file.Name)
+		splitPath := strings.Split(file.Name, "/")
+		if len(splitPath) > 1 && (!strings.Contains(file.Name, ".plugincompendium") && !strings.Contains(file.Name, ".plugin")) {
+			_, ok := pluginsMap[filepath.Join(splitPath[0], splitPath[1])]
+			if !ok {
+				pluginsMap[filepath.Join(splitPath[0], splitPath[1])] = struct{}{}
+			}
+		}
+	}
+	var files []string
+
+	for key, _ := range pluginsMap {
+		files = append(files, key)
 	}
 
 	return models.DatastoreEntryModel{
 		Plugin: model,
 		Files:  files,
 	}, nil
+}
+
+func DeletePlugin(entry models.DatastoreEntryModel, pluginDirectory string) error {
+	for _, file := range entry.Files {
+		file = filepath.Join(pluginDirectory, file)
+
+		err := os.RemoveAll(file)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

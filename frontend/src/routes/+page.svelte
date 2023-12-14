@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { LocalPlugin } from '$lib/models/localPlugin';
-	import { GetInstalledPlugins, UpdatePlugins } from '$lib/wailsjs/go/main/App';
+	import { GetInstalledPlugins, UpdatePlugins, DeletePlugin } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 	import { createPluginStore } from '$lib/store';
 
@@ -18,7 +18,10 @@
 	let installedPlugins: LocalPlugin[] = [];
 
 	const getInstalledPlugins = async () => {
-		const installedPlugins = await GetInstalledPlugins();
+		let installedPlugins = await GetInstalledPlugins();
+		if (installedPlugins === null) {
+			installedPlugins = []
+		}
 
 		let tmpPlugins: LocalPlugin[] = [];
 		let relationship = new Map<string, string>();
@@ -29,7 +32,6 @@
 			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion);
 		}
 		createPluginStore(relationship);
-
 		amountInstalledPlugins = tmpPlugins.length;
 
 		return tmpPlugins;
@@ -46,9 +48,9 @@
 
 	let amountInstalledPlugins = 0;
 
-	const refreshPage = async () => {
-		await getInstalledPlugins()
-	};
+	// const refreshPage = async () => {
+	// 	await getInstalledPlugins()
+	// };
 
 	const updateAll = () => {
 		let pluginsToUpdate: LocalPlugin[] = [];
@@ -92,8 +94,7 @@
 	<div class="flex items-center">
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
-				<button class="text-primary p-1 hover:bg-primary-transparent"
-								on:click={refreshPage}>Refresh
+				<button class="text-primary p-1 hover:bg-primary-transparent">Refresh
 				</button>
 				<button class="text-primary p-1 hover:bg-primary-transparent"
 								on:click={updateAll}>Update all
@@ -108,7 +109,7 @@
 	<div id="plugin-labels" class="flex text-left mx-2">
 		<p class="w-1/2 px-2">Plugin</p>
 		<div class="flex w-1/2">
-			<p class="w-1/3 px-2">Current Version</p>
+			<p class="w-1/3 px-2">Local Version</p>
 			<p class="w-1/3 px-2">Latest Version</p>
 			<p class="w-1/3 px-2 text-center">Update</p>
 		</div>
@@ -144,7 +145,7 @@
 							<button class="text-primary p-1 hover:bg-primary-transparent"
 											on:click={() => BrowserOpenURL(plugin.infoUrl)}>Open website
 							</button>
-							<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
+							<button class="text-primary p-1 hover:bg-primary-transparent" on:click={() => {DeletePlugin(plugin.name, plugin.author)}}>Delete</button>
 						</div>
 					</div>
 				</li>

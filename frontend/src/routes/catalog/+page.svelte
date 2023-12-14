@@ -55,7 +55,7 @@
 	<input class="p-2 text-gold bg-light-brown focus:outline-none w-1/3" type="text" placeholder="Search for plugins...">
 
 	<div id="plugin-labels" class="flex space-x-4">
-		<p class="w-1/3 px-2">Name</p>
+		<p class="w-1/3 px-2">Plugin</p>
 		<div class="flex w-2/3">
 			<p class="w-1/5 px-2">Version</p>
 			<p class="w-1/5 px-2">Author</p>

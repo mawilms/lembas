@@ -6,6 +6,7 @@ import (
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/models"
 	"github.com/mawilms/lembas/internal/settings"
+	"strings"
 )
 
 type App struct {
@@ -35,8 +36,23 @@ func (a *App) InstallPlugin(url string) {
 	a.datastore.Store(entry)
 }
 
+func (a *App) DeletePlugin(name, author string) {
+	id := fmt.Sprintf("%v-%v", strings.ToLower(name), strings.ToLower(author))
+
+	pluginDatastore, err := a.datastore.Open()
+	plugin := pluginDatastore[id]
+
+	err = internal.DeletePlugin(plugin, a.settings.PluginDirectory)
+	if err == nil {
+		a.datastore.DeleteById(id)
+	} else {
+		fmt.Println(err)
+	}
+}
+
 func (a *App) UpdatePlugins(plugins any) {
 	fmt.Println(plugins)
+	// TODO: Run  internal.DownloadPlugin(url, a.settings.PluginDirectory) in a loop
 }
 
 func (a *App) GetInstalledPlugins() []models.LocalPluginModel {

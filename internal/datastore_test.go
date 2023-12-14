@@ -171,37 +171,37 @@ func TestDatastore_Get(t *testing.T) {
 	}
 }
 
-func TestDatastore_GetById(t *testing.T) {
-	filename, teardownTestCase := setupTestCase(t)
-	defer teardownTestCase(t)
-
-	expectedPlugin := models.LocalPluginModel{
-		Id:             1,
-		Name:           "AltHolic",
-		CurrentVersion: "1.2",
-		LatestVersion:  "1.5",
-		Author:         "Homeopatix",
-		Description:    "Hello World",
-		InfoUrl:        "example.com",
-		DownloadUrl:    "example.com",
-		Descriptors:    []string{},
-		Dependencies:   []int{},
-	}
-
-	store := Datastore{
-		Path: filename,
-	}
-
-	plugin, err := store.GetById("altholic-homeopatix")
-	if err != nil {
-		t.Error("Unable to get the plugin with the id `altholic-homeopatix` from the datastore")
-	}
-
-	isEqual := reflect.DeepEqual(plugin, expectedPlugin)
-	if !isEqual {
-		t.Errorf("Retrieved struct differs from the expected one. Got %v, expected %v", plugin, expectedPlugin)
-	}
-}
+//func TestDatastore_GetById(t *testing.T) {
+//	filename, teardownTestCase := setupTestCase(t)
+//	defer teardownTestCase(t)
+//
+//	expectedPlugin := models.LocalPluginModel{
+//		Id:             1,
+//		Name:           "AltHolic",
+//		CurrentVersion: "1.2",
+//		LatestVersion:  "1.5",
+//		Author:         "Homeopatix",
+//		Description:    "Hello World",
+//		InfoUrl:        "example.com",
+//		DownloadUrl:    "example.com",
+//		Descriptors:    []string{},
+//		Dependencies:   []int{},
+//	}
+//
+//	store := Datastore{
+//		Path: filename,
+//	}
+//
+//	plugin, err := store.GetById("altholic-homeopatix")
+//	if err != nil {
+//		t.Error("Unable to get the plugin with the id `altholic-homeopatix` from the datastore")
+//	}
+//
+//	isEqual := reflect.DeepEqual(plugin, expectedPlugin)
+//	if !isEqual {
+//		t.Errorf("Retrieved struct differs from the expected one. Got %v, expected %v", plugin, expectedPlugin)
+//	}
+//}
 
 func TestDatastore_DeleteById(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
