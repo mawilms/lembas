@@ -3,15 +3,17 @@
 	import { FetchRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
 	import { RemotePlugin } from '$lib/models/remotePlugin';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
+	import { pluginStore } from '$lib/store';
+	import { get } from 'svelte/store';
 
-	let plugins: RemotePlugin[] = [];
+	async function fetchRemotePlugin() {
+		const fetchedPlugins = await FetchRemotePlugins();
+		const relationship = get(pluginStore)
 
-	FetchRemotePlugins().then(result => {
-		const relationship: Map<string, string> = new Map<string, string>();
 		let tmpArray: RemotePlugin[] = [];
 
-		for (let i = 0; i < result.length; i++) {
-			const element = result[i];
+		for (let i = 0; i < fetchedPlugins.length; i++) {
+			const element = fetchedPlugins[i];
 			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
 			const infoUrl = `https://www.lotrointerface.com/downloads/info${element.Id}-${element.Name}.html`;
 
@@ -24,13 +26,14 @@
 
 			tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url, isInstalled, installedVersion));
 		}
+
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
-		plugins = tmpArray;
-	});
+		return tmpArray;
+	}
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
@@ -55,29 +58,38 @@
 		</div>
 	</div>
 
-	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#each plugins as plugin, index}
-			<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
-				<div class="flex space-x-4">
-					<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.name}</p>
-					<div class="flex w-2/3">
-						<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.version}</p>
-						<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.author}</p>
-						<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.totalDownloads}</p>
-						<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.lastUpdated}</p>
-						{#if plugin.isInstalled && plugin.version !== plugin.installedVersion}
-							<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-								 on:click={UpdatePlugin}>Update</p>
-						{:else if plugin.isInstalled && plugin.version === plugin.installedVersion}
-							<p class="w-1/5 p-2 text-center">Installed</p>
-						{:else}
-							<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-								 on:click={() => InstallPlugin(plugin.downloadUrl)}>Install</p>
-						{/if}
+	{#await fetchRemotePlugin()}
+		<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
+			<p class="text-center p-32 text-xl text-gold">Downloading plugin information from lotrocompendium.com</p>
+		</ul>
+	{:then plugins}
+		<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
+			{#each plugins as plugin, index}
+				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
+					<div class="flex space-x-4">
+						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.name}</p>
+						<div class="flex w-2/3">
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.version}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.author}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.totalDownloads}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.lastUpdated}</p>
+							{#if plugin.isInstalled && plugin.version !== plugin.installedVersion}
+								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
+									 on:click={UpdatePlugin}>Update</p>
+							{:else if plugin.isInstalled && plugin.version === plugin.installedVersion}
+								<p class="w-1/5 p-2 text-center">Installed</p>
+							{:else}
+								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
+									 on:click={() => InstallPlugin(plugin.downloadUrl)}>Install</p>
+							{/if}
+						</div>
 					</div>
-				</div>
-			</li>
-		{/each}
-	</ul>
+				</li>
+			{/each}
+		</ul>
+	{:catch error}
+		<p>Error while downloading plugin information: {error.message}</p>
+	{/await}
+
 
 </div>

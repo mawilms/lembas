@@ -3,7 +3,7 @@
 	import { LocalPlugin } from '$lib/models/localPlugin';
 	import { GetInstalledPlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	//import { createRelationship } from '$lib/state/pluginRelationship';
+	import { createPluginStore } from '$lib/store';
 
 	class ToggleState {
 		toggledItemId;
@@ -33,6 +33,9 @@
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+
+		createPluginStore(relationship)
+
 		return tmpPlugins
 	});
 
