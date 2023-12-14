@@ -146,7 +146,8 @@ func mapPluginConfigToLocalPlugin(config *pluginConfig) models.LocalPluginModel 
 	return models.LocalPluginModel{
 		Id:             config.Id,
 		Name:           config.Name,
-		CurrentVersion: string(config.Version),
+		CurrentVersion: config.Version,
+		LatestVersion:  config.Version,
 		Author:         config.Author,
 		Description:    strings.Trim(strings.Trim(config.Description, "\n"), "\t"),
 		InfoUrl:        config.InfoUrl,

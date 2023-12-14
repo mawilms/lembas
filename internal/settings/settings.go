@@ -21,7 +21,7 @@ func New() (Settings, error) {
 	}
 
 	_, err := os.Stat(filepath.Join(dataDirectory, "settings.json"))
-	if err == nil {
+	if err != nil {
 		err := settings.Store()
 		if err != nil {
 			return Settings{}, err

@@ -1,65 +1,47 @@
 <script lang="ts">
 	import '../../app.css';
 	import { FetchRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
-	import { BrowserOpenURL } from '$lib/wailsjs/runtime/runtime';
 	import { RemotePlugin } from '$lib/models/remotePlugin';
+	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
+	import { pluginStore } from '$lib/store';
+	import { get } from 'svelte/store';
 
-	class ToggleState {
-		toggledItemId;
-		isToggled = false;
+	const fetchRemotePlugin = async () => {
+		const fetchedPlugins = await FetchRemotePlugins();
+		const relationship = get(pluginStore);
 
-		constructor(itemId: string) {
-			this.toggledItemId = itemId;
-		}
-	}
-
-	let plugins: RemotePlugin[] = [];
-	let toggleState = new ToggleState('');
-
-	FetchRemotePlugins().then(result => {
 		let tmpArray: RemotePlugin[] = [];
-		for (let i = 0; i < result.length; i++) {
-			const element = result[i];
+
+		for (let i = 0; i < fetchedPlugins.length; i++) {
+			const element = fetchedPlugins[i];
 			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
 			const infoUrl = `https://www.lotrointerface.com/downloads/info${element.Id}-${element.Name}.html`;
 
-			tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url));
+			let isInstalled = false;
+			let installedVersion = '';
+			if (relationship.has(`${element.Name}-${element.Author}`)) {
+				isInstalled = true;
+				installedVersion = relationship.get(`${element.Name}-${element.Author}`)!;
+			}
+
+			tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url, isInstalled, installedVersion));
 		}
+
+		return tmpArray;
+	};
+	fetchRemotePlugin().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-		plugins = tmpArray;
-	});
-
-	const toggleDetails = (index: number) => {
-		if (toggleState.isToggled) {
-			let element = document.getElementById(toggleState.toggledItemId)!;
-
-			element.classList.add('hidden');
-			toggleState.isToggled = false;
-
-			if (`details-${index}` !== toggleState.toggledItemId) {
-				toggleState = new ToggleState(`details-${index}`);
-				element = document.getElementById(toggleState.toggledItemId)!;
-				element.classList.remove('hidden');
-				toggleState.isToggled = true;
-			}
-
-
-		} else {
-			if (`details-${index}` !== toggleState.toggledItemId || `details-${index}` === toggleState.toggledItemId && !toggleState.isToggled) {
-				toggleState = new ToggleState(`details-${index}`);
-				let element = document.getElementById(toggleState.toggledItemId)!;
-				element.classList.remove('hidden');
-				toggleState.isToggled = true;
-			}
-		}
-	};
+	})
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
+	};
+
+	const UpdatePlugin = () => {
+		console.log('Update');
 	};
 </script>
 
@@ -78,33 +60,34 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#each plugins as plugin, index}
-			<li id="plugin-{index}" class="block bg-light-brown">
-				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
-					<p class="w-1/3 p-2">{plugin.name}</p>
-					<div class="flex w-2/3">
-						<p class="w-1/5 p-2">{plugin.version}</p>
-						<p class="w-1/5 p-2">{plugin.author}</p>
-						<p class="w-1/5 p-2">{plugin.totalDownloads}</p>
-						<p class="w-1/5 p-2">{plugin.lastUpdated}</p>
-						<p class="w-1/5 text-center text-gold hover:bg-gold-transparent p-2">Installed</p>
+		{#await fetchRemotePlugin()}
+			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
+		{:then plugins}
+			{#each plugins as plugin, index}
+				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
+					<div class="flex space-x-4">
+						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.name}</p>
+						<div class="flex w-2/3">
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.version}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.author}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.totalDownloads}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.lastUpdated}</p>
+							{#if plugin.isInstalled && plugin.version !== plugin.installedVersion}
+								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
+									 on:click={UpdatePlugin}>Update</p>
+							{:else if plugin.isInstalled && plugin.version === plugin.installedVersion}
+								<p class="w-1/5 p-2 text-center">Installed</p>
+							{:else}
+								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
+									 on:click={() => InstallPlugin(plugin.downloadUrl)}>Install</p>
+							{/if}
+						</div>
 					</div>
-				</div>
-
-				<div id="details-{index}" class="hidden p-4 bg-dark-brown">
-					<p>{plugin.description}</p>
-					<div class="flex justify-end space-x-8 mt-4">
-						<button class="text-primary p-1 hover:bg-primary-transparent"
-										on:click={() => openUrl(plugin.url)}>Open website
-						</button>
-						<button class="text-primary p-1 hover:bg-primary-transparent"
-										on:click={() => InstallPlugin(plugin.downloadUrl)}>Install/Update
-						</button>
-						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
-					</div>
-				</div>
-			</li>
-		{/each}
+				</li>
+			{/each}
+		{:catch error}
+			<p>Error while downloading plugin information: {error.message}</p>
+		{/await}
 	</ul>
 
 </div>

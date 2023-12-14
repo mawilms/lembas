@@ -21,35 +21,45 @@ type jsonDatastore map[string]jsonDatastoreEntry
 
 type jsonDatastoreEntry struct {
 	Information struct {
-		Id             int      `json:"id"`
-		Name           string   `json:"name"`
-		CurrentVersion string   `json:"currentVersion"`
-		LatestVersion  string   `json:"latestVersion"`
-		Author         string   `json:"author"`
-		Description    string   `json:"description"`
-		InfoUrl        string   `json:"infoUrl"`
-		DownloadUrl    string   `json:"downloadUrl"`
-		Descriptors    []string `json:"descriptors"`
-		Dependencies   []int    `json:"dependencies"`
-	} `json:"information"`
-	Files []string `json:"files"`
+		Id             int      `json:"Id"`
+		Name           string   `json:"Name"`
+		CurrentVersion string   `json:"CurrentVersion"`
+		LatestVersion  string   `json:"LatestVersion"`
+		Author         string   `json:"Author"`
+		Description    string   `json:"Description"`
+		InfoUrl        string   `json:"InfoUrl"`
+		DownloadUrl    string   `json:"DownloadUrl"`
+		Descriptors    []string `json:"Descriptors"`
+		Dependencies   []int    `json:"Dependencies"`
+	} `json:"Plugin"`
+	Files []string `json:"Files"`
 }
 
 type Datastore struct {
 	Path string
 }
 
-func NewDatastore(dataDirectory string) Datastore {
+func NewDatastore(dataDirectory string) (Datastore, error) {
 	datastorePath := filepath.Join(dataDirectory, "datastore.json")
-	file, err := os.OpenFile(datastorePath, os.O_RDONLY|os.O_CREATE, 0644)
+
+	_, err := os.Stat(datastorePath)
 	if err != nil {
-		return Datastore{}
+		file, err := os.OpenFile(datastorePath, os.O_RDONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return Datastore{}, err
+		}
+		defer file.Close()
+
+		_, err = file.Write([]byte("{}"))
+		if err != nil {
+			return Datastore{}, err
+		}
+
 	}
-	defer file.Close()
 
 	return Datastore{
 		Path: datastorePath,
-	}
+	}, nil
 }
 
 func (d Datastore) Open() (models.DatastoreModel, error) {

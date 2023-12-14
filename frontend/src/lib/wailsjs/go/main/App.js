@@ -6,6 +6,10 @@ export function FetchRemotePlugins() {
   return window['go']['main']['App']['FetchRemotePlugins']();
 }
 
+export function GetInstalledPlugins() {
+  return window['go']['main']['App']['GetInstalledPlugins']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }

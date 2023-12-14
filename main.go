@@ -2,9 +2,6 @@ package main
 
 import (
 	"embed"
-	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/settings"
-
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -14,10 +11,7 @@ import (
 var assets embed.FS
 
 func main() {
-	s, _ := settings.New()
-	datastore := internal.NewDatastore(s.DataDirectory)
-
-	app := NewApp(s, datastore)
+	app := NewApp()
 
 	err := wails.Run(&options.App{
 		Title:  "lembas",
