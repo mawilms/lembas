@@ -6,9 +6,9 @@
 	import { pluginStore } from '$lib/store';
 	import { get } from 'svelte/store';
 
-	async function fetchRemotePlugin() {
+	const fetchRemotePlugin = async () => {
 		const fetchedPlugins = await FetchRemotePlugins();
-		const relationship = get(pluginStore)
+		const relationship = get(pluginStore);
 
 		let tmpArray: RemotePlugin[] = [];
 
@@ -27,13 +27,14 @@
 			tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url, isInstalled, installedVersion));
 		}
 
+		return tmpArray;
+	};
+	fetchRemotePlugin().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-		return tmpArray;
-	}
+	})
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
@@ -58,12 +59,10 @@
 		</div>
 	</div>
 
-	{#await fetchRemotePlugin()}
-		<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-			<p class="text-center p-32 text-xl text-gold">Downloading plugin information from lotrocompendium.com</p>
-		</ul>
-	{:then plugins}
-		<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
+	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
+		{#await fetchRemotePlugin()}
+			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
+		{:then plugins}
 			{#each plugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
 					<div class="flex space-x-4">
@@ -86,10 +85,9 @@
 					</div>
 				</li>
 			{/each}
-		</ul>
-	{:catch error}
-		<p>Error while downloading plugin information: {error.message}</p>
-	{/await}
-
+		{:catch error}
+			<p>Error while downloading plugin information: {error.message}</p>
+		{/await}
+	</ul>
 
 </div>

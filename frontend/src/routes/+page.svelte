@@ -13,31 +13,30 @@
 			this.toggledItemId = itemId;
 		}
 	}
-
-	let plugins: LocalPlugin[] = [];
 	let toggleState = new ToggleState('');
 
-	GetInstalledPlugins().then(result => {
+	const getInstalledPlugins = async () => {
+		const installedPlugins = await GetInstalledPlugins();
+
 		let tmpPlugins: LocalPlugin[] = [];
-		let relationship = new Map<string,string>();
+		let relationship = new Map<string, string>();
 
-		for (let i = 0; i < result.length; i++) {
-			const element = result[i];
+		for (let i = 0; i < installedPlugins.length; i++) {
+			const element = installedPlugins[i];
 			tmpPlugins.push(new LocalPlugin(element.Id, element.Name, element.Author, element.Description, element.CurrentVersion, element.LatestVersion, element.InfoUrl));
-			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion)
+			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion);
 		}
+		createPluginStore(relationship);
 
-		plugins = tmpPlugins;
+		return tmpPlugins;
+	};
 
+	getInstalledPlugins().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-		createPluginStore(relationship)
-
-		return tmpPlugins
-	});
+	})
 
 	const refreshPage = () => {
 		console.log('Refresh');
@@ -70,10 +69,6 @@
 			}
 		}
 	};
-
-	const openUrl = (url: string) => {
-		BrowserOpenURL(url);
-	};
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
@@ -102,33 +97,68 @@
 		</div>
 	</div>
 
-
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#each plugins as plugin, index}
-			<li id="plugin-{index}" class="block bg-light-brown">
-				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
-					<p class="w-1/2 p-2">{plugin.name}</p>
-					<div class="flex w-1/2">
-						<p class="w-1/3 p-2">{plugin.currentVersion}</p>
-						<p class="w-1/3 p-2">{plugin.latestVersion}</p>
-						<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
-							{#if plugin.currentVersion !== plugin.latestVersion}
-								<button>Update</button>
-							{/if}
-						</p>
+		{#await getInstalledPlugins()}
+			<p class="text-center text-gold">Loading plugins from the data store</p>
+		{:then plugins}
+			{#each plugins as plugin, index}
+				<li id="plugin-{index}" class="block bg-light-brown">
+					<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
+						<p class="w-1/2 p-2">{plugin.name}</p>
+						<div class="flex w-1/2">
+							<p class="w-1/3 p-2">{plugin.currentVersion}</p>
+							<p class="w-1/3 p-2">{plugin.latestVersion}</p>
+							<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
+								{#if plugin.currentVersion !== plugin.latestVersion}
+									<button>Update</button>
+								{/if}
+							</p>
+						</div>
 					</div>
-				</div>
 
-				<div id="details-{index}" class="hidden p-4 bg-dark-brown">
-					<p>{plugin.description}</p>
-					<div class="flex justify-end space-x-8 mt-4 mr-4">
-						<button class="text-primary p-1 hover:bg-primary-transparent"
-										on:click={() => openUrl(plugin.infoUrl)}>Open website
-						</button>
-						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
+					<div id="details-{index}" class="hidden p-4 bg-dark-brown">
+						<p>{plugin.description}</p>
+						<div class="flex justify-end space-x-8 mt-4 mr-4">
+							<button class="text-primary p-1 hover:bg-primary-transparent"
+											on:click={() => BrowserOpenURL(plugin.infoUrl)}>Open website
+							</button>
+							<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
+						</div>
 					</div>
-				</div>
-			</li>
-		{/each}
+				</li>
+			{/each}
+		{:catch error}
+			<p>Error while downloading plugin information: {error.message}</p>
+		{/await}
 	</ul>
+
+
+<!--	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">-->
+<!--		{#each plugins as plugin, index}-->
+<!--			<li id="plugin-{index}" class="block bg-light-brown">-->
+<!--				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>-->
+<!--					<p class="w-1/2 p-2">{plugin.name}</p>-->
+<!--					<div class="flex w-1/2">-->
+<!--						<p class="w-1/3 p-2">{plugin.currentVersion}</p>-->
+<!--						<p class="w-1/3 p-2">{plugin.latestVersion}</p>-->
+<!--						<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">-->
+<!--							{#if plugin.currentVersion !== plugin.latestVersion}-->
+<!--								<button>Update</button>-->
+<!--							{/if}-->
+<!--						</p>-->
+<!--					</div>-->
+<!--				</div>-->
+
+<!--				<div id="details-{index}" class="hidden p-4 bg-dark-brown">-->
+<!--					<p>{plugin.description}</p>-->
+<!--					<div class="flex justify-end space-x-8 mt-4 mr-4">-->
+<!--						<button class="text-primary p-1 hover:bg-primary-transparent"-->
+<!--										on:click={() => openUrl(plugin.infoUrl)}>Open website-->
+<!--						</button>-->
+<!--						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>-->
+<!--					</div>-->
+<!--				</div>-->
+<!--			</li>-->
+<!--		{/each}-->
+<!--	</ul>-->
 </div>
