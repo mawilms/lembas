@@ -34,6 +34,8 @@ func (a *App) InstallPlugin(url string) {
 	entry, _ := internal.DownloadPlugin(url, a.settings.PluginDirectory)
 
 	a.datastore.Store(entry)
+
+	// TODO: Update catalog
 }
 
 func (a *App) DeletePlugin(name, author string) {
@@ -45,9 +47,9 @@ func (a *App) DeletePlugin(name, author string) {
 	err = internal.DeletePlugin(plugin, a.settings.PluginDirectory)
 	if err == nil {
 		a.datastore.DeleteById(id)
-	} else {
-		fmt.Println(err)
 	}
+
+	// TODO: Add callback to show new plugin list
 }
 
 func (a *App) UpdatePlugins(plugins any) {

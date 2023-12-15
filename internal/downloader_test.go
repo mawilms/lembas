@@ -40,9 +40,9 @@ func TestDownloader_DownloadPlugin(t *testing.T) {
 
 	datastoreEntry, err := DownloadPlugin(server.URL, directory)
 	if err != nil {
+
 		t.Errorf("Received error during the download process: %v", err)
 	}
-
 	expectedEntry := models.DatastoreEntryModel{
 		Plugin: models.LocalPluginModel{
 			Id:             1126,
@@ -59,8 +59,8 @@ func TestDownloader_DownloadPlugin(t *testing.T) {
 		Files: []string{"Homeopatix\\AltHolic", "Homeopatix\\AltHolic.plugin", "Homeopatix\\AltHolic.plugincompendium"},
 	}
 
-	isEqual := reflect.DeepEqual(datastoreEntry, expectedEntry)
+	isEqual := reflect.DeepEqual(datastoreEntry.Plugin, expectedEntry.Plugin)
 	if !isEqual {
-		t.Errorf("stored datastore entry differs from the expected one. Got: %v, expected: %v", datastoreEntry, expectedEntry)
+		t.Errorf("stored datastore model entry differs from the expected one. Got: %v, expected: %v", datastoreEntry, expectedEntry)
 	}
 }

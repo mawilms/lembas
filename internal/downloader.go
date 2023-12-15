@@ -33,13 +33,12 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 	body, _ := io.ReadAll(response.Body)
 
-	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-	_ = err
+	archive, _ := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 
 	pluginsMap := make(map[string]struct{})
 
-	hasPluginCompendiumFile := false
-	model := models.LocalPluginModel{}
+	var pluginCompendiumFileContent []byte
+	var pluginFileContent []byte
 	for _, file := range archive.File {
 		path := filepath.Join(pluginDirectory, file.Name)
 
@@ -72,12 +71,11 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		}
 
 		if strings.Contains(file.Name, ".plugincompendium") {
-			hasPluginCompendiumFile = true
-			model, _ = ParsePluginConfig(archiveFileContent)
+			pluginCompendiumFileContent = archiveFileContent
 			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
-		if strings.Contains(file.Name, ".plugin") && !hasPluginCompendiumFile {
-			model, _ = ParseFallbackConfig(archiveFileContent)
+		if strings.Contains(file.Name, ".plugin") {
+			pluginFileContent = archiveFileContent
 			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
 
@@ -89,6 +87,14 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 			}
 		}
 	}
+
+	model := models.LocalPluginModel{}
+	if len(pluginCompendiumFileContent) != 0 {
+		model, _ = ParsePluginConfig(pluginCompendiumFileContent)
+	} else {
+		model, _ = ParseFallbackConfig(pluginFileContent)
+	}
+
 	var files []string
 
 	for key, _ := range pluginsMap {
