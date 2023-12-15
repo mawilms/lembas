@@ -15,13 +15,13 @@
 
 	const togglePluginsTab = () => {
 		if (catalogTabActive) {
-			catalogTabActive = !catalogTabActive;
-		}
-		if (aboutTabActive) {
-			catalogTabActive = !catalogTabActive;
+			catalogTabActive = false;
 		}
 		if (settingsTabActive) {
-			catalogTabActive = !catalogTabActive;
+			settingsTabActive = false;
+		}
+		if (aboutTabActive) {
+			aboutTabActive = false;
 		}
 
 		if (!pluginsTabActive) {
@@ -30,14 +30,14 @@
 	};
 
 	const toggleCatalogTab = () => {
-		if (aboutTabActive) {
-			aboutTabActive = !aboutTabActive;
+		if (pluginsTabActive) {
+			pluginsTabActive = !pluginsTabActive;
 		}
 		if (settingsTabActive) {
 			settingsTabActive = !settingsTabActive;
 		}
-		if (pluginsTabActive) {
-			pluginsTabActive = !pluginsTabActive;
+		if (aboutTabActive) {
+			aboutTabActive = !aboutTabActive;
 		}
 
 		if (!catalogTabActive) {
@@ -49,11 +49,11 @@
 		if (pluginsTabActive) {
 			pluginsTabActive = !pluginsTabActive;
 		}
-		if (settingsTabActive) {
-			settingsTabActive = !settingsTabActive;
-		}
 		if (catalogTabActive) {
 			catalogTabActive = !catalogTabActive;
+		}
+		if (settingsTabActive) {
+			settingsTabActive = !settingsTabActive;
 		}
 
 		if (!aboutTabActive) {
