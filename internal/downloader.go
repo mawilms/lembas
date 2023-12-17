@@ -13,7 +13,7 @@ import (
 )
 
 func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, error) {
-	response, err := http.Get("https://api.lotrointerface.com/fav/plugincompendium.xml")
+	response, err := http.Get(url)
 	if err != nil {
 		return make([]entities.RemotePluginEntity, 0), err
 	}
@@ -21,7 +21,7 @@ func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, erro
 	content, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 
-	plugins, err := ParseFeed(content)
+	plugins, err := models.ParseFeed(content)
 
 	return plugins, err
 }
@@ -91,14 +91,14 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 	model := models.LocalPluginModel{}
 	if len(pluginCompendiumFileContent) != 0 {
-		model, _ = ParsePluginConfig(pluginCompendiumFileContent)
+		model, _ = models.ParsePluginConfig(pluginCompendiumFileContent)
 	} else {
-		model, _ = ParseFallbackConfig(pluginFileContent)
+		model, _ = models.ParseFallbackConfig(pluginFileContent)
 	}
 
 	var files []string
 
-	for key, _ := range pluginsMap {
+	for key := range pluginsMap {
 		files = append(files, key)
 	}
 

@@ -92,7 +92,7 @@ func (d Datastore) Store(entry DatastoreEntryModel) error {
 }
 
 func (d Datastore) Get() ([]LocalPluginModel, error) {
-	var plugins []LocalPluginModel
+	plugins := make([]LocalPluginModel, 0)
 
 	data, err := d.Open()
 	if err != nil {

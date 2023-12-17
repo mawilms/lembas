@@ -6,14 +6,17 @@ import (
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
+	"github.com/mawilms/lembas/internal/processes"
 	"github.com/mawilms/lembas/internal/settings"
 	"strings"
 )
 
 type App struct {
-	ctx       context.Context
-	settings  settings.Settings
-	datastore models.DatastoreInterface
+	ctx           context.Context
+	settings      settings.Settings
+	datastore     models.DatastoreInterface
+	localPlugins  []entities.LocalPluginEntity
+	remotePlugins []entities.RemotePluginEntity
 }
 
 func NewApp() *App {
@@ -31,12 +34,13 @@ func (a *App) SaveSettings(pluginDirectory string) {
 	fmt.Println(pluginDirectory)
 }
 
-func (a *App) InstallPlugin(url string) []models.LocalPluginModel {
-	entry, _ := internal.DownloadPlugin(url, a.settings.PluginDirectory)
+func (a *App) InstallPlugin(url string) []entities.LocalPluginEntity {
+	plugins, err := processes.InstallPlugin(a.datastore, url, a.settings.DataDirectory)
+	if err != nil {
+		return make([]entities.LocalPluginEntity, 0)
+	}
 
-	a.datastore.Store(entry)
-
-	plugins, _ := a.datastore.Get()
+	a.localPlugins = plugins
 
 	return plugins
 }
@@ -62,19 +66,24 @@ func (a *App) UpdatePlugins(plugins any) {
 	// TODO: Run  internal.DownloadPlugin(url, a.settings.PluginDirectory) in a loop
 }
 
-func (a *App) GetInstalledPlugins() []models.LocalPluginModel {
-	plugins, _ := a.datastore.Get()
+func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
+	plugins, err := processes.GetInstalledPlugins(a.datastore)
+	if err != nil {
+		return make([]entities.LocalPluginEntity, 0)
+	}
+
+	a.localPlugins = plugins
 
 	return plugins
 }
 
-func (a *App) FetchRemotePlugins() []entities.RemotePluginEntity {
-	var plugins []entities.RemotePluginEntity
-
-	plugins, err := internal.DownloadPackageInformation(a.settings.InformationUrl)
+func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
+	plugins, err := processes.GetRemotePlugins(a.settings.InformationUrl, a.localPlugins)
 	if err != nil {
-		return plugins
+		return make([]entities.RemotePluginEntity, 0)
 	}
+
+	a.remotePlugins = plugins
 
 	return plugins
 }
