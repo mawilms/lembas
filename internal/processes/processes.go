@@ -14,8 +14,13 @@ func buildPluginIndex(name, author string) string {
 
 func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
-
 	datastore.Store(entry)
+
+	for _, dependency := range entry.Plugin.Dependencies {
+		url := fmt.Sprintf("https://www.lotrointerface.com/downloads/download%v", dependency)
+		entry, _ = internal.DownloadPlugin(url, pluginDirectory)
+		datastore.Store(entry)
+	}
 
 	plugins := make([]entities.LocalPluginEntity, 0)
 
@@ -81,4 +86,35 @@ func GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalP
 	}
 
 	return localPlugins, nil
+}
+
+func DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
+	plugins := make([]entities.LocalPluginEntity, 0)
+	id := buildPluginIndex(name, author)
+
+	pluginDatastore, err := datastore.Open()
+	plugin := pluginDatastore[id]
+
+	err = internal.DeletePlugin(plugin, pluginDirectory)
+	if err == nil {
+		err = datastore.DeleteById(id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	localPlugins, err := datastore.Get()
+	if err != nil {
+		return plugins, err
+	}
+
+	for _, plugin := range localPlugins {
+		plugins = append(plugins, entities.LocalPluginEntity{
+			Base:         models.NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, plugin.CurrentVersion, plugin.LatestVersion),
+			Descriptors:  plugin.Descriptors,
+			Dependencies: plugin.Dependencies,
+		})
+	}
+
+	return plugins, nil
 }

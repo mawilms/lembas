@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"github.com/mawilms/lembas/internal/processes"
 	"github.com/mawilms/lembas/internal/settings"
-	"strings"
 )
 
 type App struct {
@@ -45,18 +43,13 @@ func (a *App) InstallPlugin(url string) []entities.LocalPluginEntity {
 	return plugins
 }
 
-func (a *App) DeletePlugin(name, author string) []models.LocalPluginModel {
-	id := fmt.Sprintf("%v-%v", strings.ToLower(name), strings.ToLower(author))
-
-	pluginDatastore, err := a.datastore.Open()
-	plugin := pluginDatastore[id]
-
-	err = internal.DeletePlugin(plugin, a.settings.PluginDirectory)
-	if err == nil {
-		a.datastore.DeleteById(id)
+func (a *App) DeletePlugin(name, author string) []entities.LocalPluginEntity {
+	plugins, err := processes.DeletePlugin(a.datastore, name, author, a.settings.PluginDirectory)
+	if err != nil {
+		return make([]entities.LocalPluginEntity, 0)
 	}
 
-	plugins, _ := a.datastore.Get()
+	a.localPlugins = plugins
 
 	return plugins
 }

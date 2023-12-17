@@ -6,8 +6,17 @@ import (
 	"github.com/mawilms/lembas/internal/models"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
+)
+
+var (
+	_, b, _, _ = runtime.Caller(0)
+
+	pluginZipArchivePath = filepath.Join(filepath.Dir(b), "..", "..", "test", "samples", "AltHolic.zip")
 )
 
 func TestGetRemotePlugins(t *testing.T) {
@@ -78,11 +87,28 @@ type dummyDatastore struct {
 }
 
 func (d dummyDatastore) Open() (models.DatastoreModel, error) {
-	panic("implement me")
+	model := make(models.DatastoreModel)
+	model["alholic-some author"] = models.DatastoreEntryModel{
+		Plugin: models.LocalPluginModel{
+			Id:             366,
+			Name:           "AltHolic",
+			CurrentVersion: "1.0",
+			LatestVersion:  "1.0",
+			Author:         "Some Author",
+			Description:    "Hello World",
+			InfoUrl:        "https://www.lotrointerface.com/downloads/info1126",
+			DownloadUrl:    "https://www.lotrointerface.com/downloads/download1126",
+			Descriptors:    nil,
+			Dependencies:   nil,
+		},
+		Files: nil,
+	}
+
+	return model, nil
 }
 
 func (d dummyDatastore) Store(model models.DatastoreEntryModel) error {
-	panic("implement me")
+	return nil
 }
 
 func (d dummyDatastore) Get() ([]models.LocalPluginModel, error) {
@@ -103,7 +129,7 @@ func (d dummyDatastore) Get() ([]models.LocalPluginModel, error) {
 }
 
 func (d dummyDatastore) DeleteById(id string) error {
-	panic("implement me")
+	return nil
 }
 
 func TestGetInstalledPlugins(t *testing.T) {
@@ -121,5 +147,43 @@ func TestGetInstalledPlugins(t *testing.T) {
 	isEqual := reflect.DeepEqual(plugins, expectedPlugins)
 	if !isEqual {
 		t.Fatalf("Got: %+v, expected: %+v", plugins, expectedPlugins)
+	}
+}
+
+func TestInstallPlugin(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "lembas")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, pluginZipArchivePath)
+	}))
+	defer server.Close()
+	expectedPlugins := []entities.LocalPluginEntity{{
+		Base:         models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		Descriptors:  nil,
+		Dependencies: nil,
+	}}
+
+	plugins, err := InstallPlugin(dummyDatastore{}, server.URL, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	isEqual := reflect.DeepEqual(plugins, expectedPlugins)
+	if !isEqual {
+		t.Errorf("Got: %+v, expected: %+v", plugins, plugins)
+	}
+}
+
+func TestDeletePlugin(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "lembas")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = DeletePlugin(dummyDatastore{}, "AltHolic", "Some Author", tmpDir)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
