@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/mawilms/lembas/internal/models"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +19,12 @@ var (
 )
 
 func TestDownloadPackageInformation(t *testing.T) {
-	plugins, err := DownloadPackageInformation()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, "") // TODO: XML content hier einbauen
+	}))
+	defer server.Close()
+
+	plugins, err := DownloadPackageInformation(server.URL)
 	if err != nil {
 		t.Error(err)
 	}

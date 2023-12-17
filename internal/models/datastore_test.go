@@ -1,7 +1,6 @@
-package internal
+package models
 
 import (
-	"github.com/mawilms/lembas/internal/models"
 	"os"
 	"reflect"
 	"testing"
@@ -54,8 +53,8 @@ func TestDatastore_Open(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	expecedModel := models.DatastoreEntryModel{
-		Plugin: models.LocalPluginModel{
+	expecedModel := DatastoreEntryModel{
+		Plugin: LocalPluginModel{
 			Id:             1,
 			Name:           "AltHolic",
 			CurrentVersion: "1.2",
@@ -97,8 +96,8 @@ func TestDatastore_Store(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	entry := models.DatastoreEntryModel{
-		Plugin: models.LocalPluginModel{
+	entry := DatastoreEntryModel{
+		Plugin: LocalPluginModel{
 			Id:             1,
 			Name:           "OtherPlugin",
 			CurrentVersion: "1.0",
@@ -140,7 +139,7 @@ func TestDatastore_Get(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	expectedPlugin := models.LocalPluginModel{
+	expectedPlugin := LocalPluginModel{
 		Id:             1,
 		Name:           "AltHolic",
 		CurrentVersion: "1.2",
