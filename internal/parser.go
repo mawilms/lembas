@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"encoding/xml"
+	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"io"
 	"strconv"
@@ -24,7 +25,7 @@ type favorite struct {
 	} `xml:"Ui"`
 }
 
-func ParseFeed(content []byte) ([]models.RemotePluginModel, error) {
+func ParseFeed(content []byte) ([]entities.RemotePluginEntity, error) {
 	var favorite favorite
 
 	decoder := xml.NewDecoder(bytes.NewReader(content))
@@ -32,18 +33,18 @@ func ParseFeed(content []byte) ([]models.RemotePluginModel, error) {
 
 	err := decoder.Decode(&favorite)
 	if err != nil {
-		return make([]models.RemotePluginModel, 0), err
+		return make([]entities.RemotePluginEntity, 0), err
 	}
 
 	plugins := mapFavoritesToRemotePlugins(&favorite)
 	return plugins, nil
 }
 
-func mapFavoritesToRemotePlugins(favorite *favorite) []models.RemotePluginModel {
-	var plugins []models.RemotePluginModel
+func mapFavoritesToRemotePlugins(favorite *favorite) []entities.RemotePluginEntity {
+	var plugins []entities.RemotePluginEntity
 
 	for _, plugin := range favorite.Ui {
-		plugins = append(plugins, models.RemotePluginModel{
+		plugins = append(plugins, entities.RemotePluginEntity{
 			Id: plugin.Id, Name: plugin.Name, Author: plugin.Author, Version: plugin.Version,
 			UpdatedTimestamp: plugin.UpdatedTimestamp, Downloads: plugin.Downloads,
 			Category: plugin.Category, Description: strings.Trim(plugin.Description, "\n\t"), FileName: plugin.FileName, Url: strings.Trim(plugin.Url, "\n\t"),

@@ -1,6 +1,6 @@
-package models
+package entities
 
-type RemotePluginModel struct {
+type RemotePluginEntity struct {
 	Id               int
 	Name             string
 	Author           string

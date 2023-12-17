@@ -3,6 +3,7 @@ package internal
 import (
 	"archive/zip"
 	"bytes"
+	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"io"
 	"net/http"
@@ -11,10 +12,10 @@ import (
 	"strings"
 )
 
-func DownloadPackageInformation() ([]models.RemotePluginModel, error) {
+func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, error) {
 	response, err := http.Get("https://api.lotrointerface.com/fav/plugincompendium.xml")
 	if err != nil {
-		return make([]models.RemotePluginModel, 0), err
+		return make([]entities.RemotePluginEntity, 0), err
 	}
 
 	content, err := io.ReadAll(response.Body)
