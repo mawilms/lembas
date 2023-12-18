@@ -3,6 +3,7 @@ package internal
 import (
 	"archive/zip"
 	"bytes"
+	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"io"
 	"net/http"
@@ -11,16 +12,16 @@ import (
 	"strings"
 )
 
-func DownloadPackageInformation() ([]models.RemotePluginModel, error) {
-	response, err := http.Get("https://api.lotrointerface.com/fav/plugincompendium.xml")
+func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, error) {
+	response, err := http.Get(url)
 	if err != nil {
-		return make([]models.RemotePluginModel, 0), err
+		return make([]entities.RemotePluginEntity, 0), err
 	}
 
 	content, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 
-	plugins, err := ParseFeed(content)
+	plugins, err := models.ParseFeed(content)
 
 	return plugins, err
 }
@@ -35,9 +36,10 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 	archive, _ := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 
-	var files []string
-	hasPluginCompendiumFile := false
-	model := models.LocalPluginModel{}
+	pluginsMap := make(map[string]struct{})
+
+	var pluginCompendiumFileContent []byte
+	var pluginFileContent []byte
 	for _, file := range archive.File {
 		path := filepath.Join(pluginDirectory, file.Name)
 
@@ -55,7 +57,6 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		}
 
 		dstFile, _ := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		defer dstFile.Close()
 
 		archiveFile, err := file.Open()
 		archiveFileContent, _ := io.ReadAll(archiveFile)
@@ -70,18 +71,53 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		}
 
 		if strings.Contains(file.Name, ".plugincompendium") {
-			hasPluginCompendiumFile = true
-			model, _ = ParsePluginConfig(archiveFileContent)
+			pluginCompendiumFileContent = archiveFileContent
+			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
-		if strings.Contains(file.Name, ".plugin") && !hasPluginCompendiumFile {
-			model, _ = ParseFallbackConfig(archiveFileContent)
+		if strings.Contains(file.Name, ".plugin") {
+			pluginFileContent = archiveFileContent
+			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
 
-		files = append(files, file.Name)
+		splitPath := strings.Split(file.Name, "/")
+		if len(splitPath) > 1 && (!strings.Contains(file.Name, ".plugincompendium") && !strings.Contains(file.Name, ".plugin")) {
+			_, ok := pluginsMap[filepath.Join(splitPath[0], splitPath[1])]
+			if !ok {
+				pluginsMap[filepath.Join(splitPath[0], splitPath[1])] = struct{}{}
+			}
+		}
+
+		dstFile.Close()
+	}
+
+	model := models.LocalPluginModel{}
+	if len(pluginCompendiumFileContent) != 0 {
+		model, _ = models.ParsePluginConfig(pluginCompendiumFileContent)
+	} else {
+		model, _ = models.ParseFallbackConfig(pluginFileContent)
+	}
+
+	var files []string
+
+	for key := range pluginsMap {
+		files = append(files, key)
 	}
 
 	return models.DatastoreEntryModel{
 		Plugin: model,
 		Files:  files,
 	}, nil
+}
+
+func DeletePlugin(entry models.DatastoreEntryModel, pluginDirectory string) error {
+	for _, file := range entry.Files {
+		file = filepath.Join(pluginDirectory, file)
+
+		err := os.RemoveAll(file)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

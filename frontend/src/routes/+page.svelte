@@ -1,9 +1,8 @@
 <script lang="ts">
 	import '../app.css';
-	import { LocalPlugin } from '$lib/models/localPlugin';
-	import { GetInstalledPlugins } from '$lib/wailsjs/go/main/App';
+	import { BasePlugin } from '$lib/entities/plugin';
+	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { createPluginStore } from '$lib/store';
 
 	class ToggleState {
 		toggledItemId;
@@ -13,37 +12,88 @@
 			this.toggledItemId = itemId;
 		}
 	}
+
 	let toggleState = new ToggleState('');
+	let installedPlugins: BasePlugin[] = [];
+	let amountInstalledPlugins = 0;
+
+	let modifiedPlugins: BasePlugin[];
+	$: modifiedPlugins = [];
+	$: {
+		getInstalledPlugins().then((v => {
+			modifiedPlugins = v;
+		}));
+	}
+
+	let searchInput = '';
+	$: search(searchInput);
+
+	function search(input: string) {
+		searchPlugins(input).then((v => {
+			modifiedPlugins = v;
+		}));
+	}
 
 	const getInstalledPlugins = async () => {
-		const installedPlugins = await GetInstalledPlugins();
+		let installedPlugins = await GetInstalledPlugins();
+		if (installedPlugins === null) {
+			installedPlugins = []
+		}
 
-		let tmpPlugins: LocalPlugin[] = [];
-		let relationship = new Map<string, string>();
+		let tmpPlugins: BasePlugin[] = [];
 
 		for (let i = 0; i < installedPlugins.length; i++) {
 			const element = installedPlugins[i];
-			tmpPlugins.push(new LocalPlugin(element.Id, element.Name, element.Author, element.Description, element.CurrentVersion, element.LatestVersion, element.InfoUrl));
-			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion);
+
+			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
 		}
-		createPluginStore(relationship);
+		amountInstalledPlugins = tmpPlugins.length;
 
 		return tmpPlugins;
 	};
 
-	getInstalledPlugins().then(() => {
+	const searchPlugins = async (input: string) => {
+		let installedPlugins = await SearchLocal(input);
+		if (installedPlugins === null) {
+			installedPlugins = [];
+		}
+
+		let tmpPlugins: BasePlugin[] = [];
+
+		for (let i = 0; i < installedPlugins.length; i++) {
+			const element = installedPlugins[i];
+
+			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
+		}
+		amountInstalledPlugins = tmpPlugins.length;
+
+		return tmpPlugins;
+	};
+
+	getInstalledPlugins().then((plugins) => {
+		installedPlugins = plugins;
+
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	})
+	});
 
-	const refreshPage = () => {
-		console.log('Refresh');
-	};
+	// const refreshPage = async () => {
+	// 	await getInstalledPlugins()
+	// };
 
 	const updateAll = () => {
-		console.log('Update all');
+		let pluginsToUpdate: BasePlugin[] = [];
+
+		for (let i = 0; i < installedPlugins.length; i++) {
+			const element = installedPlugins[i];
+			if (element.currentVersion != element.latestVersion) {
+				pluginsToUpdate.push(element);
+			}
+		}
+
+		UpdatePlugins(pluginsToUpdate)
 	};
 
 	const toggleDetails = (index: number) => {
@@ -75,23 +125,22 @@
 	<div class="flex items-center">
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
-				<button class="text-primary p-1 hover:bg-primary-transparent"
-								on:click={refreshPage}>Refresh
+				<button class="text-primary p-1 hover:bg-primary-transparent">Refresh
 				</button>
 				<button class="text-primary p-1 hover:bg-primary-transparent"
 								on:click={updateAll}>Update all
 				</button>
 			</div>
-			<p class="ml-16 m-1">2 plugins installed</p>
+			<p class="ml-16 m-1">{amountInstalledPlugins} plugins installed</p>
 		</div>
 		<input class="grow p-2 text-gold bg-light-brown focus:outline-none" type="text"
-					 placeholder="Search for a plugin...">
+					 bind:value={searchInput} placeholder="Search for a plugin...">
 	</div>
 
 	<div id="plugin-labels" class="flex text-left mx-2">
 		<p class="w-1/2 px-2">Plugin</p>
 		<div class="flex w-1/2">
-			<p class="w-1/3 px-2">Current Version</p>
+			<p class="w-1/3 px-2">Local Version</p>
 			<p class="w-1/3 px-2">Latest Version</p>
 			<p class="w-1/3 px-2 text-center">Update</p>
 		</div>
@@ -101,7 +150,7 @@
 		{#await getInstalledPlugins()}
 			<p class="text-center text-gold">Loading plugins from the data store</p>
 		{:then plugins}
-			{#each plugins as plugin, index}
+			{#each modifiedPlugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown">
 					<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
 						<p class="w-1/2 p-2">{plugin.name}</p>
@@ -117,12 +166,17 @@
 					</div>
 
 					<div id="details-{index}" class="hidden p-4 bg-dark-brown">
-						<p>{plugin.description}</p>
+						{#if (plugin.description === "")}
+							<p>No description</p>
+							{:else }
+							<p>{plugin.description}</p>
+						{/if}
+
 						<div class="flex justify-end space-x-8 mt-4 mr-4">
 							<button class="text-primary p-1 hover:bg-primary-transparent"
 											on:click={() => BrowserOpenURL(plugin.infoUrl)}>Open website
 							</button>
-							<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>
+							<button class="text-primary p-1 hover:bg-primary-transparent" on:click={() => {DeletePlugin(plugin.name, plugin.author)}}>Delete</button>
 						</div>
 					</div>
 				</li>
@@ -133,32 +187,32 @@
 	</ul>
 
 
-<!--	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">-->
-<!--		{#each plugins as plugin, index}-->
-<!--			<li id="plugin-{index}" class="block bg-light-brown">-->
-<!--				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>-->
-<!--					<p class="w-1/2 p-2">{plugin.name}</p>-->
-<!--					<div class="flex w-1/2">-->
-<!--						<p class="w-1/3 p-2">{plugin.currentVersion}</p>-->
-<!--						<p class="w-1/3 p-2">{plugin.latestVersion}</p>-->
-<!--						<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">-->
-<!--							{#if plugin.currentVersion !== plugin.latestVersion}-->
-<!--								<button>Update</button>-->
-<!--							{/if}-->
-<!--						</p>-->
-<!--					</div>-->
-<!--				</div>-->
+	<!--	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">-->
+	<!--		{#each plugins as plugin, index}-->
+	<!--			<li id="plugin-{index}" class="block bg-light-brown">-->
+	<!--				<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>-->
+	<!--					<p class="w-1/2 p-2">{plugin.name}</p>-->
+	<!--					<div class="flex w-1/2">-->
+	<!--						<p class="w-1/3 p-2">{plugin.currentVersion}</p>-->
+	<!--						<p class="w-1/3 p-2">{plugin.latestVersion}</p>-->
+	<!--						<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">-->
+	<!--							{#if plugin.currentVersion !== plugin.latestVersion}-->
+	<!--								<button>Update</button>-->
+	<!--							{/if}-->
+	<!--						</p>-->
+	<!--					</div>-->
+	<!--				</div>-->
 
-<!--				<div id="details-{index}" class="hidden p-4 bg-dark-brown">-->
-<!--					<p>{plugin.description}</p>-->
-<!--					<div class="flex justify-end space-x-8 mt-4 mr-4">-->
-<!--						<button class="text-primary p-1 hover:bg-primary-transparent"-->
-<!--										on:click={() => openUrl(plugin.infoUrl)}>Open website-->
-<!--						</button>-->
-<!--						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>-->
-<!--					</div>-->
-<!--				</div>-->
-<!--			</li>-->
-<!--		{/each}-->
-<!--	</ul>-->
+	<!--				<div id="details-{index}" class="hidden p-4 bg-dark-brown">-->
+	<!--					<p>{plugin.description}</p>-->
+	<!--					<div class="flex justify-end space-x-8 mt-4 mr-4">-->
+	<!--						<button class="text-primary p-1 hover:bg-primary-transparent"-->
+	<!--										on:click={() => openUrl(plugin.infoUrl)}>Open website-->
+	<!--						</button>-->
+	<!--						<button class="text-primary p-1 hover:bg-primary-transparent">Remove</button>-->
+	<!--					</div>-->
+	<!--				</div>-->
+	<!--			</li>-->
+	<!--		{/each}-->
+	<!--	</ul>-->
 </div>

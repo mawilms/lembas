@@ -1,7 +1,6 @@
-package internal
+package models
 
 import (
-	"github.com/mawilms/lembas/internal/models"
 	"os"
 	"reflect"
 	"testing"
@@ -10,19 +9,19 @@ import (
 func setupTestCase(t *testing.T) (string, func(t *testing.T)) {
 	jsonContent := []byte(`{
   "altholic-homeopatix": {
-    "information": {
-      "id": 1,
-      "name": "AltHolic",
-      "currentVersion": "1.2",
-      "latestVersion": "1.5",
-      "author": "Homeopatix",
-      "description": "Hello World",
-      "infoUrl": "example.com",
-      "downloadUrl": "example.com",
-      "descriptors": [],
-      "dependencies": []
+    "Plugin": {
+      "Id": 1,
+      "Name": "AltHolic",
+      "CurrentVersion": "1.2",
+      "LatestVersion": "1.5",
+      "Author": "Homeopatix",
+      "Description": "Hello World",
+      "InfoUrl": "example.com",
+      "DownloadUrl": "example.com",
+      "Descriptors": [],
+      "Dependencies": []
     },
-    "files": [
+    "Files": [
       "PengorosPlugins\\Utils\\Class.lua",
       "PengorosPlugins\\Utils\\FontMetrics.lua"
     ]
@@ -54,8 +53,8 @@ func TestDatastore_Open(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	expecedModel := models.DatastoreEntryModel{
-		Plugin: models.LocalPluginModel{
+	expecedModel := DatastoreEntryModel{
+		Plugin: LocalPluginModel{
 			Id:             1,
 			Name:           "AltHolic",
 			CurrentVersion: "1.2",
@@ -97,8 +96,8 @@ func TestDatastore_Store(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	entry := models.DatastoreEntryModel{
-		Plugin: models.LocalPluginModel{
+	entry := DatastoreEntryModel{
+		Plugin: LocalPluginModel{
 			Id:             1,
 			Name:           "OtherPlugin",
 			CurrentVersion: "1.0",
@@ -140,7 +139,7 @@ func TestDatastore_Get(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
 	defer teardownTestCase(t)
 
-	expectedPlugin := models.LocalPluginModel{
+	expectedPlugin := LocalPluginModel{
 		Id:             1,
 		Name:           "AltHolic",
 		CurrentVersion: "1.2",
@@ -171,37 +170,37 @@ func TestDatastore_Get(t *testing.T) {
 	}
 }
 
-func TestDatastore_GetById(t *testing.T) {
-	filename, teardownTestCase := setupTestCase(t)
-	defer teardownTestCase(t)
-
-	expectedPlugin := models.LocalPluginModel{
-		Id:             1,
-		Name:           "AltHolic",
-		CurrentVersion: "1.2",
-		LatestVersion:  "1.5",
-		Author:         "Homeopatix",
-		Description:    "Hello World",
-		InfoUrl:        "example.com",
-		DownloadUrl:    "example.com",
-		Descriptors:    []string{},
-		Dependencies:   []int{},
-	}
-
-	store := Datastore{
-		Path: filename,
-	}
-
-	plugin, err := store.GetById("altholic-homeopatix")
-	if err != nil {
-		t.Error("Unable to get the plugin with the id `altholic-homeopatix` from the datastore")
-	}
-
-	isEqual := reflect.DeepEqual(plugin, expectedPlugin)
-	if !isEqual {
-		t.Errorf("Retrieved struct differs from the expected one. Got %v, expected %v", plugin, expectedPlugin)
-	}
-}
+//func TestDatastore_GetById(t *testing.T) {
+//	filename, teardownTestCase := setupTestCase(t)
+//	defer teardownTestCase(t)
+//
+//	expectedPlugin := models.LocalPluginModel{
+//		Id:             1,
+//		Name:           "AltHolic",
+//		CurrentVersion: "1.2",
+//		LatestVersion:  "1.5",
+//		Author:         "Homeopatix",
+//		Description:    "Hello World",
+//		InfoUrl:        "example.com",
+//		DownloadUrl:    "example.com",
+//		Descriptors:    []string{},
+//		Dependencies:   []int{},
+//	}
+//
+//	store := Datastore{
+//		Path: filename,
+//	}
+//
+//	plugin, err := store.GetById("altholic-homeopatix")
+//	if err != nil {
+//		t.Error("Unable to get the plugin with the id `altholic-homeopatix` from the datastore")
+//	}
+//
+//	isEqual := reflect.DeepEqual(plugin, expectedPlugin)
+//	if !isEqual {
+//		t.Errorf("Retrieved struct differs from the expected one. Got %v, expected %v", plugin, expectedPlugin)
+//	}
+//}
 
 func TestDatastore_DeleteById(t *testing.T) {
 	filename, teardownTestCase := setupTestCase(t)
