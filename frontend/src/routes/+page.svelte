@@ -16,6 +16,15 @@
 	let toggleState = new ToggleState('');
 	let installedPlugins: BasePlugin[] = [];
 
+	let modifiedPlugins: BasePlugin[];
+	$: modifiedPlugins = [];
+
+	$: {
+		getInstalledPlugins().then((v => {
+			modifiedPlugins = v;
+		}));
+	}
+
 	const getInstalledPlugins = async () => {
 		let installedPlugins = await GetInstalledPlugins();
 		if (installedPlugins === null) {
@@ -116,7 +125,7 @@
 		{#await getInstalledPlugins()}
 			<p class="text-center text-gold">Loading plugins from the data store</p>
 		{:then plugins}
-			{#each plugins as plugin, index}
+			{#each modifiedPlugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown">
 					<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
 						<p class="w-1/2 p-2">{plugin.name}</p>

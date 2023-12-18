@@ -5,6 +5,7 @@ import (
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
+	"sort"
 	"strings"
 )
 
@@ -40,6 +41,10 @@ func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory str
 		}
 	}
 
+	sort.Slice(remotePlugins, func(i, j int) bool {
+		return remotePlugins[i].Base.Name < remotePlugins[j].Base.Name
+	})
+
 	return remotePlugins, nil
 }
 
@@ -69,6 +74,10 @@ func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]
 		}
 	}
 
+	sort.Slice(remotePlugins, func(i, j int) bool {
+		return remotePlugins[i].Base.Name < remotePlugins[j].Base.Name
+	})
+
 	return remotePlugins, nil
 }
 
@@ -87,6 +96,10 @@ func GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalP
 			Dependencies: plugin.Dependencies,
 		})
 	}
+
+	sort.Slice(localPlugins, func(i, j int) bool {
+		return localPlugins[i].Base.Name < localPlugins[j].Base.Name
+	})
 
 	return localPlugins, nil
 }
@@ -118,6 +131,10 @@ func DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirec
 			Dependencies: plugin.Dependencies,
 		})
 	}
+
+	sort.Slice(localPlugins, func(i, j int) bool {
+		return plugins[i].Base.Name < plugins[j].Base.Name
+	})
 
 	return plugins, nil
 }
