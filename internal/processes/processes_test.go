@@ -159,20 +159,30 @@ func TestInstallPlugin(t *testing.T) {
 		http.ServeFile(w, r, pluginZipArchivePath)
 	}))
 	defer server.Close()
-	expectedPlugins := []entities.LocalPluginEntity{{
-		Base:         models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
-		Descriptors:  nil,
-		Dependencies: nil,
+	expectedPlugins := []entities.RemotePluginEntity{{
+		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		IsInstalled:      true,
+		UpdatedTimestamp: 0,
+		Downloads:        0,
+		Category:         "",
+		FileName:         "",
 	}}
 
-	plugins, err := InstallPlugin(dummyDatastore{}, server.URL, tmpDir)
+	plugins, err := InstallPlugin(dummyDatastore{}, server.URL, tmpDir, []entities.RemotePluginEntity{{
+		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		IsInstalled:      false,
+		UpdatedTimestamp: 0,
+		Downloads:        0,
+		Category:         "",
+		FileName:         "",
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	isEqual := reflect.DeepEqual(plugins, expectedPlugins)
 	if !isEqual {
-		t.Errorf("Got: %+v, expected: %+v", plugins, plugins)
+		t.Errorf("Got: %+v, expected: %+v", plugins, expectedPlugins)
 	}
 }
 
@@ -185,5 +195,33 @@ func TestDeletePlugin(t *testing.T) {
 	_, err = DeletePlugin(dummyDatastore{}, "AltHolic", "Some Author", tmpDir)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	expectedOutput := []entities.LocalPluginEntity{{
+		Base:         models.NewBasePlugin(1, "ABC", "", "", "", ""),
+		Descriptors:  nil,
+		Dependencies: nil,
+	}}
+
+	inputPlugins := []entities.LocalPluginEntity{{
+		Base:         models.NewBasePlugin(1, "ABC", "", "", "", ""),
+		Descriptors:  nil,
+		Dependencies: nil,
+	}, {
+		Base:         models.NewBasePlugin(2, "XYZ", "", "", "", ""),
+		Descriptors:  nil,
+		Dependencies: nil,
+	}}
+
+	filteredPlugins := SearchLocal("bc", inputPlugins)
+	if len(filteredPlugins) != 1 {
+		t.Fatalf("Expected: 1, got: %v", len(filteredPlugins))
+	}
+
+	isEqual := reflect.DeepEqual(filteredPlugins, expectedOutput)
+	if !isEqual {
+		t.Fatalf("Got: %+v, expected: %+v", filteredPlugins, expectedOutput)
 	}
 }

@@ -13,6 +13,38 @@ func BuildPluginIndex(name, author string) string {
 	return fmt.Sprintf("%v-%v", strings.ToLower(name), strings.ToLower(author))
 }
 
+func SearchLocal(input string, plugins []entities.LocalPluginEntity) []entities.LocalPluginEntity {
+	input = strings.ToLower(input)
+	if input == "" {
+		return plugins
+	}
+
+	filteredPlugins := make([]entities.LocalPluginEntity, 0)
+	for _, plugin := range plugins {
+		if strings.Contains(strings.ToLower(plugin.Base.Name), input) {
+			filteredPlugins = append(filteredPlugins, plugin)
+		}
+	}
+
+	return filteredPlugins
+}
+
+func SearchRemote(input string, plugins []entities.RemotePluginEntity) []entities.RemotePluginEntity {
+	input = strings.ToLower(input)
+	if input == "" {
+		return plugins
+	}
+
+	filteredPlugins := make([]entities.RemotePluginEntity, 0)
+	for _, plugin := range plugins {
+		if strings.Contains(strings.ToLower(plugin.Base.Name), input) {
+			filteredPlugins = append(filteredPlugins, plugin)
+		}
+	}
+
+	return filteredPlugins
+}
+
 func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
 	datastore.Store(entry)

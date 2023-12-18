@@ -26,6 +26,14 @@ export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
 }
 
+export function SearchLocal(arg1) {
+	return window['go']['main']['App']['SearchLocal'](arg1);
+}
+
+export function SearchRemote(arg1) {
+	return window['go']['main']['App']['SearchRemote'](arg1);
+}
+
 export function UpdatePlugins(arg1) {
   return window['go']['main']['App']['UpdatePlugins'](arg1);
 }

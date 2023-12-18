@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { BasePlugin } from '$lib/entities/plugin';
-	import { DeletePlugin, GetInstalledPlugins, UpdatePlugins } from '$lib/wailsjs/go/main/App';
+	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 
 	class ToggleState {
@@ -15,12 +15,21 @@
 
 	let toggleState = new ToggleState('');
 	let installedPlugins: BasePlugin[] = [];
+	let amountInstalledPlugins = 0;
 
 	let modifiedPlugins: BasePlugin[];
 	$: modifiedPlugins = [];
-
 	$: {
 		getInstalledPlugins().then((v => {
+			modifiedPlugins = v;
+		}));
+	}
+
+	let searchInput = '';
+	$: search(searchInput);
+
+	function search(input: string) {
+		searchPlugins(input).then((v => {
 			modifiedPlugins = v;
 		}));
 	}
@@ -43,6 +52,24 @@
 		return tmpPlugins;
 	};
 
+	const searchPlugins = async (input: string) => {
+		let installedPlugins = await SearchLocal(input);
+		if (installedPlugins === null) {
+			installedPlugins = [];
+		}
+
+		let tmpPlugins: BasePlugin[] = [];
+
+		for (let i = 0; i < installedPlugins.length; i++) {
+			const element = installedPlugins[i];
+
+			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
+		}
+		amountInstalledPlugins = tmpPlugins.length;
+
+		return tmpPlugins;
+	};
+
 	getInstalledPlugins().then((plugins) => {
 		installedPlugins = plugins;
 
@@ -51,8 +78,6 @@
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 	});
-
-	let amountInstalledPlugins = 0;
 
 	// const refreshPage = async () => {
 	// 	await getInstalledPlugins()
@@ -109,7 +134,7 @@
 			<p class="ml-16 m-1">{amountInstalledPlugins} plugins installed</p>
 		</div>
 		<input class="grow p-2 text-gold bg-light-brown focus:outline-none" type="text"
-					 placeholder="Search for a plugin...">
+					 bind:value={searchInput} placeholder="Search for a plugin...">
 	</div>
 
 	<div id="plugin-labels" class="flex text-left mx-2">

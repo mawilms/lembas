@@ -14,4 +14,8 @@ export function InstallPlugin(arg1: string): Promise<Array<entities.RemotePlugin
 
 export function SaveSettings(arg1: { [key: string]: string }): Promise<void>;
 
+export function SearchLocal(arg1: string): Promise<Array<entities.LocalPluginEntity>>;
+
+export function SearchRemote(arg1: string): Promise<Array<entities.RemotePluginEntity>>;
+
 export function UpdatePlugins(arg1:any):Promise<void>;

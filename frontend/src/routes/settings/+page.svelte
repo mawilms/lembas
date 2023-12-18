@@ -13,7 +13,6 @@
 	$: onChange(settings);
 
 	function onChange(settings: Settings) {
-		console.log(settings);
 		SaveSettings({
 			'pluginPath': settings.pluginPath,
 			'dataDirectory': settings.dataDirectory,

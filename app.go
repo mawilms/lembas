@@ -28,6 +28,18 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
+func (a *App) SearchLocal(input string) []entities.LocalPluginEntity {
+	plugins := processes.SearchLocal(input, a.localPlugins)
+
+	return plugins
+}
+
+func (a *App) SearchRemote(input string) []entities.RemotePluginEntity {
+	plugins := processes.SearchRemote(input, a.remotePlugins)
+
+	return plugins
+}
+
 func (a *App) SaveSettings(input map[string]string) {
 	newSettings := settings.Settings{
 		PluginDirectory: input["pluginPath"],
