@@ -73,6 +73,7 @@ func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
 func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
 	plugins, err := processes.GetRemotePlugins(a.settings.InformationUrl, a.localPlugins)
 	if err != nil {
+		fmt.Println(err)
 		return make([]entities.RemotePluginEntity, 0)
 	}
 

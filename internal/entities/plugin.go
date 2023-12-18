@@ -18,9 +18,10 @@ type LocalPluginEntity struct {
 }
 
 type RemotePluginEntity struct {
-	Base        BasePluginEntity
-	IsInstalled bool
-	Downloads   int
-	Category    string
-	FileName    string
+	Base             BasePluginEntity
+	IsInstalled      bool
+	UpdatedTimestamp int
+	Downloads        int
+	Category         string
+	FileName         string
 }

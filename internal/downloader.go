@@ -57,7 +57,6 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		}
 
 		dstFile, _ := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		defer dstFile.Close()
 
 		archiveFile, err := file.Open()
 		archiveFileContent, _ := io.ReadAll(archiveFile)
@@ -87,6 +86,8 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 				pluginsMap[filepath.Join(splitPath[0], splitPath[1])] = struct{}{}
 			}
 		}
+
+		dstFile.Close()
 	}
 
 	model := models.LocalPluginModel{}

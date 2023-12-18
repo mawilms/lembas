@@ -1,9 +1,8 @@
 <script lang="ts">
 	import '../app.css';
-	import { LocalPlugin } from '$lib/models/localPlugin';
-	import { GetInstalledPlugins, UpdatePlugins, DeletePlugin } from '$lib/wailsjs/go/main/App';
+	import { BasePlugin } from '$lib/entities/localPlugin';
+	import { DeletePlugin, GetInstalledPlugins, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { createPluginStore } from '$lib/store';
 
 	class ToggleState {
 		toggledItemId;
@@ -15,7 +14,7 @@
 	}
 
 	let toggleState = new ToggleState('');
-	let installedPlugins: LocalPlugin[] = [];
+	let installedPlugins: BasePlugin[] = [];
 
 	const getInstalledPlugins = async () => {
 		let installedPlugins = await GetInstalledPlugins();
@@ -23,15 +22,13 @@
 			installedPlugins = []
 		}
 
-		let tmpPlugins: LocalPlugin[] = [];
-		let relationship = new Map<string, string>();
+		let tmpPlugins: BasePlugin[] = [];
 
 		for (let i = 0; i < installedPlugins.length; i++) {
 			const element = installedPlugins[i];
-			tmpPlugins.push(new LocalPlugin(element.Id, element.Name, element.Author, element.Description, element.CurrentVersion, element.LatestVersion, element.InfoUrl));
-			relationship.set(`${element.Name}-${element.Author}`, element.CurrentVersion);
+
+			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
 		}
-		createPluginStore(relationship);
 		amountInstalledPlugins = tmpPlugins.length;
 
 		return tmpPlugins;
@@ -53,7 +50,7 @@
 	// };
 
 	const updateAll = () => {
-		let pluginsToUpdate: LocalPlugin[] = [];
+		let pluginsToUpdate: BasePlugin[] = [];
 
 		for (let i = 0; i < installedPlugins.length; i++) {
 			const element = installedPlugins[i];

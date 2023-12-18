@@ -1,41 +1,31 @@
 <script lang="ts">
 	import '../../app.css';
-	import { FetchRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
-	import { RemotePlugin } from '$lib/models/remotePlugin';
+	import { GetRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { pluginStore } from '$lib/store';
-	import { get } from 'svelte/store';
+	import { BasePlugin, RemotePlugin } from '$lib/entities/localPlugin';
 
 	const installPlugin = (plugin: RemotePlugin) => {
 		if (!plugin.isInstalled) {
-			InstallPlugin(plugin.downloadUrl);
+			InstallPlugin(plugin.base.downloadUrl);
 		}
 	};
 
-	const fetchRemotePlugin = async () => {
-		const fetchedPlugins = await FetchRemotePlugins();
-		const relationship = get(pluginStore);
+	const getRemotePlugin = async () => {
+		const fetchedPlugins = await GetRemotePlugins();
 
 		let tmpArray: RemotePlugin[] = [];
 
 		for (let i = 0; i < fetchedPlugins.length; i++) {
 			const element = fetchedPlugins[i];
 			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-			const infoUrl = `https://www.lotrointerface.com/downloads/info${element.Id}-${element.Name}.html`;
 
-			let isInstalled = false;
-			let installedVersion = '';
-			if (relationship.has(`${element.Name}-${element.Author}`)) {
-				isInstalled = true;
-				installedVersion = relationship.get(`${element.Name}-${element.Author}`)!;
-			}
-
-			tmpArray.push(new RemotePlugin(element.Id, element.Name, element.Author, element.Version, time, element.Downloads, element.Category, element.Description, element.FileName, infoUrl, element.Url, isInstalled, installedVersion));
+			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloardUrl);
+			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
 		}
 
 		return tmpArray;
 	};
-	fetchRemotePlugin().then(() => {
+	getRemotePlugin().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
@@ -66,22 +56,22 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await fetchRemotePlugin()}
+		{#await getRemotePlugin()}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
 		{:then plugins}
 			{#each plugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
 					<div class="flex space-x-4">
-						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.name}</p>
+						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>
 						<div class="flex w-2/3">
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.version}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.author}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.totalDownloads}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.infoUrl)}}>{plugin.lastUpdated}</p>
-							{#if plugin.isInstalled && plugin.version !== plugin.installedVersion}
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.totalDownloads}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.lastUpdated}</p>
+							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
 								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
 									 on:click={UpdatePlugin}>Update</p>
-							{:else if plugin.isInstalled && plugin.version === plugin.installedVersion}
+							{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}
 								<p class="w-1/5 p-2 text-center">Installed</p>
 							{:else}
 								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"

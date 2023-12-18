@@ -107,7 +107,7 @@ func (d dummyDatastore) Open() (models.DatastoreModel, error) {
 	return model, nil
 }
 
-func (d dummyDatastore) Store(model models.DatastoreEntryModel) error {
+func (d dummyDatastore) Store(models.DatastoreEntryModel) error {
 	return nil
 }
 
@@ -128,7 +128,7 @@ func (d dummyDatastore) Get() ([]models.LocalPluginModel, error) {
 	return plugins, nil
 }
 
-func (d dummyDatastore) DeleteById(id string) error {
+func (d dummyDatastore) DeleteById(string) error {
 	return nil
 }
 

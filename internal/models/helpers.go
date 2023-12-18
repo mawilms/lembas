@@ -25,10 +25,3 @@ func NewBasePlugin(id int, name, description, author, currentVersion, latestVers
 		DownloadUrl:    downloadUrl,
 	}
 }
-
-func MarkRemotePluginsAsInstalled() ([]entities.RemotePluginEntity, error) {
-	plugins := make([]entities.RemotePluginEntity, 0)
-
-	return plugins, nil
-
-}

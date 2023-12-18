@@ -6,12 +6,12 @@ export function DeletePlugin(arg1, arg2) {
   return window['go']['main']['App']['DeletePlugin'](arg1, arg2);
 }
 
-export function FetchRemotePlugins() {
-  return window['go']['main']['App']['FetchRemotePlugins']();
-}
-
 export function GetInstalledPlugins() {
   return window['go']['main']['App']['GetInstalledPlugins']();
+}
+
+export function GetRemotePlugins() {
+	return window['go']['main']['App']['GetRemotePlugins']();
 }
 
 export function InstallPlugin(arg1) {

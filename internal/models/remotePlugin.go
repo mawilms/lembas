@@ -37,10 +37,11 @@ func ParseFeed(content []byte) ([]entities.RemotePluginEntity, error) {
 	plugins := make([]entities.RemotePluginEntity, 0)
 	for _, plugin := range favorite.Plugins {
 		remotePlugin := entities.RemotePluginEntity{
-			Base:      NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, "", plugin.Version),
-			Downloads: plugin.Downloads,
-			Category:  plugin.Category,
-			FileName:  plugin.FileName,
+			Base:             NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, "", plugin.Version),
+			Downloads:        plugin.Downloads,
+			Category:         plugin.Category,
+			FileName:         plugin.FileName,
+			UpdatedTimestamp: plugin.UpdatedTimestamp,
 		}
 
 		plugins = append(plugins, remotePlugin)
