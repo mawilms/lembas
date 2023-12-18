@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { BasePlugin } from '$lib/entities/localPlugin';
+	import { BasePlugin } from '$lib/entities/plugin';
 	import { DeletePlugin, GetInstalledPlugins, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 

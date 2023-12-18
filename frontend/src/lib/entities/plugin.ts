@@ -20,7 +20,7 @@ export class BasePlugin {
 	}
 }
 
-export class LocalPlugin {
+export class Plugin {
 	base: BasePlugin;
 
 	constructor(base: BasePlugin) {

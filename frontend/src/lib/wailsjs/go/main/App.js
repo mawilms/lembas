@@ -14,6 +14,10 @@ export function GetRemotePlugins() {
 	return window['go']['main']['App']['GetRemotePlugins']();
 }
 
+export function GetSettings() {
+	return window['go']['main']['App']['GetSettings']();
+}
+
 export function InstallPlugin(arg1) {
   return window['go']['main']['App']['InstallPlugin'](arg1);
 }

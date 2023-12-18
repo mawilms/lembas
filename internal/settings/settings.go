@@ -9,7 +9,7 @@ import (
 type Settings struct {
 	PluginDirectory string `json:"pluginPath"`
 	DataDirectory   string `json:"dataDirectory"`
-	InformationUrl  string `json:"informationUrl"`
+	InfoUrl         string `json:"infoUrl"`
 }
 
 func New() (Settings, error) {
@@ -19,7 +19,7 @@ func New() (Settings, error) {
 	settings := Settings{
 		PluginDirectory: pluginDirectory,
 		DataDirectory:   dataDirectory,
-		InformationUrl:  "https://api.lotrointerface.com/fav/plugincompendium.xml",
+		InfoUrl:         "https://api.lotrointerface.com/fav/plugincompendium.xml",
 	}
 
 	_, err := os.Stat(filepath.Join(dataDirectory, "settings.json"))

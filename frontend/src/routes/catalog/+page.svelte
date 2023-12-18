@@ -2,11 +2,32 @@
 	import '../../app.css';
 	import { GetRemotePlugins, InstallPlugin } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { BasePlugin, RemotePlugin } from '$lib/entities/localPlugin';
+	import { BasePlugin, RemotePlugin } from '$lib/entities/plugin';
 
-	const installPlugin = (plugin: RemotePlugin) => {
+	let modifiedPlugins: RemotePlugin[];
+	$: modifiedPlugins = [];
+
+	$: {
+		getRemotePlugin().then((v => {
+			modifiedPlugins = v;
+		}));
+	}
+
+
+	const installPlugin = async (plugin: RemotePlugin) => {
 		if (!plugin.isInstalled) {
-			InstallPlugin(plugin.base.downloadUrl);
+			const fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
+
+			let tmpArray: RemotePlugin[] = [];
+
+			for (let i = 0; i < fetchedPlugins.length; i++) {
+				const element = fetchedPlugins[i];
+				const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
+
+				const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
+				tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
+			}
+			modifiedPlugins = tmpArray;
 		}
 	};
 
@@ -19,7 +40,7 @@
 			const element = fetchedPlugins[i];
 			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
 
-			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloardUrl);
+			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
 			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
 		}
 
@@ -59,7 +80,7 @@
 		{#await getRemotePlugin()}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
 		{:then plugins}
-			{#each plugins as plugin, index}
+			{#each modifiedPlugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
 					<div class="flex space-x-4">
 						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>

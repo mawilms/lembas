@@ -28,17 +28,31 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) SaveSettings(pluginDirectory string) {
-	fmt.Println(pluginDirectory)
-}
-
-func (a *App) InstallPlugin(url string) []entities.LocalPluginEntity {
-	plugins, err := processes.InstallPlugin(a.datastore, url, a.settings.DataDirectory)
-	if err != nil {
-		return make([]entities.LocalPluginEntity, 0)
+func (a *App) SaveSettings(input map[string]string) {
+	newSettings := settings.Settings{
+		PluginDirectory: input["pluginPath"],
+		DataDirectory:   input["dataDirectory"],
+		InfoUrl:         input["infoUrl"],
 	}
 
-	a.localPlugins = plugins
+	err := newSettings.Store()
+	if err != nil {
+		a.settings = newSettings
+	}
+}
+
+func (a *App) GetSettings() settings.Settings {
+	return a.settings
+}
+
+func (a *App) InstallPlugin(url string) []entities.RemotePluginEntity {
+	plugins, err := processes.InstallPlugin(a.datastore, url, a.settings.PluginDirectory, a.remotePlugins)
+	if err != nil {
+		fmt.Println(err)
+		return make([]entities.RemotePluginEntity, 0)
+	}
+
+	a.remotePlugins = plugins
 
 	return plugins
 }
@@ -71,7 +85,7 @@ func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
 }
 
 func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
-	plugins, err := processes.GetRemotePlugins(a.settings.InformationUrl, a.localPlugins)
+	plugins, err := processes.GetRemotePlugins(a.settings.InfoUrl, a.localPlugins)
 	if err != nil {
 		fmt.Println(err)
 		return make([]entities.RemotePluginEntity, 0)

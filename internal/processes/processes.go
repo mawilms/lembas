@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-func buildPluginIndex(name, author string) string {
+func BuildPluginIndex(name, author string) string {
 	return fmt.Sprintf("%v-%v", strings.ToLower(name), strings.ToLower(author))
 }
 
-func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
+func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
 	datastore.Store(entry)
 
@@ -22,22 +22,25 @@ func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory str
 		datastore.Store(entry)
 	}
 
-	plugins := make([]entities.LocalPluginEntity, 0)
-
 	storedPlugins, err := datastore.Get()
 	if err != nil {
-		return plugins, err
+		return remotePlugins, err
 	}
 
+	installedPlugins := make(map[string]string)
 	for _, storedPlugin := range storedPlugins {
-		plugins = append(plugins, entities.LocalPluginEntity{
-			Base:         models.NewBasePlugin(storedPlugin.Id, storedPlugin.Name, storedPlugin.Description, storedPlugin.Author, storedPlugin.CurrentVersion, storedPlugin.LatestVersion),
-			Descriptors:  storedPlugin.Descriptors,
-			Dependencies: storedPlugin.Dependencies,
-		})
+		installedPlugins[BuildPluginIndex(storedPlugin.Name, storedPlugin.Author)] = storedPlugin.LatestVersion
 	}
 
-	return plugins, nil
+	for i, remotePlugin := range remotePlugins {
+		installedVersion, ok := installedPlugins[BuildPluginIndex(remotePlugin.Base.Name, remotePlugin.Base.Author)]
+		if ok {
+			remotePlugins[i].IsInstalled = true
+			remotePlugins[i].Base.CurrentVersion = installedVersion
+		}
+	}
+
+	return remotePlugins, nil
 }
 
 func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]entities.RemotePluginEntity, error) {
@@ -50,7 +53,7 @@ func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]
 
 	localPluginNames := make(map[string]string)
 	for _, localPlugin := range localPlugins {
-		index := buildPluginIndex(localPlugin.Base.Name, localPlugin.Base.Author)
+		index := BuildPluginIndex(localPlugin.Base.Name, localPlugin.Base.Author)
 		_, ok := localPluginNames[index]
 		if !ok {
 			localPluginNames[index] = localPlugin.Base.CurrentVersion
@@ -58,7 +61,7 @@ func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]
 	}
 
 	for index, remotePlugin := range remotePlugins {
-		pluginIndex := buildPluginIndex(remotePlugin.Base.Name, remotePlugin.Base.Author)
+		pluginIndex := BuildPluginIndex(remotePlugin.Base.Name, remotePlugin.Base.Author)
 		_, ok := localPluginNames[pluginIndex]
 		if ok {
 			remotePlugins[index].IsInstalled = true
@@ -90,7 +93,7 @@ func GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalP
 
 func DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
 	plugins := make([]entities.LocalPluginEntity, 0)
-	id := buildPluginIndex(name, author)
+	id := BuildPluginIndex(name, author)
 
 	pluginDatastore, err := datastore.Open()
 	plugin := pluginDatastore[id]
