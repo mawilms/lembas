@@ -73,8 +73,7 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		if strings.Contains(file.Name, ".plugincompendium") {
 			pluginCompendiumFileContent = archiveFileContent
 			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
-		}
-		if strings.Contains(file.Name, ".plugin") {
+		} else if strings.Contains(file.Name, ".plugin") {
 			pluginFileContent = archiveFileContent
 			pluginsMap[strings.Replace(file.Name, "/", string(os.PathSeparator), -1)] = struct{}{}
 		}
@@ -110,13 +109,25 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 }
 
 func DeletePlugin(entry models.DatastoreEntryModel, pluginDirectory string) error {
+	rootDirectory := ""
+
 	for _, file := range entry.Files {
+		rootDirectory = strings.Split(file, string(os.PathSeparator))[0]
 		file = filepath.Join(pluginDirectory, file)
 
 		err := os.RemoveAll(file)
 		if err != nil {
 			return err
 		}
+	}
+
+	content, err := os.ReadDir(filepath.Join(pluginDirectory, rootDirectory))
+	if err != nil {
+		return err
+	}
+
+	if len(content) == 0 {
+		err = os.RemoveAll(filepath.Join(pluginDirectory, rootDirectory))
 	}
 
 	return nil

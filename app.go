@@ -60,7 +60,6 @@ func (a *App) GetSettings() settings.Settings {
 func (a *App) InstallPlugin(url string) []entities.RemotePluginEntity {
 	plugins, err := processes.InstallPlugin(a.datastore, url, a.settings.PluginDirectory, a.remotePlugins)
 	if err != nil {
-		fmt.Println(err)
 		return make([]entities.RemotePluginEntity, 0)
 	}
 
@@ -99,7 +98,6 @@ func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
 func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
 	plugins, err := processes.GetRemotePlugins(a.settings.InfoUrl, a.localPlugins)
 	if err != nil {
-		fmt.Println(err)
 		return make([]entities.RemotePluginEntity, 0)
 	}
 

@@ -37,7 +37,7 @@
 	const getInstalledPlugins = async () => {
 		let installedPlugins = await GetInstalledPlugins();
 		if (installedPlugins === null) {
-			installedPlugins = []
+			installedPlugins = [];
 		}
 
 		let tmpPlugins: BasePlugin[] = [];
@@ -70,6 +70,23 @@
 		return tmpPlugins;
 	};
 
+	const deletePlugin = async (name: string, author: string) => {
+		const plugins = await DeletePlugin(name, author);
+		if (installedPlugins === null) {
+			installedPlugins = [];
+		}
+
+		let tmpPlugins: BasePlugin[] = [];
+
+		for (let i = 0; i < plugins.length; i++) {
+			const element = plugins[i];
+
+			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
+		}
+
+		modifiedPlugins = tmpPlugins;
+	};
+
 	getInstalledPlugins().then((plugins) => {
 		installedPlugins = plugins;
 
@@ -93,7 +110,7 @@
 			}
 		}
 
-		UpdatePlugins(pluginsToUpdate)
+		UpdatePlugins(pluginsToUpdate);
 	};
 
 	const toggleDetails = (index: number) => {
@@ -157,18 +174,22 @@
 						<div class="flex w-1/2">
 							<p class="w-1/3 p-2">{plugin.currentVersion}</p>
 							<p class="w-1/3 p-2">{plugin.latestVersion}</p>
-							<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
-								{#if plugin.currentVersion !== plugin.latestVersion}
+							{#if plugin.currentVersion !== plugin.latestVersion}
+								<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
 									<button>Update</button>
-								{/if}
-							</p>
+								</p>
+							{:else }
+								<p class="w-1/3 p-2 text-center text-gold">
+									<button></button>
+								</p>
+							{/if}
 						</div>
 					</div>
 
 					<div id="details-{index}" class="hidden p-4 bg-dark-brown">
 						{#if (plugin.description === "")}
 							<p>No description</p>
-							{:else }
+						{:else }
 							<p>{plugin.description}</p>
 						{/if}
 
@@ -176,7 +197,9 @@
 							<button class="text-primary p-1 hover:bg-primary-transparent"
 											on:click={() => BrowserOpenURL(plugin.infoUrl)}>Open website
 							</button>
-							<button class="text-primary p-1 hover:bg-primary-transparent" on:click={() => {DeletePlugin(plugin.name, plugin.author)}}>Delete</button>
+							<button class="text-primary p-1 hover:bg-primary-transparent"
+											on:click={() => {deletePlugin(plugin.name, plugin.author)}}>Delete
+							</button>
 						</div>
 					</div>
 				</li>

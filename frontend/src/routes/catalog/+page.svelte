@@ -42,7 +42,10 @@
 
 	const installPlugin = async (plugin: RemotePlugin) => {
 		if (!plugin.isInstalled) {
-			const fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
+			let fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
+			if (fetchedPlugins === null) {
+				fetchedPlugins = [];
+			}
 
 			let tmpArray: RemotePlugin[] = [];
 
