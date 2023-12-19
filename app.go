@@ -7,10 +7,13 @@ import (
 	"github.com/mawilms/lembas/internal/models"
 	"github.com/mawilms/lembas/internal/processes"
 	"github.com/mawilms/lembas/internal/settings"
+	"log/slog"
+	"os"
 )
 
 type App struct {
 	ctx           context.Context
+	logger        *slog.Logger
 	settings      settings.Settings
 	datastore     models.DatastoreInterface
 	localPlugins  []entities.LocalPluginEntity
@@ -21,7 +24,10 @@ func NewApp() *App {
 	s, _ := settings.New()
 	datastore, _ := models.NewDatastore(s.DataDirectory)
 
-	return &App{settings: s, datastore: datastore}
+	loggerHandler := slog.NewTextHandler(os.Stdout, nil)
+	logger := slog.New(loggerHandler)
+
+	return &App{logger: logger, settings: s, datastore: datastore}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -85,6 +91,8 @@ func (a *App) UpdatePlugins(plugins any) {
 }
 
 func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
+	a.logger.Info("loading installed plugins")
+
 	plugins, err := processes.GetInstalledPlugins(a.datastore)
 	if err != nil {
 		return make([]entities.LocalPluginEntity, 0)
@@ -92,6 +100,7 @@ func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
 
 	a.localPlugins = plugins
 
+	a.logger.Info("plugins successfully loaded")
 	return plugins
 }
 
