@@ -10,7 +10,7 @@ import (
 )
 
 func BuildPluginIndex(name, author string) string {
-	return fmt.Sprintf("%v-%v", strings.ToLower(name), strings.ToLower(author))
+	return fmt.Sprintf("%v-%v", strings.Replace(strings.ToLower(name), " ", "", -1), strings.Replace(strings.ToLower(author), " ", "", -1))
 }
 
 func SearchLocal(input string, plugins []entities.LocalPluginEntity) []entities.LocalPluginEntity {
@@ -47,12 +47,14 @@ func SearchRemote(input string, plugins []entities.RemotePluginEntity) []entitie
 
 func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
-	datastore.Store(entry)
+	identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
+	datastore.Store(identifier, entry)
 
 	for _, dependency := range entry.Plugin.Dependencies {
 		url := fmt.Sprintf("https://www.lotrointerface.com/downloads/download%v", dependency)
 		entry, _ = internal.DownloadPlugin(url, pluginDirectory)
-		datastore.Store(entry)
+		identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
+		datastore.Store(identifier, entry)
 	}
 
 	storedPlugins, err := datastore.Get()
@@ -85,7 +87,7 @@ func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]
 
 	remotePlugins, err := internal.DownloadPackageInformation(url)
 	if err != nil {
-		return remotePlugins, err
+		return make([]entities.RemotePluginEntity, 0), err
 	}
 
 	localPluginNames := make(map[string]string)

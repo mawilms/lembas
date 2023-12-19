@@ -1,8 +1,10 @@
 package models
 
 import (
+	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -124,7 +126,8 @@ func TestDatastore_Store(t *testing.T) {
 		t.Errorf("Expected length of datastore content is 1, got %v", len(plugins))
 	}
 
-	err := store.Store(entry)
+	id := fmt.Sprintf("%v-%v", strings.Replace(strings.ToLower(entry.Plugin.Name), " ", "", -1), strings.Replace(strings.ToLower(entry.Plugin.Author), " ", "", -1))
+	err := store.Store(id, entry)
 	if err != nil {
 		t.Error("Unable to store the plugin in the datastore")
 	}

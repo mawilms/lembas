@@ -3,10 +3,8 @@ package models
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type DatastoreModel map[string]DatastoreEntryModel
@@ -18,7 +16,7 @@ type DatastoreEntryModel struct {
 
 type DatastoreInterface interface {
 	Open() (DatastoreModel, error)
-	Store(model DatastoreEntryModel) error
+	Store(identifier string, model DatastoreEntryModel) error
 	Get() ([]LocalPluginModel, error)
 	DeleteById(id string) error
 }
@@ -68,10 +66,9 @@ func (d Datastore) Open() (DatastoreModel, error) {
 	return model, nil
 }
 
-func (d Datastore) Store(entry DatastoreEntryModel) error {
+func (d Datastore) Store(identifier string, entry DatastoreEntryModel) error {
 	store, _ := d.Open()
 
-	identifier := fmt.Sprintf("%v-%v", strings.ToLower(entry.Plugin.Name), strings.ToLower(entry.Plugin.Author))
 	_, ok := store[identifier]
 	if !ok {
 		store[identifier] = entry
@@ -113,6 +110,16 @@ func (d Datastore) DeleteById(id string) error {
 	}
 
 	delete(data, id)
+
+	file, err := json.MarshalIndent(data, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(d.Path, file, 0644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
