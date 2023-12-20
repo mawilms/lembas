@@ -3,6 +3,7 @@
 	import { GetRemotePlugins, InstallPlugin, SearchRemote } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 	import type { entities } from '$lib/wailsjs/go/models';
+	import PluginRow from '$lib/components/catalog/PluginRow.svelte';
 
 	export let data: { plugins: entities.RemotePluginEntity[], amountPlugins: number };
 	let plugins = data.plugins;
@@ -40,7 +41,7 @@
 		BrowserOpenURL(url);
 	};
 
-	const UpdatePlugin = () => {
+	const updatePlugin = () => {
 		console.log('Update');
 	};
 
@@ -52,7 +53,7 @@
 		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
 					 placeholder="Search for data.plugins..."
 					 type="text">
-		<p class="ml-16 m-1">{data.amountPlugins} plugins found</p>
+		<p class="ml-16 m-1">{amountPlugins} plugins found</p>
 	</div>
 
 	<div id="plugin-labels" class="flex space-x-4">
@@ -71,26 +72,28 @@
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
 		{:else }
 			{#each plugins as plugin, index}
-				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
-					<div class="flex space-x-4">
-						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>
-						<div class="flex w-2/3">
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.downloads}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.updatedTimestamp}</p>
-							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
-								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-									 on:click={UpdatePlugin}>Update</p>
-							{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}
-								<p class="w-1/5 p-2 text-center">Installed</p>
-							{:else}
-								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-									 on:click={() => installPlugin(plugin)}>Install</p>
-							{/if}
-						</div>
-					</div>
-				</li>
+				<PluginRow index={index} plugin={plugin} openUrl={openUrl} installPlugin={installPlugin}
+									 updatePlugin={updatePlugin} />
+				<!--				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">-->
+				<!--					<div class="flex space-x-4">-->
+				<!--						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>-->
+				<!--						<div class="flex w-2/3">-->
+				<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>-->
+				<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>-->
+				<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.downloads}</p>-->
+				<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.updatedTimestamp}</p>-->
+				<!--							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}-->
+				<!--								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"-->
+				<!--									 on:click={updatePlugin}>Update</p>-->
+				<!--							{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}-->
+				<!--								<p class="w-1/5 p-2 text-center">Installed</p>-->
+				<!--							{:else}-->
+				<!--								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"-->
+				<!--									 on:click={() => installPlugin(plugin)}>Install</p>-->
+				<!--							{/if}-->
+				<!--						</div>-->
+				<!--					</div>-->
+				<!--				</li>-->
 			{/each}
 		{/if}
 	</ul>
