@@ -63,7 +63,7 @@ export namespace entities {
 	export class RemotePluginEntity {
 	    base: BasePluginEntity;
 	    isInstalled: boolean;
-	    updatedTimestamp: number;
+		updatedTimestamp: string;
 	    downloads: number;
 	    category: string;
 	    file_name: string;

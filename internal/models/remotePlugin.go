@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"github.com/mawilms/lembas/internal/entities"
+	"time"
 )
 
 type RemotePluginModel struct {
@@ -41,7 +42,7 @@ func ParseFeed(content []byte) ([]entities.RemotePluginEntity, error) {
 			Downloads:        plugin.Downloads,
 			Category:         plugin.Category,
 			FileName:         plugin.FileName,
-			UpdatedTimestamp: plugin.UpdatedTimestamp,
+			UpdatedTimestamp: time.Unix(int64(plugin.UpdatedTimestamp), 0).Format("2006-01-02"),
 		}
 
 		plugins = append(plugins, remotePlugin)

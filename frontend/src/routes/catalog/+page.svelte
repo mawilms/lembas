@@ -2,87 +2,39 @@
 	import '../../app.css';
 	import { GetRemotePlugins, InstallPlugin, SearchRemote } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { BasePlugin, RemotePlugin } from '$lib/entities/plugin';
+	import type { entities } from '$lib/wailsjs/go/models';
 
-	let amountPlugins = 0;
-	let modifiedPlugins: RemotePlugin[];
-	$: modifiedPlugins = [];
-	$: {
-		getRemotePlugin().then((v => {
-			modifiedPlugins = v;
-		}));
-	}
+	export let data: { plugins: entities.RemotePluginEntity[], amountPlugins: number };
+	let plugins = data.plugins;
+	let amountPlugins = data.amountPlugins;
 
 	let searchInput = '';
-	$: search(searchInput);
-
-	function search(input: string) {
-		searchPlugins(input).then((v => {
-			modifiedPlugins = v;
-		}));
-	}
+	$: searchPlugins(searchInput);
 
 	const searchPlugins = async (input: string) => {
-		const fetchedPlugins = await SearchRemote(input);
-
-		let tmpArray: RemotePlugin[] = [];
-
-		for (let i = 0; i < fetchedPlugins.length; i++) {
-			const element = fetchedPlugins[i];
-			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-
-			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
-		}
-
-		amountPlugins = tmpArray.length;
-
-		return tmpArray;
+		plugins = await SearchRemote(input);
 	};
 
-	const installPlugin = async (plugin: RemotePlugin) => {
+	const installPlugin = async (plugin: entities.RemotePluginEntity) => {
 		if (!plugin.isInstalled) {
-			let fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
-			if (fetchedPlugins === null) {
-				fetchedPlugins = [];
-			}
+			const fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
 
-			let tmpArray: RemotePlugin[] = [];
-
-			for (let i = 0; i < fetchedPlugins.length; i++) {
-				const element = fetchedPlugins[i];
-				const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-
-				const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-				tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
-			}
-			modifiedPlugins = tmpArray;
+			amountPlugins = fetchedPlugins.length;
+			plugins = fetchedPlugins;
 		}
 	};
 
 	const getRemotePlugin = async () => {
 		const fetchedPlugins = await GetRemotePlugins();
 
-		let tmpArray: RemotePlugin[] = [];
-
-		for (let i = 0; i < fetchedPlugins.length; i++) {
-			const element = fetchedPlugins[i];
-			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-
-			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
-		}
-
-		amountPlugins = tmpArray.length;
-
-		return tmpArray;
-	};
-	getRemotePlugin().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	});
+
+		amountPlugins = fetchedPlugins.length;
+		plugins = fetchedPlugins;
+	};
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
@@ -91,14 +43,16 @@
 	const UpdatePlugin = () => {
 		console.log('Update');
 	};
+
+	getRemotePlugin();
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
 		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
-					 placeholder="Search for plugins..."
+					 placeholder="Search for data.plugins..."
 					 type="text">
-		<p class="ml-16 m-1">{amountPlugins} plugins found</p>
+		<p class="ml-16 m-1">{data.amountPlugins} plugins found</p>
 	</div>
 
 	<div id="plugin-labels" class="flex space-x-4">
@@ -113,18 +67,18 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await getRemotePlugin()}
+		{#if plugins === null}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
-		{:then plugins}
-			{#each modifiedPlugins as plugin, index}
+		{:else }
+			{#each plugins as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
 					<div class="flex space-x-4">
 						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>
 						<div class="flex w-2/3">
 							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>
 							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.totalDownloads}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.lastUpdated}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.downloads}</p>
+							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.updatedTimestamp}</p>
 							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
 								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
 									 on:click={UpdatePlugin}>Update</p>
@@ -138,9 +92,7 @@
 					</div>
 				</li>
 			{/each}
-		{:catch error}
-			<p>Error while downloading plugin information: {error.message}</p>
-		{/await}
+		{/if}
 	</ul>
 
 </div>

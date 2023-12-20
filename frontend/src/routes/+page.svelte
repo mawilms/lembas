@@ -4,6 +4,10 @@
 	import PluginRow from '$lib/components/plugins/PluginRow.svelte';
 	import type { entities } from '$lib/wailsjs/go/models';
 
+	export let data: { plugins: entities.LocalPluginEntity[], amountPlugins: number };
+	let plugins = data.plugins;
+	let amountPlugins = data.amountPlugins;
+
 	class ToggleState {
 		toggledItemId;
 		isToggled = false;
@@ -13,49 +17,46 @@
 		}
 	}
 
-	let allPlugins: entities.LocalPluginEntity[] = [];
-	let amountInstalledPlugins = 0;
-
 	let toggleState = new ToggleState('');
 
 	let searchInput = '';
 	$: searchPlugins(searchInput);
 
 	const getInstalledPlugins = async () => {
-		let installedPlugins = await GetInstalledPlugins();
+		const installedPlugins = await GetInstalledPlugins();
 
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
 		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
-		amountInstalledPlugins = installedPlugins.length;
-		allPlugins = installedPlugins
+		amountPlugins = installedPlugins.length;
+		plugins = installedPlugins;
 	};
 
 	const searchPlugins = async (input: string) => {
-		allPlugins = await SearchLocal(input);
+		plugins = await SearchLocal(input);
 	};
 
 	const deletePlugin = async (name: string, author: string) => {
-		allPlugins = await DeletePlugin(name, author);
+		plugins = await DeletePlugin(name, author);
 	};
 
-	// const refreshPage = async () => {
-	// 	await getInstalledPlugins()
-	// };
+	const refreshPage = async () => {
+		await getInstalledPlugins();
+	};
 
 	const updateAll = () => {
-		// let pluginsToUpdate: BasePlugin[] = [];
-		//
-		// for (let i = 0; i < allPlugins.length; i++) {
-		// 	const element = allPlugins[i];
-		// 	if (element.currentVersion != element.latestVersion) {
-		// 		pluginsToUpdate.push(element);
-		// 	}
-		// }
-		//
-		// UpdatePlugins(pluginsToUpdate);
+		let pluginsToUpdate: entities.LocalPluginEntity[] = [];
+
+		for (let i = 0; i < plugins.length; i++) {
+			const element = plugins[i];
+			if (element.base.currentVersion != element.base.latestVersion) {
+				pluginsToUpdate.push(element);
+			}
+		}
+
+		UpdatePlugins(pluginsToUpdate);
 	};
 
 	const toggleDetails = (index: number) => {
@@ -82,20 +83,20 @@
 		}
 	};
 
-	getInstalledPlugins()
+	getInstalledPlugins();
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
-				<button class="text-primary p-1 hover:bg-primary-transparent">Refresh
+				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={refreshPage}>Refresh
 				</button>
 				<button class="text-primary p-1 hover:bg-primary-transparent"
 								on:click={updateAll}>Update all
 				</button>
 			</div>
-			<p class="ml-16 m-1">{amountInstalledPlugins} plugins installed</p>
+			<p class="ml-16 m-1">{amountPlugins} plugins installed</p>
 		</div>
 		<input class="grow p-2 text-gold bg-light-brown focus:outline-none" type="text"
 					 bind:value={searchInput} placeholder="Search for a plugin...">
@@ -111,22 +112,21 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#if allPlugins.length === 0}
-			<p class="text-center text-gold">No plugins found</p>
-		{:else}
-			{#each allPlugins as plugin, index}
-				<PluginRow index={index} plugin={plugin} toggleDetails={toggleDetails} deletePlugin={deletePlugin} />
-			{/each}
-		{/if}
-
 		<!--{#await getInstalledPlugins()}-->
 		<!--	<p class="text-center text-gold">Loading plugins from the data store</p>-->
 		<!--{:then plugins}-->
-		<!--	{#each modifiedPlugins as plugin, index}-->
+		<!--	{#each plugins as plugin, index}-->
 		<!--		<PluginRow index={index} plugin={plugin} toggleDetails={toggleDetails} deletePlugin={deletePlugin} />-->
 		<!--	{/each}-->
 		<!--{:catch error}-->
 		<!--	<p>Error while downloading plugin information: {error.message}</p>-->
 		<!--{/await}-->
+		{#if plugins === null}
+			<p class="text-center text-gold">No plugins found</p>
+		{:else}
+			{#each plugins as plugin, index}
+				<PluginRow index={index} plugin={plugin} toggleDetails={toggleDetails} deletePlugin={deletePlugin} />
+			{/each}
+		{/if}
 	</ul>
 </div>

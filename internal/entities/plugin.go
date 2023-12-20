@@ -20,7 +20,7 @@ type LocalPluginEntity struct {
 type RemotePluginEntity struct {
 	Base             BasePluginEntity `json:"base"`
 	IsInstalled      bool             `json:"isInstalled"`
-	UpdatedTimestamp int              `json:"updatedTimestamp"`
+	UpdatedTimestamp string           `json:"updatedTimestamp"`
 	Downloads        int              `json:"downloads"`
 	Category         string           `json:"category"`
 	FileName         string           `json:"file_name"`
