@@ -95,16 +95,19 @@ func (a *App) GetInstalledPlugins() []entities.LocalPluginEntity {
 
 	plugins, err := processes.GetInstalledPlugins(a.datastore)
 	if err != nil {
+		a.logger.Error(err.Error())
 		return make([]entities.LocalPluginEntity, 0)
 	}
 
 	a.localPlugins = plugins
 
-	a.logger.Info("plugins successfully loaded")
+	a.logger.Info("local plugins successfully loaded")
 	return plugins
 }
 
 func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
+	a.logger.Info("loading remote plugins")
+
 	plugins, err := processes.GetRemotePlugins(a.settings.InfoUrl, a.localPlugins)
 	if err != nil {
 		return make([]entities.RemotePluginEntity, 0)
@@ -112,5 +115,6 @@ func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
 
 	a.remotePlugins = plugins
 
+	a.logger.Info("remote plugins successfully loaded")
 	return plugins
 }
