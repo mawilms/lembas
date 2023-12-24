@@ -5,7 +5,7 @@
 	import type { entities } from '$lib/wailsjs/go/models';
 	import PluginRow from '$lib/components/catalog/PluginRow.svelte';
 
-	export let data: { plugins: entities.RemotePluginEntity[], amountPlugins: number };
+	export let data: { plugins: entities.RemotePluginEntity[]; amountPlugins: number };
 	let plugins = data.plugins;
 	let amountPlugins = data.amountPlugins;
 
@@ -31,7 +31,8 @@
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
-		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+		labelDocument.style.paddingRight =
+			pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
 		amountPlugins = fetchedPlugins.length;
 		plugins = fetchedPlugins;
@@ -50,9 +51,12 @@
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
-		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
-					 placeholder="Search for data.plugins..."
-					 type="text">
+		<input
+			bind:value={searchInput}
+			class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
+			placeholder="Search for data.plugins..."
+			type="text"
+		/>
 		<p class="ml-16 m-1">{amountPlugins} plugins found</p>
 	</div>
 
@@ -70,10 +74,9 @@
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
 		{#if plugins === null}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
-		{:else }
+		{:else}
 			{#each plugins as plugin, index}
-				<PluginRow index={index} plugin={plugin} openUrl={openUrl} installPlugin={installPlugin}
-									 updatePlugin={updatePlugin} />
+				<PluginRow {index} {plugin} {openUrl} {installPlugin} {updatePlugin} />
 				<!--				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">-->
 				<!--					<div class="flex space-x-4">-->
 				<!--						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>-->
@@ -97,5 +100,4 @@
 			{/each}
 		{/if}
 	</ul>
-
 </div>
