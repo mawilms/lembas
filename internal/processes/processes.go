@@ -52,18 +52,27 @@ func (p Process) SearchRemote(input string, plugins []entities.RemotePluginEntit
 
 func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
-	identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
-	datastore.Store(identifier, entry)
+	id := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
+	err := datastore.Store(id, entry)
+	if err != nil {
+		p.Logger.Error("failed to store plugin in local datastore", slog.String("id", id), slog.String("url", url))
+		return nil, err
+	}
 
 	for _, dependency := range entry.Plugin.Dependencies {
 		url := fmt.Sprintf("https://www.lotrointerface.com/downloads/download%v", dependency)
 		entry, _ = internal.DownloadPlugin(url, pluginDirectory)
 		identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
-		datastore.Store(identifier, entry)
+		err = datastore.Store(identifier, entry)
+		if err != nil {
+			p.Logger.Error("failed to store plugin in local datastore", slog.String("id", id), slog.String("url", url))
+			return nil, err
+		}
 	}
 
 	storedPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return remotePlugins, err
 	}
 
@@ -88,10 +97,9 @@ func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginD
 }
 
 func (p Process) GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]entities.RemotePluginEntity, error) {
-	remotePlugins := make([]entities.RemotePluginEntity, 0)
-
 	remotePlugins, err := internal.DownloadPackageInformation(url)
 	if err != nil {
+		p.Logger.Error("failure in the plugin downloading process", slog.String("url", url), slog.String("error", err.Error()))
 		return make([]entities.RemotePluginEntity, 0), err
 	}
 
@@ -125,6 +133,7 @@ func (p Process) GetInstalledPlugins(datastore models.DatastoreInterface) ([]ent
 
 	storedPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return localPlugins, err
 	}
 
@@ -152,14 +161,17 @@ func (p Process) DeletePlugin(datastore models.DatastoreInterface, name, author,
 
 	err = internal.DeletePlugin(plugin, pluginDirectory)
 	if err == nil {
+		p.Logger.Error("failed to delete plugin", slog.String("name", name), slog.String("author", author), slog.String("error", err.Error()))
 		err = datastore.DeleteById(id)
 		if err != nil {
-			return nil, err
+			p.Logger.Error("failed to delete entry from datastore", slog.String("id", id))
+			return plugins, err
 		}
 	}
 
 	localPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return plugins, err
 	}
 
