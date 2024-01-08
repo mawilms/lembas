@@ -5,38 +5,42 @@
 	import { ToggleState } from './interactions';
 	import PluginRow from './PluginRow.svelte';
 
+	let isDataLoaded = false;
 	let amountPlugins = 0;
 
-	const getInstalledPlugins = async () => {
-		const installedPlugins = await GetInstalledPlugins();
+	$: pluginPromise = getInstalledPlugins(isDataLoaded);
 
-		amountPlugins = installedPlugins.length;
-		return installedPlugins;
-	};
+	async function getInstalledPlugins(isLoaded: boolean): Promise<entities.LocalPluginEntity[]> {
+		const promise = GetInstalledPlugins();
+		promise.then((result) => {
+				const labelDocument = document.getElementById('plugin-labels')!;
+				const pluginListDocument = document.getElementById('plugin-list')!;
 
-	getInstalledPlugins().then(() => {
-		const labelDocument = document.getElementById('plugin-labels')!;
-		const pluginListDocument = document.getElementById('plugin-list')!;
+				labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
-		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	});
+			amountPlugins = result.length;
+			isDataLoaded = isLoaded
+			plugins = result;
+		});
+		return promise;
+	}
 
-	let plugins = getInstalledPlugins();
+	let plugins: entities.LocalPluginEntity[] = [];
 	let toggleState = new ToggleState('');
 
 	let searchInput = '';
 	$: searchPlugins(searchInput);
 
 	const searchPlugins = async (input: string) => {
-		plugins = SearchLocal(input);
+		return SearchLocal(input);
 	};
 
 	const deletePlugin = async (name: string, author: string) => {
-		plugins = DeletePlugin(name, author);
+		return DeletePlugin(name, author);
 	};
 
 	const refreshPage = async () => {
-		plugins = getInstalledPlugins();
+		return getInstalledPlugins(isDataLoaded);
 	};
 
 	const updateAll = async () => {
@@ -90,7 +94,7 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await plugins}
+		{#await pluginPromise}
 			<p class="text-center text-gold">Loading plugins from the data store</p>
 		{:then resolvedData}
 			{#each resolvedData as plugin, index}
