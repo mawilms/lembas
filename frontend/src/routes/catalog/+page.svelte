@@ -5,39 +5,32 @@
 	import { BasePlugin, RemotePlugin } from '$lib/entities/plugin';
 
 	let amountPlugins = 0;
-	let modifiedPlugins: RemotePlugin[];
-	$: modifiedPlugins = [];
-	$: {
-		getRemotePlugin().then((v => {
-			modifiedPlugins = v;
-		}));
-	}
+
+	const getRemotePlugins = async () => {
+		const fetchedPlugins = await GetRemotePlugins();
+
+		const mappedPlugins = mapRemotePlugins(fetchedPlugins)
+
+		amountPlugins = mappedPlugins.length;
+		return mappedPlugins
+	};
+
+	let plugins = getRemotePlugins()
 
 	let searchInput = '';
 	$: search(searchInput);
 
 	function search(input: string) {
-		searchPlugins(input).then((v => {
-			modifiedPlugins = v;
-		}));
+		searchPlugins(input)
 	}
 
 	const searchPlugins = async (input: string) => {
 		const fetchedPlugins = await SearchRemote(input);
 
-		let tmpArray: RemotePlugin[] = [];
+		const mappedPlugins = mapRemotePlugins(fetchedPlugins)
 
-		for (let i = 0; i < fetchedPlugins.length; i++) {
-			const element = fetchedPlugins[i];
-			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-
-			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
-		}
-
-		amountPlugins = tmpArray.length;
-
-		return tmpArray;
+		amountPlugins = mappedPlugins.length;
+		plugins = Promise.resolve(mappedPlugins)
 	};
 
 	const installPlugin = async (plugin: RemotePlugin) => {
@@ -47,37 +40,24 @@
 				fetchedPlugins = [];
 			}
 
-			let tmpArray: RemotePlugin[] = [];
-
-			for (let i = 0; i < fetchedPlugins.length; i++) {
-				const element = fetchedPlugins[i];
-				const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
-
-				const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-				tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
-			}
-			modifiedPlugins = tmpArray;
+			plugins = Promise.resolve(mapRemotePlugins(fetchedPlugins))
 		}
 	};
 
-	const getRemotePlugin = async () => {
-		const fetchedPlugins = await GetRemotePlugins();
-
+	const mapRemotePlugins = (plugins: RemotePlugin[]) => {
 		let tmpArray: RemotePlugin[] = [];
 
-		for (let i = 0; i < fetchedPlugins.length; i++) {
-			const element = fetchedPlugins[i];
-			const time = new Date(element.UpdatedTimestamp * 1000).toLocaleDateString();
+		for (let i = 0; i < plugins.length; i++) {
+			const element = plugins[i];
 
-			const basePlugin = new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl);
-			tmpArray.push(new RemotePlugin(basePlugin, element.Downloads, element.Category, element.FileName, element.IsInstalled, time));
+			const basePlugin = new BasePlugin(element.base.id, element.base.name, element.base.author, element.base.description, element.base.currentVersion, element.base.latestVersion, element.base.infoUrl, element.base.downloadUrl);
+			tmpArray.push(new RemotePlugin(basePlugin, element.totalDownloads, element.category, element.filename, element.isInstalled, element.lastUpdated));
 		}
 
-		amountPlugins = tmpArray.length;
+		return tmpArray
+	}
 
-		return tmpArray;
-	};
-	getRemotePlugin().then(() => {
+	getRemotePlugins().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
@@ -113,10 +93,10 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await getRemotePlugin()}
+		{#await plugins}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
-		{:then plugins}
-			{#each modifiedPlugins as plugin, index}
+		{:then resolvedData}
+			{#each resolvedData as plugin, index}
 				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
 					<div class="flex space-x-4">
 						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>
