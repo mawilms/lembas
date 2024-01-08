@@ -1,111 +1,55 @@
 <script lang="ts">
 	import '../app.css';
-	import { BasePlugin } from '$lib/entities/plugin';
-	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
-	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
+	import {
+		DeletePlugin,
+		GetInstalledPlugins,
+		SearchLocal,
+		UpdatePlugins
+	} from '$lib/wailsjs/go/main/App';
+	import PluginRow from '$lib/components/plugins/PluginRow.svelte';
+	import type { entities } from '$lib/wailsjs/go/models';
+	import { ToggleState } from './interactions';
 
-	class ToggleState {
-		toggledItemId;
-		isToggled = false;
-
-		constructor(itemId: string) {
-			this.toggledItemId = itemId;
-		}
-	}
+	export let data: { plugins: entities.LocalPluginEntity[]; amountPlugins: number };
+	let plugins = data.plugins;
+	let amountPlugins = data.amountPlugins;
 
 	let toggleState = new ToggleState('');
-	let installedPlugins: BasePlugin[] = [];
-	let amountInstalledPlugins = 0;
-
-	let modifiedPlugins: BasePlugin[];
-	$: modifiedPlugins = [];
-	$: {
-		getInstalledPlugins().then((v => {
-			modifiedPlugins = v;
-		}));
-	}
 
 	let searchInput = '';
-	$: search(searchInput);
-
-	function search(input: string) {
-		searchPlugins(input).then((v => {
-			modifiedPlugins = v;
-		}));
-	}
+	$: searchPlugins(searchInput);
 
 	const getInstalledPlugins = async () => {
-		let installedPlugins = await GetInstalledPlugins();
-		if (installedPlugins === null) {
-			installedPlugins = [];
-		}
-
-		let tmpPlugins: BasePlugin[] = [];
-
-		for (let i = 0; i < installedPlugins.length; i++) {
-			const element = installedPlugins[i];
-
-			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
-		}
-		amountInstalledPlugins = tmpPlugins.length;
-
-		return tmpPlugins;
-	};
-
-	const searchPlugins = async (input: string) => {
-		let installedPlugins = await SearchLocal(input);
-		if (installedPlugins === null) {
-			installedPlugins = [];
-		}
-
-		let tmpPlugins: BasePlugin[] = [];
-
-		for (let i = 0; i < installedPlugins.length; i++) {
-			const element = installedPlugins[i];
-
-			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
-		}
-		amountInstalledPlugins = tmpPlugins.length;
-
-		return tmpPlugins;
-	};
-
-	const deletePlugin = async (name: string, author: string) => {
-		const plugins = await DeletePlugin(name, author);
-		if (installedPlugins === null) {
-			installedPlugins = [];
-		}
-
-		let tmpPlugins: BasePlugin[] = [];
-
-		for (let i = 0; i < plugins.length; i++) {
-			const element = plugins[i];
-
-			tmpPlugins.push(new BasePlugin(element.Base.Id, element.Base.Name, element.Base.Author, element.Base.Description, element.Base.CurrentVersion, element.Base.LatestVersion, element.Base.InfoUrl, element.Base.DownloadUrl));
-		}
-
-		modifiedPlugins = tmpPlugins;
-	};
-
-	getInstalledPlugins().then((plugins) => {
-		installedPlugins = plugins;
+		const installedPlugins = await GetInstalledPlugins();
 
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
-		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	});
+		labelDocument.style.paddingRight =
+			pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 
-	// const refreshPage = async () => {
-	// 	await getInstalledPlugins()
-	// };
+		amountPlugins = installedPlugins.length;
+		plugins = installedPlugins;
+	};
+
+	const searchPlugins = async (input: string) => {
+		plugins = await SearchLocal(input);
+	};
+
+	const deletePlugin = async (name: string, author: string) => {
+		plugins = await DeletePlugin(name, author);
+	};
+
+	const refreshPage = async () => {
+		await getInstalledPlugins();
+	};
 
 	const updateAll = () => {
-		let pluginsToUpdate: BasePlugin[] = [];
+		let pluginsToUpdate: entities.LocalPluginEntity[] = [];
 
-		for (let i = 0; i < installedPlugins.length; i++) {
-			const element = installedPlugins[i];
-			if (element.currentVersion != element.latestVersion) {
+		for (let i = 0; i < plugins.length; i++) {
+			const element = plugins[i];
+			if (element.base.currentVersion != element.base.latestVersion) {
 				pluginsToUpdate.push(element);
 			}
 		}
@@ -113,45 +57,32 @@
 		UpdatePlugins(pluginsToUpdate);
 	};
 
-	const toggleDetails = (index: number) => {
-		if (toggleState.isToggled) {
-			let element = document.getElementById(toggleState.toggledItemId)!;
+	const toggle = (index: number) => {
+		toggleState.toggle(index)
+	}
 
-			element.classList.add('hidden');
-			toggleState.isToggled = false;
-
-			if (`details-${index}` !== toggleState.toggledItemId) {
-				toggleState = new ToggleState(`details-${index}`);
-				element = document.getElementById(toggleState.toggledItemId)!;
-				element.classList.remove('hidden');
-				toggleState.isToggled = true;
-			}
-
-		} else {
-			if (`details-${index}` !== toggleState.toggledItemId || `details-${index}` === toggleState.toggledItemId && !toggleState.isToggled) {
-				toggleState = new ToggleState(`details-${index}`);
-				const element = document.getElementById(toggleState.toggledItemId)!;
-				element.classList.remove('hidden');
-				toggleState.isToggled = true;
-			}
-		}
-	};
+	getInstalledPlugins();
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
-				<button class="text-primary p-1 hover:bg-primary-transparent">Refresh
+				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={refreshPage}
+					>Refresh
 				</button>
-				<button class="text-primary p-1 hover:bg-primary-transparent"
-								on:click={updateAll}>Update all
+				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={updateAll}
+					>Update all
 				</button>
 			</div>
-			<p class="ml-16 m-1">{amountInstalledPlugins} plugins installed</p>
+			<p class="ml-16 m-1">{amountPlugins} plugins installed</p>
 		</div>
-		<input class="grow p-2 text-gold bg-light-brown focus:outline-none" type="text"
-					 bind:value={searchInput} placeholder="Search for a plugin...">
+		<input
+			class="grow p-2 text-gold bg-light-brown focus:outline-none"
+			type="text"
+			bind:value={searchInput}
+			placeholder="Search for a plugin..."
+		/>
 	</div>
 
 	<div id="plugin-labels" class="flex text-left mx-2">
@@ -164,48 +95,21 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await getInstalledPlugins()}
-			<p class="text-center text-gold">Loading plugins from the data store</p>
-		{:then plugins}
-			{#each modifiedPlugins as plugin, index}
-				<li id="plugin-{index}" class="block bg-light-brown">
-					<div class="flex space-x-4 cursor-pointer" on:click={() => toggleDetails(index)}>
-						<p class="w-1/2 p-2">{plugin.name}</p>
-						<div class="flex w-1/2">
-							<p class="w-1/3 p-2">{plugin.currentVersion}</p>
-							<p class="w-1/3 p-2">{plugin.latestVersion}</p>
-							{#if plugin.currentVersion !== plugin.latestVersion}
-								<p class="w-1/3 p-2 text-center text-gold hover:bg-gold-transparent">
-									<button>Update</button>
-								</p>
-							{:else }
-								<p class="w-1/3 p-2 text-center text-gold">
-									<button></button>
-								</p>
-							{/if}
-						</div>
-					</div>
-
-					<div id="details-{index}" class="hidden p-4 bg-dark-brown">
-						{#if (plugin.description === "")}
-							<p>No description</p>
-						{:else }
-							<p>{plugin.description}</p>
-						{/if}
-
-						<div class="flex justify-end space-x-8 mt-4 mr-4">
-							<button class="text-primary p-1 hover:bg-primary-transparent"
-											on:click={() => BrowserOpenURL(plugin.infoUrl)}>Open website
-							</button>
-							<button class="text-primary p-1 hover:bg-primary-transparent"
-											on:click={() => {deletePlugin(plugin.name, plugin.author)}}>Delete
-							</button>
-						</div>
-					</div>
-				</li>
+		<!--{#await getInstalledPlugins()}-->
+		<!--	<p class="text-center text-gold">Loading plugins from the data store</p>-->
+		<!--{:then plugins}-->
+		<!--	{#each plugins as plugin, index}-->
+		<!--		<PluginRow index={index} plugin={plugin} toggleDetails={toggleDetails} deletePlugin={deletePlugin} />-->
+		<!--	{/each}-->
+		<!--{:catch error}-->
+		<!--	<p>Error while downloading plugin information: {error.message}</p>-->
+		<!--{/await}-->
+		{#if plugins === null}
+			<p class="text-center text-gold">No plugins found</p>
+		{:else}
+			{#each plugins as plugin, index}
+				<PluginRow {index} {plugin} {toggle} {deletePlugin} />
 			{/each}
-		{:catch error}
-			<p>Error while downloading plugin information: {error.message}</p>
-		{/await}
+		{/if}
 	</ul>
 </div>

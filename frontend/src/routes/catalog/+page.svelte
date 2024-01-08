@@ -2,82 +2,61 @@
 	import '../../app.css';
 	import { GetRemotePlugins, InstallPlugin, SearchRemote } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
-	import { BasePlugin, RemotePlugin } from '$lib/entities/plugin';
+	import type { entities } from '$lib/wailsjs/go/models';
+	import PluginRow from '$lib/components/catalog/PluginRow.svelte';
 
-	let amountPlugins = 0;
-
-	const getRemotePlugins = async () => {
-		const fetchedPlugins = await GetRemotePlugins();
-
-		const mappedPlugins = mapRemotePlugins(fetchedPlugins)
-
-		amountPlugins = mappedPlugins.length;
-		return mappedPlugins
-	};
-
-	let plugins = getRemotePlugins()
+	export let data: { plugins: entities.RemotePluginEntity[]; amountPlugins: number };
+	let plugins = data.plugins;
+	let amountPlugins = data.amountPlugins;
 
 	let searchInput = '';
-	$: search(searchInput);
-
-	function search(input: string) {
-		searchPlugins(input)
-	}
+	$: searchPlugins(searchInput);
 
 	const searchPlugins = async (input: string) => {
-		const fetchedPlugins = await SearchRemote(input);
-
-		const mappedPlugins = mapRemotePlugins(fetchedPlugins)
-
-		amountPlugins = mappedPlugins.length;
-		plugins = Promise.resolve(mappedPlugins)
+		plugins = await SearchRemote(input);
 	};
 
-	const installPlugin = async (plugin: RemotePlugin) => {
+	const installPlugin = async (plugin: entities.RemotePluginEntity) => {
 		if (!plugin.isInstalled) {
-			let fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
-			if (fetchedPlugins === null) {
-				fetchedPlugins = [];
-			}
+			const fetchedPlugins = await InstallPlugin(plugin.base.downloadUrl);
 
-			plugins = Promise.resolve(mapRemotePlugins(fetchedPlugins))
+			amountPlugins = fetchedPlugins.length;
+			plugins = fetchedPlugins;
 		}
 	};
 
-	const mapRemotePlugins = (plugins: RemotePlugin[]) => {
-		let tmpArray: RemotePlugin[] = [];
+	const getRemotePlugin = async () => {
+		const fetchedPlugins = await GetRemotePlugins();
 
-		for (let i = 0; i < plugins.length; i++) {
-			const element = plugins[i];
-
-			const basePlugin = new BasePlugin(element.base.id, element.base.name, element.base.author, element.base.description, element.base.currentVersion, element.base.latestVersion, element.base.infoUrl, element.base.downloadUrl);
-			tmpArray.push(new RemotePlugin(basePlugin, element.totalDownloads, element.category, element.filename, element.isInstalled, element.lastUpdated));
-		}
-
-		return tmpArray
-	}
-
-	getRemotePlugins().then(() => {
 		const labelDocument = document.getElementById('plugin-labels')!;
 		const pluginListDocument = document.getElementById('plugin-list')!;
 
-		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-	});
+		labelDocument.style.paddingRight =
+			pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+
+		amountPlugins = fetchedPlugins.length;
+		plugins = fetchedPlugins;
+	};
 
 	const openUrl = (url: string) => {
 		BrowserOpenURL(url);
 	};
 
-	const UpdatePlugin = () => {
+	const updatePlugin = () => {
 		console.log('Update');
 	};
+
+	getRemotePlugin();
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
-		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
-					 placeholder="Search for plugins..."
-					 type="text">
+		<input
+			bind:value={searchInput}
+			class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
+			placeholder="Search for data.plugins..."
+			type="text"
+		/>
 		<p class="ml-16 m-1">{amountPlugins} plugins found</p>
 	</div>
 
@@ -93,34 +72,42 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await plugins}
+		{#if plugins === null}
 			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>
-		{:then resolvedData}
-			{#each resolvedData as plugin, index}
-				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">
-					<div class="flex space-x-4">
-						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>
-						<div class="flex w-2/3">
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.totalDownloads}</p>
-							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.lastUpdated}</p>
-							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
-								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-									 on:click={UpdatePlugin}>Update</p>
-							{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}
-								<p class="w-1/5 p-2 text-center">Installed</p>
-							{:else}
-								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-									 on:click={() => installPlugin(plugin)}>Install</p>
-							{/if}
-						</div>
-					</div>
-				</li>
+		{:else}
+			{#each plugins as plugin, index}
+				<PluginRow {index} {plugin} {openUrl} {installPlugin} {updatePlugin} />
 			{/each}
-		{:catch error}
-			<p>Error while downloading plugin information: {error.message}</p>
-		{/await}
+		{/if}
 	</ul>
-
+<!--	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">-->
+<!--		{#await plugins}-->
+<!--			<p class="text-center text-gold">Downloading plugin information from lotrocompendium.com</p>-->
+<!--		{:then resolvedData}-->
+<!--			{#each resolvedData as plugin, index}-->
+<!--				<li id="plugin-{index}" class="block bg-light-brown cursor-pointer">-->
+<!--					<div class="flex space-x-4">-->
+<!--						<p class="w-1/3 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.name}</p>-->
+<!--						<div class="flex w-2/3">-->
+<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.latestVersion}</p>-->
+<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.base.author}</p>-->
+<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.totalDownloads}</p>-->
+<!--							<p class="w-1/5 p-2" on:click={() => {openUrl(plugin.base.infoUrl)}}>{plugin.lastUpdated}</p>-->
+<!--							{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}-->
+<!--								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"-->
+<!--									 on:click={UpdatePlugin}>Update</p>-->
+<!--							{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}-->
+<!--								<p class="w-1/5 p-2 text-center">Installed</p>-->
+<!--							{:else}-->
+<!--								<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"-->
+<!--									 on:click={() => installPlugin(plugin)}>Install</p>-->
+<!--							{/if}-->
+<!--						</div>-->
+<!--					</div>-->
+<!--				</li>-->
+<!--			{/each}-->
+<!--		{:catch error}-->
+<!--			<p>Error while downloading plugin information: {error.message}</p>-->
+<!--		{/await}-->
+<!--	</ul>-->
 </div>

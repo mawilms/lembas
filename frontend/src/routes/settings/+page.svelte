@@ -14,23 +14,24 @@
 
 	function onChange(settings: Settings) {
 		SaveSettings({
-			'pluginPath': settings.pluginPath,
-			'dataDirectory': settings.dataDirectory,
-			'infoUrl': settings.infoUrl
+			pluginPath: settings.pluginPath,
+			dataDirectory: settings.dataDirectory,
+			infoUrl: settings.infoUrl
 		});
 	}
 
 	getSettings();
-
-
 </script>
 
 <div class="text-left my-4 space-y-4">
 	<div class="flex flex-col space-y-2">
 		<label for="plugin-path">LotRO directory</label>
-		<input bind:value={settings.pluginPath} class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none"
-					 id="plugin-path"
-					 type="text" />
+		<input
+			bind:value={settings.pluginPath}
+			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none"
+			id="plugin-path"
+			type="text"
+		/>
 	</div>
 	<!--	<div class="flex flex-col space-y-2">-->
 	<!--		<label for="data-directory">Lembas directory</label>-->
@@ -39,7 +40,11 @@
 	<!--	</div>-->
 	<div class="flex flex-col space-y-2">
 		<label for="info-url">Plugin Feed Url</label>
-		<input bind:value={settings.infoUrl} class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none" id="info-url"
-					 type="text" />
+		<input
+			bind:value={settings.infoUrl}
+			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none"
+			id="info-url"
+			type="text"
+		/>
 	</div>
 </div>

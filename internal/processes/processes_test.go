@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -71,8 +73,10 @@ func TestGetRemotePlugins(t *testing.T) {
 		Category:    "Bags Bank & Inventory",
 		FileName:    "AltHolicV4.40.zip",
 	}}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	process := Process{Logger: logger}
 
-	remotePlugins, err := GetRemotePlugins(server.URL, localPlugins)
+	remotePlugins, err := process.GetRemotePlugins(server.URL, localPlugins)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -107,7 +111,7 @@ func (d dummyDatastore) Open() (models.DatastoreModel, error) {
 	return model, nil
 }
 
-func (d dummyDatastore) Store(models.DatastoreEntryModel) error {
+func (d dummyDatastore) Store(string, models.DatastoreEntryModel) error {
 	return nil
 }
 
@@ -138,8 +142,10 @@ func TestGetInstalledPlugins(t *testing.T) {
 		Descriptors:  nil,
 		Dependencies: nil,
 	}}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	process := Process{Logger: logger}
 
-	plugins, err := GetInstalledPlugins(dummyDatastore{})
+	plugins, err := process.GetInstalledPlugins(dummyDatastore{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,8 +173,10 @@ func TestInstallPlugin(t *testing.T) {
 		Category:         "",
 		FileName:         "",
 	}}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	process := Process{Logger: logger}
 
-	plugins, err := InstallPlugin(dummyDatastore{}, server.URL, tmpDir, []entities.RemotePluginEntity{{
+	plugins, err := process.InstallPlugin(dummyDatastore{}, server.URL, tmpDir, []entities.RemotePluginEntity{{
 		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		IsInstalled:      false,
 		UpdatedTimestamp: 0,
@@ -191,8 +199,10 @@ func TestDeletePlugin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	process := Process{Logger: logger}
 
-	_, err = DeletePlugin(dummyDatastore{}, "AltHolic", "Some Author", tmpDir)
+	_, err = process.DeletePlugin(dummyDatastore{}, "AltHolic", "Some Author", tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,8 +224,10 @@ func TestSearch(t *testing.T) {
 		Descriptors:  nil,
 		Dependencies: nil,
 	}}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	process := Process{Logger: logger}
 
-	filteredPlugins := SearchLocal("bc", inputPlugins)
+	filteredPlugins := process.SearchLocal("bc", inputPlugins)
 	if len(filteredPlugins) != 1 {
 		t.Fatalf("Expected: 1, got: %v", len(filteredPlugins))
 	}

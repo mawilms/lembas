@@ -5,15 +5,20 @@ import (
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
+	"log/slog"
 	"sort"
 	"strings"
 )
+
+type Process struct {
+	Logger *slog.Logger
+}
 
 func BuildPluginIndex(name, author string) string {
 	return fmt.Sprintf("%v-%v", strings.Replace(strings.ToLower(name), " ", "", -1), strings.Replace(strings.ToLower(author), " ", "", -1))
 }
 
-func SearchLocal(input string, plugins []entities.LocalPluginEntity) []entities.LocalPluginEntity {
+func (p Process) SearchLocal(input string, plugins []entities.LocalPluginEntity) []entities.LocalPluginEntity {
 	input = strings.ToLower(input)
 	if input == "" {
 		return plugins
@@ -29,7 +34,7 @@ func SearchLocal(input string, plugins []entities.LocalPluginEntity) []entities.
 	return filteredPlugins
 }
 
-func SearchRemote(input string, plugins []entities.RemotePluginEntity) []entities.RemotePluginEntity {
+func (p Process) SearchRemote(input string, plugins []entities.RemotePluginEntity) []entities.RemotePluginEntity {
 	input = strings.ToLower(input)
 	if input == "" {
 		return plugins
@@ -45,20 +50,29 @@ func SearchRemote(input string, plugins []entities.RemotePluginEntity) []entitie
 	return filteredPlugins
 }
 
-func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
+func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
 	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
-	identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
-	datastore.Store(identifier, entry)
+	id := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
+	err := datastore.Store(id, entry)
+	if err != nil {
+		p.Logger.Error("failed to store plugin in local datastore", slog.String("id", id), slog.String("url", url))
+		return nil, err
+	}
 
 	for _, dependency := range entry.Plugin.Dependencies {
 		url := fmt.Sprintf("https://www.lotrointerface.com/downloads/download%v", dependency)
 		entry, _ = internal.DownloadPlugin(url, pluginDirectory)
 		identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
-		datastore.Store(identifier, entry)
+		err = datastore.Store(identifier, entry)
+		if err != nil {
+			p.Logger.Error("failed to store plugin in local datastore", slog.String("id", id), slog.String("url", url))
+			return nil, err
+		}
 	}
 
 	storedPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return remotePlugins, err
 	}
 
@@ -82,11 +96,10 @@ func InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory str
 	return remotePlugins, nil
 }
 
-func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]entities.RemotePluginEntity, error) {
-	remotePlugins := make([]entities.RemotePluginEntity, 0)
-
+func (p Process) GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]entities.RemotePluginEntity, error) {
 	remotePlugins, err := internal.DownloadPackageInformation(url)
 	if err != nil {
+		p.Logger.Error("failure in the plugin downloading process", slog.String("url", url), slog.String("error", err.Error()))
 		return make([]entities.RemotePluginEntity, 0), err
 	}
 
@@ -115,11 +128,12 @@ func GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]
 	return remotePlugins, nil
 }
 
-func GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalPluginEntity, error) {
+func (p Process) GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalPluginEntity, error) {
 	localPlugins := make([]entities.LocalPluginEntity, 0)
 
 	storedPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return localPlugins, err
 	}
 
@@ -138,7 +152,7 @@ func GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalP
 	return localPlugins, nil
 }
 
-func DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
+func (p Process) DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
 	plugins := make([]entities.LocalPluginEntity, 0)
 	id := BuildPluginIndex(name, author)
 
@@ -147,14 +161,17 @@ func DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirec
 
 	err = internal.DeletePlugin(plugin, pluginDirectory)
 	if err == nil {
+		p.Logger.Error("failed to delete plugin", slog.String("name", name), slog.String("author", author), slog.String("error", err.Error()))
 		err = datastore.DeleteById(id)
 		if err != nil {
-			return nil, err
+			p.Logger.Error("failed to delete entry from datastore", slog.String("id", id))
+			return plugins, err
 		}
 	}
 
 	localPlugins, err := datastore.Get()
 	if err != nil {
+		p.Logger.Error("failed to retrieve plugins from the local datastore", slog.String("error", err.Error()))
 		return plugins, err
 	}
 
