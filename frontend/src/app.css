@@ -2,12 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: normal;
+    src: url("/fonts/roboto/Roboto-Regular.ttf");
+}
+
 html {
     background-color: rgb(36, 21, 18);
     text-align: center;
     color: white;
     overflow: hidden;
-    font-size: 14px;
+    font-size: 15px;
+    font-family: Roboto, sans-serif;
 }
 
 body {
