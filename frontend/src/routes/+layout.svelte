@@ -84,22 +84,41 @@
 			<h1>Lembas</h1>
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
 				<li>
-					<a class:pluginsTabActive
-						 class="block text-primary hover:bg-primary-transparent p-2 {plugins_tab_active_class}"
-						 href="/" on:click={togglePluginsTab}>My Plugins</a></li>
+					<a
+						class:pluginsTabActive
+						class="block text-primary hover:bg-primary-transparent p-2 {plugins_tab_active_class}"
+						href="/"
+						on:click={togglePluginsTab}>My Plugins</a
+					>
+				</li>
 				<li>
-					<a class:catalogTabActive
-						 class="block text-primary hover:bg-primary-transparent p-2 {catalog_tab_active_class}"
-						 href="/catalog" on:click={toggleCatalogTab}>Catalog</a></li>
+					<a
+						class:catalogTabActive
+						class="block text-primary hover:bg-primary-transparent p-2 {catalog_tab_active_class}"
+						href="/catalog"
+						on:click={toggleCatalogTab}>Catalog</a
+					>
+				</li>
 			</ul>
 		</div>
 		<div>
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
-				<li><a class:aboutTabActive class="block text-primary hover:bg-primary-transparent p-2 {about_tab_active_class}"
-							 href="/about" on:click={toggleAboutTab}>About</a>
+				<li>
+					<a
+						class:aboutTabActive
+						class="block text-primary hover:bg-primary-transparent p-2 {about_tab_active_class}"
+						href="/about"
+						on:click={toggleAboutTab}>About</a
+					>
 				</li>
-				<li><a class:settingsTabActive class="block text-primary hover:bg-primary-transparent p-2 {settings_tab_active_class}"
-							 href="/settings" on:click={toggleSettingsTab}>Settings</a></li>
+				<li>
+					<a
+						class:settingsTabActive
+						class="block text-primary hover:bg-primary-transparent p-2 {settings_tab_active_class}"
+						href="/settings"
+						on:click={toggleSettingsTab}>Settings</a
+					>
+				</li>
 			</ul>
 		</div>
 	</nav>
@@ -107,5 +126,4 @@
 	<div class="absolute mt-20 top-0 right-0 left-0 bottom-0 p-4">
 		<slot />
 	</div>
-
 </main>
