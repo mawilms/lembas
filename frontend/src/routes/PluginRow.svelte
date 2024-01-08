@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BrowserOpenURL } from '$lib/wailsjs/runtime/runtime.js';
+	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 	import type { entities } from '$lib/wailsjs/go/models';
 
 	type deletePlugin = (name: string, author: string) => void;

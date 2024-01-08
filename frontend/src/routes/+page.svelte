@@ -1,67 +1,62 @@
 <script lang="ts">
 	import '../app.css';
-	import {
-		DeletePlugin,
-		GetInstalledPlugins,
-		SearchLocal,
-		UpdatePlugins
-	} from '$lib/wailsjs/go/main/App';
-	import PluginRow from '$lib/components/plugins/PluginRow.svelte';
+	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import type { entities } from '$lib/wailsjs/go/models';
 	import { ToggleState } from './interactions';
+	import PluginRow from './PluginRow.svelte';
 
-	export let data: { plugins: entities.LocalPluginEntity[]; amountPlugins: number };
-	let plugins = data.plugins;
-	let amountPlugins = data.amountPlugins;
+	let amountPlugins = 0;
 
+	const getInstalledPlugins = async () => {
+		const installedPlugins = await GetInstalledPlugins();
+
+		amountPlugins = installedPlugins.length;
+		return installedPlugins;
+	};
+
+	getInstalledPlugins().then(() => {
+		const labelDocument = document.getElementById('plugin-labels')!;
+		const pluginListDocument = document.getElementById('plugin-list')!;
+
+		labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+	});
+
+	let plugins = getInstalledPlugins();
 	let toggleState = new ToggleState('');
 
 	let searchInput = '';
 	$: searchPlugins(searchInput);
 
-	const getInstalledPlugins = async () => {
-		const installedPlugins = await GetInstalledPlugins();
-
-		const labelDocument = document.getElementById('plugin-labels')!;
-		const pluginListDocument = document.getElementById('plugin-list')!;
-
-		labelDocument.style.paddingRight =
-			pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-		amountPlugins = installedPlugins.length;
-		plugins = installedPlugins;
-	};
-
 	const searchPlugins = async (input: string) => {
-		plugins = await SearchLocal(input);
+		plugins = SearchLocal(input);
 	};
 
 	const deletePlugin = async (name: string, author: string) => {
-		plugins = await DeletePlugin(name, author);
+		plugins = DeletePlugin(name, author);
 	};
 
 	const refreshPage = async () => {
-		await getInstalledPlugins();
+		plugins = getInstalledPlugins();
 	};
 
-	const updateAll = () => {
+	const updateAll = async () => {
+		const localPlugins = await plugins;
 		let pluginsToUpdate: entities.LocalPluginEntity[] = [];
 
-		for (let i = 0; i < plugins.length; i++) {
-			const element = plugins[i];
+		for (let i = 0; i < localPlugins.length; i++) {
+			const element = localPlugins[i];
 			if (element.base.currentVersion != element.base.latestVersion) {
 				pluginsToUpdate.push(element);
 			}
 		}
 
-		UpdatePlugins(pluginsToUpdate);
+		// TODO: Return updated plugin view
+		await UpdatePlugins(pluginsToUpdate);
 	};
 
 	const toggle = (index: number) => {
-		toggleState.toggle(index)
-	}
-
-	getInstalledPlugins();
+		toggleState.toggle(index);
+	};
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
@@ -69,10 +64,10 @@
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
 				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={refreshPage}
-					>Refresh
+				>Refresh
 				</button>
 				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={updateAll}
-					>Update all
+				>Update all
 				</button>
 			</div>
 			<p class="ml-16 m-1">{amountPlugins} plugins installed</p>
@@ -95,21 +90,14 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		<!--{#await getInstalledPlugins()}-->
-		<!--	<p class="text-center text-gold">Loading plugins from the data store</p>-->
-		<!--{:then plugins}-->
-		<!--	{#each plugins as plugin, index}-->
-		<!--		<PluginRow index={index} plugin={plugin} toggleDetails={toggleDetails} deletePlugin={deletePlugin} />-->
-		<!--	{/each}-->
-		<!--{:catch error}-->
-		<!--	<p>Error while downloading plugin information: {error.message}</p>-->
-		<!--{/await}-->
-		{#if plugins === null}
-			<p class="text-center text-gold">No plugins found</p>
-		{:else}
-			{#each plugins as plugin, index}
-				<PluginRow {index} {plugin} {toggle} {deletePlugin} />
+		{#await plugins}
+			<p class="text-center text-gold">Loading plugins from the data store</p>
+		{:then resolvedData}
+			{#each resolvedData as plugin, index}
+				<PluginRow index={index} plugin={plugin} toggle={toggle} deletePlugin={deletePlugin} />
 			{/each}
-		{/if}
+		{:catch error}
+			<p>Error while downloading plugin information: {error.message}</p>
+		{/await}
 	</ul>
 </div>
