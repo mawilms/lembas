@@ -4,51 +4,53 @@
 	import type { entities } from '$lib/wailsjs/go/models';
 	import { ToggleState } from './interactions';
 	import PluginRow from './PluginRow.svelte';
-
-	let isDataLoaded = false;
+	// export let data;
 	let amountPlugins = 0;
+	let error = '';
 
-	$: pluginPromise = getInstalledPlugins(isDataLoaded);
+	$:  plugins = [];
+	$: if (plugins != null) {
+		const labelDocument = document.getElementById('plugin-labels');
+		const pluginListDocument = document.getElementById('plugin-list');
+		if (labelDocument !== null && pluginListDocument !== null) {
+			labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+		}
 
-	async function getInstalledPlugins(isLoaded: boolean): Promise<entities.LocalPluginEntity[]> {
-		const promise = GetInstalledPlugins();
-		promise.then((result) => {
-				const labelDocument = document.getElementById('plugin-labels')!;
-				const pluginListDocument = document.getElementById('plugin-list')!;
-
-				labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-
-			amountPlugins = result.length;
-			isDataLoaded = isLoaded
-			plugins = result;
-		});
-		return promise;
+		amountPlugins = plugins.length;
 	}
 
-	let plugins: entities.LocalPluginEntity[] = [];
+	GetInstalledPlugins()
+		.then((result) => plugins = result);
+
+	async function getInstalledPlugins() {
+		const installedPlugins = await GetInstalledPlugins();
+
+		amountPlugins = installedPlugins.length;
+		plugins = installedPlugins;
+	}
+
 	let toggleState = new ToggleState('');
 
 	let searchInput = '';
 	$: searchPlugins(searchInput);
 
 	const searchPlugins = async (input: string) => {
-		return SearchLocal(input);
+		plugins = await SearchLocal(input);
 	};
 
 	const deletePlugin = async (name: string, author: string) => {
-		return DeletePlugin(name, author);
+		plugins = await DeletePlugin(name, author);
 	};
 
 	const refreshPage = async () => {
-		return getInstalledPlugins(isDataLoaded);
+		await getInstalledPlugins();
 	};
 
 	const updateAll = async () => {
-		const localPlugins = await plugins;
 		let pluginsToUpdate: entities.LocalPluginEntity[] = [];
 
-		for (let i = 0; i < localPlugins.length; i++) {
-			const element = localPlugins[i];
+		for (let i = 0; i < plugins.length; i++) {
+			const element = plugins[i];
 			if (element.base.currentVersion != element.base.latestVersion) {
 				pluginsToUpdate.push(element);
 			}
@@ -94,14 +96,14 @@
 	</div>
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
-		{#await pluginPromise}
+		{#if plugins === null}
 			<p class="text-center text-gold">Loading plugins from the data store</p>
-		{:then resolvedData}
-			{#each resolvedData as plugin, index}
+		{:else if plugins.length !== 0}
+			{#each plugins as plugin, index}
 				<PluginRow index={index} plugin={plugin} toggle={toggle} deletePlugin={deletePlugin} />
 			{/each}
-		{:catch error}
-			<p>Error while downloading plugin information: {error.message}</p>
-		{/await}
+		{:else}
+			<p class="text-center text-gold">Error while loading data from the data store: {error}</p>
+		{/if}
 	</ul>
 </div>
