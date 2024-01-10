@@ -6,15 +6,15 @@ export class ToggleState {
 		this.toggledItemId = itemId;
 	}
 
-	public toggle(index: number) {
+	public toggle(index: number, element: HTMLElement) {
 		if (this.isToggled) {
 			if (`details-${index}` !== this.toggledItemId) {
 				this.toggledItemId = `details-${index}`;
 				this.isToggled = false;
 
-				this.show()
+				this.show(element);
 			} else {
-				this.hide()
+				this.hide(element);
 			}
 		} else {
 			if (
@@ -24,19 +24,17 @@ export class ToggleState {
 				this.toggledItemId = `details-${index}`;
 				this.isToggled = false;
 
-				this.show()
+				this.show(element);
 			}
 		}
 	};
 
-	private hide() {
-		const element = document.getElementById(this.toggledItemId)!;
+	private hide(element: HTMLElement) {
 		element.classList.add('hidden');
 		this.isToggled = false;
 	}
 
-	private show() {
-		const element = document.getElementById(this.toggledItemId)!;
+	private show(element: HTMLElement) {
 		element.classList.remove('hidden');
 		this.isToggled = true;
 	}

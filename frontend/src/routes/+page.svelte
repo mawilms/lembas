@@ -71,7 +71,8 @@
 	};
 
 	const toggle = (index: number) => {
-		toggleState.toggle(index);
+		const element = document.getElementById(`details-${index}`)!;
+		toggleState.toggle(index, element);
 	};
 </script>
 
