@@ -4,9 +4,16 @@
 	import type { entities } from '$lib/wailsjs/go/models';
 	import { ToggleState } from './interactions';
 	import PluginRow from './PluginRow.svelte';
-	// export let data;
+
+	// TODO: Add state for plugins loading and no plugins found
+	enum Status {
+		Loading = 1,
+		Loaded
+	}
+
 	let amountPlugins = 0;
 	let error = '';
+	let status = Status.Loading;
 
 	$:  plugins = [];
 	$: if (plugins != null) {
@@ -20,7 +27,10 @@
 	}
 
 	GetInstalledPlugins()
-		.then((result) => plugins = result);
+		.then((result) => {
+			status = Status.Loaded;
+			plugins = result;
+		});
 
 	async function getInstalledPlugins() {
 		const installedPlugins = await GetInstalledPlugins();
@@ -97,7 +107,17 @@
 
 	<ul id="plugin-list" class="space-y-2 h-full overflow-y-scroll">
 		{#if plugins === null}
-			<p class="text-center text-gold">Loading plugins from the data store</p>
+			{#if status === Status.Loading}
+				<p class="text-center text-gold">Loading plugins from the data store</p>
+			{:else}
+				<p class="text-center text-gold">No plugins found</p>
+			{/if}
+		{:else if plugins.length === 0}
+			{#if status === Status.Loading}
+				<p class="text-center text-gold">Loading plugins from the data store</p>
+			{:else}
+				<p class="text-center text-gold">No plugins found</p>
+			{/if}
 		{:else if plugins.length !== 0}
 			{#each plugins as plugin, index}
 				<PluginRow index={index} plugin={plugin} toggle={toggle} deletePlugin={deletePlugin} />

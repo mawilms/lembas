@@ -22,11 +22,20 @@ type App struct {
 }
 
 func NewApp() *App {
-	s, _ := settings.New()
-	datastore, _ := models.NewDatastore(s.DataDirectory)
-
 	loggerHandler := slog.NewTextHandler(os.Stdout, nil)
 	logger := slog.New(loggerHandler)
+
+	s, err := settings.New()
+	if err != nil {
+		logger.Error("Error while initializing settings", slog.String("err", err.Error()))
+		os.Exit(1)
+	}
+
+	datastore, err := models.NewDatastore(s.DataDirectory)
+	if err != nil {
+		logger.Error("Error while initializing datastore", slog.String("err", err.Error()))
+		os.Exit(1)
+	}
 	process := processes.Process{Logger: logger}
 
 	return &App{logger: logger, settings: s, datastore: datastore, process: process}
