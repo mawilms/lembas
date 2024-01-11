@@ -2,10 +2,9 @@
 	import '../app.css';
 	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import type { entities } from '$lib/wailsjs/go/models';
-	import { ToggleState } from './interactions';
 	import PluginRow from './PluginRow.svelte';
+	import { LocalPlugin } from './localPlugin';
 
-	// TODO: Add state for plugins loading and no plugins found
 	enum Status {
 		Loading = 1,
 		Loaded
@@ -15,7 +14,7 @@
 	let error = '';
 	let status = Status.Loading;
 
-	$:  plugins = [];
+	$:  plugins = new Array<LocalPlugin>();
 	$: if (plugins != null) {
 		const labelDocument = document.getElementById('plugin-labels');
 		const pluginListDocument = document.getElementById('plugin-list');
@@ -29,27 +28,52 @@
 	GetInstalledPlugins()
 		.then((result) => {
 			status = Status.Loaded;
-			plugins = result;
+
+			let localPlugins: LocalPlugin[] = [];
+			for (let i = 0; i < result.length; i++) {
+				localPlugins.push(new LocalPlugin(result[i]));
+			}
+
+			plugins = localPlugins;
 		});
 
 	async function getInstalledPlugins() {
 		const installedPlugins = await GetInstalledPlugins();
 
-		amountPlugins = installedPlugins.length;
-		plugins = installedPlugins;
+		let localPlugins: LocalPlugin[] = [];
+		for (let i = 0; i < installedPlugins.length; i++) {
+			localPlugins.push(new LocalPlugin(installedPlugins[i]));
+		}
+
+		amountPlugins = localPlugins.length;
+		plugins = localPlugins;
 	}
 
-	let toggleState = new ToggleState('');
+	// let toggleState = new ToggleState('');
 
 	let searchInput = '';
 	$: searchPlugins(searchInput);
 
 	const searchPlugins = async (input: string) => {
-		plugins = await SearchLocal(input);
+		const filteredPlugins = await SearchLocal(input);
+
+		let localPlugins: LocalPlugin[] = [];
+		for (let i = 0; i < filteredPlugins.length; i++) {
+			localPlugins.push(new LocalPlugin(filteredPlugins[i]));
+		}
+
+		plugins = localPlugins;
 	};
 
 	const deletePlugin = async (name: string, author: string) => {
-		plugins = await DeletePlugin(name, author);
+		const newPlugins = await DeletePlugin(name, author);
+
+		let localPlugins: LocalPlugin[] = [];
+		for (let i = 0; i < newPlugins.length; i++) {
+			localPlugins.push(new LocalPlugin(newPlugins[i]));
+		}
+
+		plugins = localPlugins;
 	};
 
 	const refreshPage = async () => {
@@ -60,7 +84,7 @@
 		let pluginsToUpdate: entities.LocalPluginEntity[] = [];
 
 		for (let i = 0; i < plugins.length; i++) {
-			const element = plugins[i];
+			const element = plugins[i].plugin;
 			if (element.base.currentVersion != element.base.latestVersion) {
 				pluginsToUpdate.push(element);
 			}
@@ -71,8 +95,16 @@
 	};
 
 	const toggle = (index: number) => {
-		const element = document.getElementById(`details-${index}`)!;
-		toggleState.toggle(index, element);
+		if (plugins[index].isHidden === false) {
+			plugins[index].isHidden = true;
+		} else {
+			for (let i = 0; i < plugins.length; i++) {
+				plugins[i].isHidden = true;
+			}
+			plugins[index].isHidden = false;
+		}
+
+		plugins = plugins;
 	};
 </script>
 
@@ -121,7 +153,8 @@
 			{/if}
 		{:else if plugins.length !== 0}
 			{#each plugins as plugin, index}
-				<PluginRow index={index} plugin={plugin} toggle={toggle} deletePlugin={deletePlugin} />
+				<PluginRow index={index} plugin={plugin.plugin} isHidden={plugin.isHidden} toggle={toggle}
+									 deletePlugin={deletePlugin} />
 			{/each}
 		{:else}
 			<p class="text-center text-gold">Error while loading data from the data store: {error}</p>

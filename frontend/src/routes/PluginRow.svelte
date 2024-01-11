@@ -9,6 +9,7 @@
 	export let plugin: entities.LocalPluginEntity;
 	export let toggle: toggle;
 	export let deletePlugin: deletePlugin;
+	export let isHidden: boolean;
 </script>
 
 <li id="plugin-{index}" class="block bg-light-brown">
@@ -29,7 +30,7 @@
 		</div>
 	</div>
 
-	<div id="details-{index}" class="hidden p-4 bg-dark-brown">
+	<div id="details-{index}" class="p-4 bg-dark-brown" class:hidden={isHidden}>
 		{#if plugin.base.description === ''}
 			<p>No description</p>
 		{:else}
