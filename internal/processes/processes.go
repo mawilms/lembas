@@ -160,8 +160,12 @@ func (p Process) DeletePlugin(datastore models.DatastoreInterface, name, author,
 	plugin := pluginDatastore[id]
 
 	err = internal.DeletePlugin(plugin, pluginDirectory)
-	if err == nil {
+	if err != nil {
 		p.Logger.Error("failed to delete plugin", slog.String("name", name), slog.String("author", author), slog.String("error", err.Error()))
+		return plugins, err
+	}
+
+	if err == nil {
 		err = datastore.DeleteById(id)
 		if err != nil {
 			p.Logger.Error("failed to delete entry from datastore", slog.String("id", id))

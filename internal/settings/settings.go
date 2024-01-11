@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -13,8 +14,17 @@ type Settings struct {
 }
 
 func New() (Settings, error) {
-	pluginDirectory, _ := findPluginDirectory()
-	dataDirectory, _ := findDataDirectory()
+	pluginDirectory, err := findPluginDirectory()
+	if err != nil {
+		return Settings{}, err
+	}
+	dataDirectory, err := findDataDirectory()
+	if err != nil {
+		return Settings{}, err
+	}
+
+	fmt.Println(pluginDirectory)
+	fmt.Println(dataDirectory)
 
 	settings := Settings{
 		PluginDirectory: pluginDirectory,
@@ -22,7 +32,7 @@ func New() (Settings, error) {
 		InfoUrl:         "https://api.lotrointerface.com/fav/plugincompendium.xml",
 	}
 
-	_, err := os.Stat(filepath.Join(dataDirectory, "settings.json"))
+	_, err = os.Stat(filepath.Join(dataDirectory, "settings.json"))
 	if err != nil {
 		err := settings.Store()
 		if err != nil {
@@ -78,12 +88,14 @@ func findPluginDirectory() (string, error) {
 		return "", err
 	}
 
-	lotroDirectory := ""
-	_, err = os.Stat(filepath.Join(homeDir, "Documents", "The Lord of the Rings Online", "Plugins"))
-	if err == nil {
-		lotroDirectory = filepath.Join(homeDir, "Documents", "The Lord of the Rings Online", "Plugins")
+	lotroDirectory := filepath.Join(homeDir, "Documents", "The Lord of the Rings Online", "Plugins")
+	_, err = os.Stat(lotroDirectory)
+	if err != nil {
+		err := os.MkdirAll(lotroDirectory, os.ModePerm)
+		if err != nil {
+			return lotroDirectory, err
+		}
 	}
-
 	// TODO: Check for steam folder
 
 	return lotroDirectory, nil
