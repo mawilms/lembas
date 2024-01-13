@@ -13,5 +13,11 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Install ubuntu dependencies
+        run: sudo apt install -y nodejs
+
+      - name: Build frontend
+        run: npm --prefix frontend run build
+
       - name: Test
         run: go test -v ./...
