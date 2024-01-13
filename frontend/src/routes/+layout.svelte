@@ -79,9 +79,11 @@
 </script>
 
 <main class="h-full">
-	<nav class="flex justify-between items-center bg-light-brown py-4 px-8">
+	<nav class="flex justify-between items-center bg-light-brown py-4 px-8 h-20">
 		<div class="flex space-x-8 items-center">
-			<h1>Lembas</h1>
+			<div>
+				<img class="h-12 w-12" src="./logo.png" alt="Lembas Logo">
+			</div>
 			<ul class="flex border-solid border-1 border-primary rounded-xl overflow-hidden">
 				<li>
 					<a
