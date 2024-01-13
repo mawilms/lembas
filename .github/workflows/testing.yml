@@ -17,7 +17,9 @@ jobs:
         run: sudo apt install -y nodejs
 
       - name: Build frontend
-        run: npm --prefix frontend run build
+        run: |
+          npm --prefix frontend install
+          npm --prefix frontend run build
 
       - name: Test
         run: go test -v ./...
