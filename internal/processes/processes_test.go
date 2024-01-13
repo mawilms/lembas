@@ -68,10 +68,11 @@ func TestGetRemotePlugins(t *testing.T) {
 			InfoUrl:        "https://www.lotrointerface.com/downloads/info1126",
 			DownloadUrl:    "https://www.lotrointerface.com/downloads/download1126",
 		},
-		IsInstalled: true,
-		Downloads:   378268,
-		Category:    "Bags Bank & Inventory",
-		FileName:    "AltHolicV4.40.zip",
+		UpdatedTimestamp: "2023-12-07",
+		IsInstalled:      true,
+		Downloads:        378268,
+		Category:         "Bags Bank & Inventory",
+		FileName:         "AltHolicV4.40.zip",
 	}}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	process := Process{Logger: logger}
@@ -168,7 +169,7 @@ func TestInstallPlugin(t *testing.T) {
 	expectedPlugins := []entities.RemotePluginEntity{{
 		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		IsInstalled:      true,
-		UpdatedTimestamp: 0,
+		UpdatedTimestamp: "2023-12-28",
 		Downloads:        0,
 		Category:         "",
 		FileName:         "",
@@ -179,7 +180,7 @@ func TestInstallPlugin(t *testing.T) {
 	plugins, err := process.InstallPlugin(dummyDatastore{}, server.URL, tmpDir, []entities.RemotePluginEntity{{
 		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		IsInstalled:      false,
-		UpdatedTimestamp: 0,
+		UpdatedTimestamp: "2023-12-28",
 		Downloads:        0,
 		Category:         "",
 		FileName:         "",
