@@ -9,7 +9,7 @@
 		easy as possible.\n It's open source and shouldn't be used commercialized in any way. The
 		project is heavily inspired by <span
 			class="text-gold cursor-pointer"
-			on:click={() => {
+			onclick={() => {
 				BrowserOpenURL('https://github.com/ajour/ajour');
 			}}>Ajour</span
 		>
@@ -17,7 +17,7 @@
 	</p>
 	<button
 		class="border-solid border-1 border-primary rounded-xl overflow-hidden p-2 text-primary w-fit"
-		on:click={() => {
+		onclick={() => {
 			BrowserOpenURL('https://github.com/mawilms/lembas');
 		}}
 		>Website

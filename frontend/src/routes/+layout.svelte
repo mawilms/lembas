@@ -1,17 +1,22 @@
 <script lang="ts">
 	import '../app.css';
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
 
-	let pluginsTabActive = false;
-	$: plugins_tab_active_class = pluginsTabActive ? 'bg-primary-transparent' : '';
+	let { children }: Props = $props();
 
-	let catalogTabActive = false;
-	$: catalog_tab_active_class = catalogTabActive ? 'bg-primary-transparent' : '';
+	let pluginsTabActive = $state(false);
+	let plugins_tab_active_class = $derived(pluginsTabActive ? 'bg-primary-transparent' : '');
 
-	let aboutTabActive = false;
-	$: about_tab_active_class = aboutTabActive ? 'bg-primary-transparent' : '';
+	let catalogTabActive = $state(false);
+	let catalog_tab_active_class = $derived(catalogTabActive ? 'bg-primary-transparent' : '');
 
-	let settingsTabActive = false;
-	$: settings_tab_active_class = settingsTabActive ? 'bg-primary-transparent' : '';
+	let aboutTabActive = $state(false);
+	let about_tab_active_class = $derived(aboutTabActive ? 'bg-primary-transparent' : '');
+
+	let settingsTabActive = $state(false);
+	let settings_tab_active_class = $derived(settingsTabActive ? 'bg-primary-transparent' : '');
 
 	const togglePluginsTab = () => {
 		if (catalogTabActive) {
@@ -90,7 +95,7 @@
 						class:pluginsTabActive
 						class="block text-primary hover:bg-primary-transparent p-2 {plugins_tab_active_class}"
 						href="/"
-						on:click={togglePluginsTab}>My Plugins</a
+						onclick={togglePluginsTab}>My Plugins</a
 					>
 				</li>
 				<li>
@@ -98,7 +103,7 @@
 						class:catalogTabActive
 						class="block text-primary hover:bg-primary-transparent p-2 {catalog_tab_active_class}"
 						href="/catalog"
-						on:click={toggleCatalogTab}>Catalog</a
+						onclick={toggleCatalogTab}>Catalog</a
 					>
 				</li>
 			</ul>
@@ -110,7 +115,7 @@
 						class:aboutTabActive
 						class="block text-primary hover:bg-primary-transparent p-2 {about_tab_active_class}"
 						href="/about"
-						on:click={toggleAboutTab}>About</a
+						onclick={toggleAboutTab}>About</a
 					>
 				</li>
 				<li>
@@ -118,7 +123,7 @@
 						class:settingsTabActive
 						class="block text-primary hover:bg-primary-transparent p-2 {settings_tab_active_class}"
 						href="/settings"
-						on:click={toggleSettingsTab}>Settings</a
+						onclick={toggleSettingsTab}>Settings</a
 					>
 				</li>
 			</ul>
@@ -126,6 +131,6 @@
 	</nav>
 
 	<div class="absolute mt-20 top-0 right-0 left-0 bottom-0 p-4">
-		<slot />
+		{@render children?.()}
 	</div>
 </main>

@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: Identifier 'toggle' has already been declared -->
 <script lang="ts">
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 	import type { entities } from '$lib/wailsjs/go/models';

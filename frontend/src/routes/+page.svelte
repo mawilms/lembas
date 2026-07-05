@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import '../app.css';
 	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import type { entities } from '$lib/wailsjs/go/models';
@@ -10,20 +12,10 @@
 		Loaded
 	}
 
-	let amountPlugins = 0;
+	let amountPlugins = $state(0);
 	let error = '';
-	let status = Status.Loading;
+	let status = $state(Status.Loading);
 
-	$:  plugins = new Array<LocalPlugin>();
-	$: if (plugins != null) {
-		const labelDocument = document.getElementById('plugin-labels');
-		const pluginListDocument = document.getElementById('plugin-list');
-		if (labelDocument !== null && pluginListDocument !== null) {
-			labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
-		}
-
-		amountPlugins = plugins.length;
-	}
 
 	GetInstalledPlugins()
 		.then((result) => {
@@ -51,8 +43,7 @@
 
 	// let toggleState = new ToggleState('');
 
-	let searchInput = '';
-	$: searchPlugins(searchInput);
+	let searchInput = $state('');
 
 	const searchPlugins = async (input: string) => {
 		const filteredPlugins = await SearchLocal(input);
@@ -106,16 +97,34 @@
 
 		plugins = plugins;
 	};
+	let plugins;
+	run(() => {
+		plugins = new Array<LocalPlugin>();
+	});
+	run(() => {
+		if (plugins != null) {
+			const labelDocument = document.getElementById('plugin-labels');
+			const pluginListDocument = document.getElementById('plugin-list');
+			if (labelDocument !== null && pluginListDocument !== null) {
+				labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+			}
+
+			amountPlugins = plugins.length;
+		}
+	});
+	run(() => {
+		searchPlugins(searchInput);
+	});
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
-				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={refreshPage}
+				<button class="text-primary p-1 hover:bg-primary-transparent" onclick={refreshPage}
 				>Refresh
 				</button>
-				<button class="text-primary p-1 hover:bg-primary-transparent" on:click={updateAll}
+				<button class="text-primary p-1 hover:bg-primary-transparent" onclick={updateAll}
 				>Update all
 				</button>
 			</div>

@@ -1,18 +1,28 @@
 <script lang="ts">
 	import type { entities } from '$lib/wailsjs/go/models';
 
-	export let index: number;
-	export let plugin: entities.RemotePluginEntity;
-	export let openUrl: (url: string) => void;
-	export let installPlugin: (plugin: entities.RemotePluginEntity) => void;
-	export let updatePlugin: () => void;
+	interface Props {
+		index: number;
+		plugin: entities.RemotePluginEntity;
+		openUrl: (url: string) => void;
+		installPlugin: (plugin: entities.RemotePluginEntity) => void;
+		updatePlugin: () => void;
+	}
+
+	let {
+		index,
+		plugin,
+		openUrl,
+		installPlugin,
+		updatePlugin
+	}: Props = $props();
 </script>
 
 <li class="block bg-light-brown cursor-pointer" id="plugin-{index}">
 	<div class="flex space-x-4">
 		<p
 			class="w-1/3 p-2"
-			on:click={() => {
+			onclick={() => {
 				openUrl(plugin.base.infoUrl);
 			}}
 		>
@@ -21,7 +31,7 @@
 		<div class="flex w-2/3">
 			<p
 				class="w-1/5 p-2"
-				on:click={() => {
+				onclick={() => {
 					openUrl(plugin.base.infoUrl);
 				}}
 			>
@@ -29,7 +39,7 @@
 			</p>
 			<p
 				class="w-1/5 p-2"
-				on:click={() => {
+				onclick={() => {
 					openUrl(plugin.base.infoUrl);
 				}}
 			>
@@ -37,7 +47,7 @@
 			</p>
 			<p
 				class="w-1/5 p-2"
-				on:click={() => {
+				onclick={() => {
 					openUrl(plugin.base.infoUrl);
 				}}
 			>
@@ -45,7 +55,7 @@
 			</p>
 			<p
 				class="w-1/5 p-2"
-				on:click={() => {
+				onclick={() => {
 					openUrl(plugin.base.infoUrl);
 				}}
 			>
@@ -54,7 +64,7 @@
 			{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
 				<p
 					class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-					on:click={updatePlugin}
+					onclick={updatePlugin}
 				>
 					Update
 				</p>
@@ -63,7 +73,7 @@
 			{:else}
 				<p
 					class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-					on:click={() => installPlugin(plugin)}
+					onclick={() => installPlugin(plugin)}
 				>
 					Install
 				</p>

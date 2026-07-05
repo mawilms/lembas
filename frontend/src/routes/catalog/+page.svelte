@@ -1,11 +1,13 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import '../../app.css';
 	import { GetRemotePlugins, InstallPlugin, SearchRemote } from '$lib/wailsjs/go/main/App';
 	import { BrowserOpenURL } from '$lib/wailsjs/runtime';
 	import type { entities } from '$lib/wailsjs/go/models';
 	import PluginRow from './PluginRow.svelte';
 
-	let amountPlugins = 0;
+	let amountPlugins = $state(0);
 
 	const getRemotePlugins = async () => {
 		const fetchedPlugins = await GetRemotePlugins();
@@ -14,10 +16,9 @@
 		return fetchedPlugins
 	};
 
-	let plugins = getRemotePlugins()
+	let plugins = $state(getRemotePlugins())
 
-	let searchInput = '';
-	$: search(searchInput);
+	let searchInput = $state('');
 
 	function search(input: string) {
 		searchPlugins(input)
@@ -55,6 +56,9 @@
 	const updatePlugin = () => {
 		console.log('Update');
 	};
+	run(() => {
+		search(searchInput);
+	});
 </script>
 
 <div class="h-full text-left space-y-4 overflow-hidden">

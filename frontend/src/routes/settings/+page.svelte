@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { GetSettings, SaveSettings } from '$lib/wailsjs/go/main/App';
 	import { Settings } from '$lib/entities/settings';
 
-	let settings = new Settings('', '', '');
+	let settings = $state(new Settings('', '', ''));
 
 	const getSettings = () => {
 		GetSettings().then((result) => {
@@ -10,7 +12,6 @@
 		});
 	};
 
-	$: onChange(settings);
 
 	function onChange(settings: Settings) {
 		SaveSettings({
@@ -21,6 +22,9 @@
 	}
 
 	getSettings();
+	run(() => {
+		onChange(settings);
+	});
 </script>
 
 <div class="text-left my-4 space-y-4">
