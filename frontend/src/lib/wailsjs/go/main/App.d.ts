@@ -13,7 +13,7 @@ export function GetSettings():Promise<settings.Settings>;
 
 export function InstallPlugin(arg1:string):Promise<Array<entities.RemotePluginEntity>>;
 
-export function SaveSettings(arg1:{[key: string]: string}):Promise<void>;
+export function SaveSettings(arg1:Record<string, string>):Promise<void>;
 
 export function SearchLocal(arg1:string):Promise<Array<entities.LocalPluginEntity>>;
 

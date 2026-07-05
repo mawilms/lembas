@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { run } from 'svelte/legacy';
-
 	import '../app.css';
 	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
 	import type { entities } from '$lib/wailsjs/go/models';
 	import PluginRow from './PluginRow.svelte';
 	import { LocalPlugin } from './localPlugin';
 
-	enum Status {
-		Loading = 1,
-		Loaded
-	}
+	const Status = {
+		Loading: 1,
+		Loaded: 2,
+	} as const;
+
+	type Status = (typeof Status)[keyof typeof Status]
 
 	let amountPlugins = $state(0);
 	let error = '';
@@ -98,10 +98,10 @@
 		plugins = plugins;
 	};
 	let plugins;
-	run(() => {
+	$effect(() => {
 		plugins = new Array<LocalPlugin>();
 	});
-	run(() => {
+	$effect(() => {
 		if (plugins != null) {
 			const labelDocument = document.getElementById('plugin-labels');
 			const pluginListDocument = document.getElementById('plugin-list');
@@ -112,7 +112,7 @@
 			amountPlugins = plugins.length;
 		}
 	});
-	run(() => {
+	$effect(() => {
 		searchPlugins(searchInput);
 	});
 </script>

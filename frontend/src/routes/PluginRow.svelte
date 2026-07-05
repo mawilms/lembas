@@ -6,15 +6,23 @@
 	type deletePlugin = (name: string, author: string) => void;
 	type toggle = (index: number) => void;
 
-	export let index: number;
-	export let plugin: entities.LocalPluginEntity;
-	export let toggle: toggle;
-	export let deletePlugin: deletePlugin;
-	export let isHidden: boolean;
+	let {
+		index,
+		plugin,
+		toggle,
+		deletePlugin,
+		isHidden
+	}: {
+		index: number,
+		plugin: entities.LocalPluginEntity,
+		toggle: toggle,
+		deletePlugin: deletePlugin,
+		isHidden: boolean,
+	} = $props();
 </script>
 
 <li id="plugin-{index}" class="block bg-light-brown">
-	<div class="flex space-x-4 cursor-pointer" on:click={() => toggle(index)}>
+	<div class="flex space-x-4 cursor-pointer" onclick={() => toggle(index)}>
 		<p class="w-1/2 p-2">{plugin.base.name}</p>
 		<div class="flex w-1/2">
 			<p class="w-1/3 p-2">{plugin.base.currentVersion}</p>
@@ -41,15 +49,15 @@
 		<div class="flex justify-end space-x-8 mt-4 mr-4">
 			<button
 				class="text-primary p-1 hover:bg-primary-transparent"
-				on:click={() => BrowserOpenURL(plugin.base.infoUrl)}
-				>Open website
+				onclick={() => BrowserOpenURL(plugin.base.infoUrl)}
+			>Open website
 			</button>
 			<button
 				class="text-primary p-1 hover:bg-primary-transparent"
-				on:click={() => {
+				onclick={() => {
 					deletePlugin(plugin.base.name, plugin.base.author);
 				}}
-				>Delete
+			>Delete
 			</button>
 		</div>
 	</div>
