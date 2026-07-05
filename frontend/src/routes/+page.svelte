@@ -1,6 +1,11 @@
 <script lang="ts">
 	import '../app.css';
-	import { DeletePlugin, GetInstalledPlugins, SearchLocal, UpdatePlugins } from '$lib/wailsjs/go/main/App';
+	import {
+		DeletePlugin,
+		GetInstalledPlugins,
+		SearchLocal,
+		UpdatePlugins
+	} from '$lib/wailsjs/go/main/App';
 	import type { entities } from '$lib/wailsjs/go/models';
 	import PluginRow from './PluginRow.svelte';
 	import { LocalPlugin } from './localPlugin';
@@ -10,25 +15,23 @@
 		Loaded: 2
 	} as const;
 
-	type Status = (typeof Status)[keyof typeof Status]
+	type Status = (typeof Status)[keyof typeof Status];
 
 	let amountPlugins = $state(0);
 	let error = '';
 	let status: Status = $state(Status.Loading);
 	let plugins: LocalPlugin[] = $derived(new Array<LocalPlugin>());
 
+	GetInstalledPlugins().then((result) => {
+		status = Status.Loaded;
 
-	GetInstalledPlugins()
-		.then((result) => {
-			status = Status.Loaded;
+		let localPlugins: LocalPlugin[] = [];
+		for (let i = 0; i < result.length; i++) {
+			localPlugins.push(new LocalPlugin(result[i]));
+		}
 
-			let localPlugins: LocalPlugin[] = [];
-			for (let i = 0; i < result.length; i++) {
-				localPlugins.push(new LocalPlugin(result[i]));
-			}
-
-			plugins = localPlugins;
-		});
+		plugins = localPlugins;
+	});
 
 	async function getInstalledPlugins() {
 		const installedPlugins = await GetInstalledPlugins();
@@ -98,13 +101,14 @@
 
 		plugins = plugins;
 	};
-	
+
 	$effect(() => {
 		if (plugins != null) {
 			const labelDocument = document.getElementById('plugin-labels');
 			const pluginListDocument = document.getElementById('plugin-list');
 			if (labelDocument !== null && pluginListDocument !== null) {
-				labelDocument.style.paddingRight = pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
+				labelDocument.style.paddingRight =
+					pluginListDocument.offsetWidth - pluginListDocument.clientWidth + 'px';
 			}
 
 			amountPlugins = plugins.length;
@@ -120,10 +124,10 @@
 		<div class="flex w-3/4">
 			<div class="flex space-x-2">
 				<button class="text-primary p-1 hover:bg-primary-transparent" onclick={refreshPage}
-				>Refresh
+					>Refresh
 				</button>
 				<button class="text-primary p-1 hover:bg-primary-transparent" onclick={updateAll}
-				>Update all
+					>Update all
 				</button>
 			</div>
 			<p class="ml-16 m-1">{amountPlugins} plugins installed</p>
@@ -160,8 +164,13 @@
 			{/if}
 		{:else if plugins.length !== 0}
 			{#each plugins as plugin, index (index)}
-				<PluginRow index={index} plugin={plugin.plugin} isHidden={plugin.isHidden} toggle={toggle}
-				           deletePlugin={deletePlugin} />
+				<PluginRow
+					{index}
+					plugin={plugin.plugin}
+					isHidden={plugin.isHidden}
+					{toggle}
+					{deletePlugin}
+				/>
 			{/each}
 		{:else}
 			<p class="text-center text-gold">Error while loading data from the data store: {error}</p>

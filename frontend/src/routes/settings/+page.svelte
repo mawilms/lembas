@@ -12,7 +12,6 @@
 		});
 	};
 
-
 	function onChange(settings: Settings) {
 		SaveSettings({
 			pluginPath: settings.pluginPath,

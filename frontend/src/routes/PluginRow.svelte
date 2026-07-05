@@ -13,11 +13,11 @@
 		deletePlugin,
 		isHidden
 	}: {
-		index: number,
-		plugin: entities.LocalPluginEntity,
-		toggle: toggle,
-		deletePlugin: deletePlugin,
-		isHidden: boolean,
+		index: number;
+		plugin: entities.LocalPluginEntity;
+		toggle: toggle;
+		deletePlugin: deletePlugin;
+		isHidden: boolean;
 	} = $props();
 </script>
 
@@ -50,14 +50,14 @@
 			<button
 				class="text-primary p-1 hover:bg-primary-transparent"
 				onclick={() => BrowserOpenURL(plugin.base.infoUrl)}
-			>Open website
+				>Open website
 			</button>
 			<button
 				class="text-primary p-1 hover:bg-primary-transparent"
 				onclick={() => {
 					deletePlugin(plugin.base.name, plugin.base.author);
 				}}
-			>Delete
+				>Delete
 			</button>
 		</div>
 	</div>

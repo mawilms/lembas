@@ -9,13 +9,7 @@
 		updatePlugin: () => void;
 	}
 
-	let {
-		index,
-		plugin,
-		openUrl,
-		installPlugin,
-		updatePlugin
-	}: Props = $props();
+	let { index, plugin, openUrl, installPlugin, updatePlugin }: Props = $props();
 </script>
 
 <li class="block bg-light-brown cursor-pointer" id="plugin-{index}">
@@ -62,10 +56,7 @@
 				{plugin.updatedTimestamp}
 			</p>
 			{#if plugin.isInstalled && plugin.base.latestVersion !== plugin.base.currentVersion}
-				<p
-					class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent"
-					onclick={updatePlugin}
-				>
+				<p class="w-1/5 p-2 text-center text-gold hover:bg-gold-transparent" onclick={updatePlugin}>
 					Update
 				</p>
 			{:else if plugin.isInstalled && plugin.base.latestVersion === plugin.base.currentVersion}
