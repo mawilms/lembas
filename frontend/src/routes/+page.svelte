@@ -7,14 +7,15 @@
 
 	const Status = {
 		Loading: 1,
-		Loaded: 2,
+		Loaded: 2
 	} as const;
 
 	type Status = (typeof Status)[keyof typeof Status]
 
 	let amountPlugins = $state(0);
 	let error = '';
-	let status = $state(Status.Loading);
+	let status: Status = $state(Status.Loading);
+	let plugins: LocalPlugin[] = $derived(new Array<LocalPlugin>());
 
 
 	GetInstalledPlugins()
@@ -97,10 +98,7 @@
 
 		plugins = plugins;
 	};
-	let plugins;
-	$effect(() => {
-		plugins = new Array<LocalPlugin>();
-	});
+	
 	$effect(() => {
 		if (plugins != null) {
 			const labelDocument = document.getElementById('plugin-labels');
@@ -161,9 +159,9 @@
 				<p class="text-center text-gold">No plugins found</p>
 			{/if}
 		{:else if plugins.length !== 0}
-			{#each plugins as plugin, index}
+			{#each plugins as plugin, index (index)}
 				<PluginRow index={index} plugin={plugin.plugin} isHidden={plugin.isHidden} toggle={toggle}
-									 deletePlugin={deletePlugin} />
+				           deletePlugin={deletePlugin} />
 			{/each}
 		{:else}
 			<p class="text-center text-gold">Error while loading data from the data store: {error}</p>
