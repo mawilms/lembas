@@ -32,21 +32,21 @@
 		<label for="plugin-path">LotRO directory</label>
 		<input
 			bind:value={settings.pluginPath}
-			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none"
+			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-hidden"
 			id="plugin-path"
 			type="text"
 		/>
 	</div>
 	<!--	<div class="flex flex-col space-y-2">-->
 	<!--		<label for="data-directory">Lembas directory</label>-->
-	<!--		<input class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none" type="text" id="data-directory" disabled-->
+	<!--		<input class="w-1/2 p-2 text-gold bg-light-brown focus:outline-hidden" type="text" id="data-directory" disabled-->
 	<!--					 bind:value={settings.dataDirectory} />-->
 	<!--	</div>-->
 	<div class="flex flex-col space-y-2">
 		<label for="info-url">Plugin Feed Url</label>
 		<input
 			bind:value={settings.infoUrl}
-			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-none"
+			class="w-1/2 p-2 text-gold bg-light-brown focus:outline-hidden"
 			id="info-url"
 			type="text"
 		/>

@@ -131,7 +131,7 @@
 			<p class="ml-16 m-1">{amountPlugins} plugins installed</p>
 		</div>
 		<input
-			class="grow p-2 text-gold bg-light-brown focus:outline-none"
+			class="grow p-2 text-gold bg-light-brown focus:outline-hidden"
 			type="text"
 			bind:value={searchInput}
 			placeholder="Search for a plugin..."

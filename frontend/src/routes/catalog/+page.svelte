@@ -63,7 +63,7 @@
 
 <div class="h-full text-left space-y-4 overflow-hidden">
 	<div class="flex items-center">
-		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-none w-1/3"
+		<input bind:value={searchInput} class="p-2 text-gold bg-light-brown focus:outline-hidden w-1/3"
 					 placeholder="Search for plugins..."
 					 type="text">
 		<p class="ml-16 m-1">{amountPlugins} plugins found</p>
