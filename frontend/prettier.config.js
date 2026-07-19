@@ -1,12 +1,13 @@
-/** @type {import("prettier").Config} */
+/**
+ * @see https://prettier.io/docs/configuration
+ * @type {import("prettier").Config}
+ */
 const config = {
-	useTabs: true,
-	singleQuote: true,
-	trailingComma: 'none',
-	printWidth: 100,
-	plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
-	overrides: [{ files: '*.svelte', options: { parser: 'svelte' } }],
-	tailwindStylesheet: './src/app.css'
-};
+    trailingComma: 'es5',
+    tabWidth: 4,
+    semi: false,
+    singleQuote: true,
+    printWidth: 100,
+}
 
-export default config;
+export default config

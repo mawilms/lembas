@@ -1,3 +1,1 @@
-allowBuilds:
-  esbuild: true
-  svelte-preprocess: true
+minimumReleaseAge: 1440 # 7 Tage

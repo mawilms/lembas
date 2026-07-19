@@ -1,41 +1,35 @@
-import prettier from 'eslint-config-prettier';
-import path from 'node:path';
-import js from '@eslint/js';
-import svelte from 'eslint-plugin-svelte';
-import { defineConfig, includeIgnoreFile } from 'eslint/config';
-import globals from 'globals';
-import ts from 'typescript-eslint';
+import { globalIgnores } from 'eslint/config'
+import { vueTsConfigs, withVueTs } from '@vue/eslint-config-typescript'
+import pluginVue from 'eslint-plugin-vue'
+import pluginPlaywright from 'eslint-plugin-playwright'
+import pluginVitest from '@vitest/eslint-plugin'
+import skipFormatting from 'eslint-config-prettier/flat'
 
-const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
+// To allow more languages other than `ts` in `.vue` files, uncomment the following lines:
+// import { configureVueProject } from '@vue/eslint-config-typescript'
+// configureVueProject({ scriptLangs: ['ts', 'tsx'] })
+// More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
 
-export default defineConfig(
-	includeIgnoreFile(gitignorePath),
-	js.configs.recommended,
-	ts.configs.recommended,
-	svelte.configs.recommended,
-	prettier,
-	svelte.configs.prettier,
-	{
-		languageOptions: { globals: { ...globals.browser, ...globals.node } },
-		rules: {
-			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
-			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
-		}
-	},
-	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
-		languageOptions: {
-			parserOptions: {
-				projectService: true,
-				extraFileExtensions: ['.svelte'],
-				parser: ts.parser
-			}
-		}
-	},
-	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
-	}
-);
+export default withVueTs(
+    {
+        name: 'app/files-to-lint',
+        files: ['**/*.{vue,ts,mts,tsx}'],
+    },
+    globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/wailsjs/**']),
+    ...pluginVue.configs['flat/essential'],
+    {
+        rules: {
+            'vue/multi-word-component-names': 'off',
+        },
+    },
+    vueTsConfigs.recommended,
+    {
+        ...pluginPlaywright.configs['flat/recommended'],
+        files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    },
+    {
+        ...pluginVitest.configs.recommended,
+        files: ['src/**/__tests__/*'],
+    },
+    skipFormatting
+)

@@ -6,7 +6,6 @@
   "frontend:build": "pnpm run build",
   "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "auto",
-  "wailsjsdir": "./frontend/src/lib",
   "author": {
     "name": "Marius Wilms",
     "email": "info@mariuswilms.dev"

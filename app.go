@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"github.com/mawilms/lembas/internal/processes"
 	"github.com/mawilms/lembas/internal/settings"
-	"log/slog"
-	"os"
 )
 
 type App struct {
