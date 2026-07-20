@@ -10,6 +10,10 @@ export function GetInstalledPlugins() {
   return window['go']['main']['App']['GetInstalledPlugins']();
 }
 
+export function GetNewRemotePlugins() {
+  return window['go']['main']['App']['GetNewRemotePlugins']();
+}
+
 export function GetRemotePlugins() {
   return window['go']['main']['App']['GetRemotePlugins']();
 }

@@ -8,6 +8,10 @@ const props = defineProps({
         required: true,
     },
 })
+
+const extractFirstLetter = () => {
+    return props.addon.base.name.substring(0, 1)
+}
 </script>
 
 <template>
@@ -16,7 +20,7 @@ const props = defineProps({
         <div
             class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold"
         >
-            R
+            {{ extractFirstLetter() }}
         </div>
 
         <div class="flex-1">

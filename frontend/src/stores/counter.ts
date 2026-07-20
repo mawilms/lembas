@@ -1,12 +1,12 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  const doubleCount = computed(() => count.value * 2)
-  function increment() {
-    count.value++
-  }
+export const useSearchTextStore = defineStore('searchText', () => {
+    const searchText = ref<string>('')
 
-  return { count, doubleCount, increment }
+    function changeSearchText(value: string) {
+        searchText.value = value
+    }
+
+    return { searchText, changeSearchText }
 })

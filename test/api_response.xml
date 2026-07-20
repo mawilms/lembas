@@ -1,0 +1,110 @@
+<Favorites>
+    <Ui>
+        <UID>1294</UID>
+        <UIName>LUI</UIName>
+        <UIAuthorName>Geldahr</UIAuthorName>
+        <UIVersion>v2.2.0</UIVersion>
+        <UIUpdated>1784392106</UIUpdated>
+        <UIDownloads>966</UIDownloads>
+        <UICategory>Other</UICategory>
+        <UIDescription>
+            LUI short for LotRO UI is a broad plugin built around a highly customizable HUD: vitals for self target boss
+            fellowship raid and pets buff/debuff tracking cooldowns and expiringeffect timers with precise control over
+            layout colors fonts thresholds scaling and window placement. On top of the HUD it brings a large set of
+            extra tools: an inventory window serverwide assets a crafting browser loot drops a status bar and an ingame
+            Encyclopedia covering bestiary items traceries quests and...
+        </UIDescription>
+        <UIFile>LUI-v2.2.0.zip</UIFile>
+        <UIMD5/>
+        <UISize>43045746</UISize>
+        <UIFileURL>
+            http://www.lotrointerface.com/downloads/download1294
+        </UIFileURL>
+    </Ui>
+    <Ui>
+        <UID>1299</UID>
+        <UIName>Finally Cooldown Timers</UIName>
+        <UIAuthorName>awakemon</UIAuthorName>
+        <UIVersion>1.4.2</UIVersion>
+        <UIUpdated>1784239870</UIUpdated>
+        <UIDownloads>163</UIDownloads>
+        <UICategory>Other</UICategory>
+        <UIDescription>
+            Finally Cooldown Timers tries to implement what Ive been missing desperately: An overview of all the used
+            skills with cooldowns in seconds and this without needing to add everything I want to track. Most people
+            probably know Skill Timer which is another awesome Plugin but its a lot more sophisticated and thus requires
+            a lot of setup for each character. FCT bypasses the problem of the API being unable to read the action bars
+            by listening for cooldown...
+        </UIDescription>
+        <UIFile>Finally_Cooldown_Timers_1.4.2.zip</UIFile>
+        <UIMD5/>
+        <UISize>9742</UISize>
+        <UIFileURL>
+            http://www.lotrointerface.com/downloads/download1299
+        </UIFileURL>
+    </Ui>
+    <Ui>
+        <UID>1085</UID>
+        <UIName>PrimePlugin</UIName>
+        <UIAuthorName>Rolo</UIAuthorName>
+        <UIVersion>13.9.23</UIVersion>
+        <UIUpdated>1783880880</UIUpdated>
+        <UIDownloads>563479</UIDownloads>
+        <UICategory>Raiding & Instances</UICategory>
+        <UIDescription>
+            PrimePlugin RaidTools The primeplugins consisting of: Primeplugins Prime Vitals Prime Party Vitals beta
+            Prime Bags Prime Parse beta Prime Cast
+        </UIDescription>
+        <UIFile>Plugins.zip</UIFile>
+        <UIMD5/>
+        <UISize>13384993</UISize>
+        <UIFileURL>
+            http://www.lotrointerface.com/downloads/download1085
+        </UIFileURL>
+    </Ui>
+    <Ui>
+        <UID>1238</UID>
+        <UIName>Fishing Log</UIName>
+        <UIAuthorName>Vinny</UIAuthorName>
+        <UIVersion>1.3</UIVersion>
+        <UIUpdated>1783816001</UIUpdated>
+        <UIDownloads>32256</UIDownloads>
+        <UICategory>LotRO StandAlone Plugins</UICategory>
+        <UIDescription>
+            This plugin keeps a record of all fish caught by each character and optionally the fish caught at a
+            particular location by any character. It also provides convenient shortcuts to equip your fishing rod and
+            fish and then switch back to your weapon. Basic chat commands: /fl Display fishing proficiency. /fl &amp;lt;link&amp;gt;
+            Display item details. /fl catch List fishing catch records. /fl cook List fish that can be cooked. /fl quest
+            List fish that are part of a quest. /fl trophy List fish that are trophies. /fl track Toggle unknown fish
+            tracking.
+        </UIDescription>
+        <UIFile>FishingLog_1.3.zip</UIFile>
+        <UIMD5/>
+        <UISize>45870</UISize>
+        <UIFileURL>
+            http://www.lotrointerface.com/downloads/download1238
+        </UIFileURL>
+    </Ui>
+    <Ui>
+        <UID>1218</UID>
+        <UIName>Festival Buddy II</UIName>
+        <UIAuthorName>b414213562</UIAuthorName>
+        <UIVersion>2.3.1</UIVersion>
+        <UIUpdated>1783122757</UIUpdated>
+        <UIDownloads>84983</UIDownloads>
+        <UICategory>Other</UICategory>
+        <UIDescription>
+            Introduction Festival Buddy II is a simple tool to help you keep track of the festivities throughout
+            Middleearth. It is an updated version of the original Festival Buddy by Galuhad. It will display the number
+            of tokens in your wallet when some effects have expired e.g. the treasure chests in the Haunted Barrow and a
+            simple quest guide for those quests that are easily forgotten. Theres also a dance instructor to help you
+            with the dance quests and a barter list...
+        </UIDescription>
+        <UIFile>Festival Buddy II v2.3.1.zip</UIFile>
+        <UIMD5/>
+        <UISize>15205211</UISize>
+        <UIFileURL>
+            http://www.lotrointerface.com/downloads/download1218
+        </UIFileURL>
+    </Ui>
+</Favorites>

@@ -9,6 +9,7 @@ import (
 	"github.com/mawilms/lembas/internal/entities"
 	"github.com/mawilms/lembas/internal/models"
 	"github.com/mawilms/lembas/internal/processes"
+	"github.com/mawilms/lembas/internal/remote"
 	"github.com/mawilms/lembas/internal/settings"
 )
 
@@ -138,4 +139,28 @@ func (a *App) GetRemotePlugins() []entities.RemotePluginEntity {
 
 	a.logger.Info("remote plugins successfully loaded", slog.Int("amount plugins", len(a.remotePlugins)))
 	return plugins
+}
+
+func (a *App) GetNewRemotePlugins() []remote.RemoteAddon {
+	api := remote.Api{}
+
+	response, err := api.GetSourceXml("https://api.lotrointerface.com/fav/plugincompendium.xml")
+	if err != nil {
+		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", a.settings.InfoUrl), slog.String("error", err.Error()))
+		return nil
+	}
+
+	xmlModel, err := remote.ParseXmlResponse(response)
+	if err != nil {
+		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", a.settings.InfoUrl), slog.String("error", err.Error()))
+		return make([]remote.RemoteAddon, 0)
+	}
+
+	addons := make([]remote.RemoteAddon, 0)
+
+	for _, model := range xmlModel {
+		addons = append(addons, remote.New(model))
+	}
+
+	return addons
 }
