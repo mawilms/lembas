@@ -5,10 +5,10 @@ import { remote } from '../../wailsjs/go/models.ts'
 import { GetNewRemotePlugins } from '../../wailsjs/go/main/App'
 import AddonList from '@/components/browse/AddonList.vue'
 import { computed, onMounted, ref } from 'vue'
-import { useSearchTextStore } from '@/stores/counter.ts'
+import { useSearchbarStore } from '@/stores/searchbar.ts'
 import RemoteAddon = remote.RemoteAddon
 
-const searchTextStore = useSearchTextStore()
+const searchbarStore = useSearchbarStore()
 
 const addons = ref<RemoteAddon[]>([])
 const isLoading = ref(true)
@@ -33,7 +33,7 @@ const totalAddons = computed(() => {
 })
 
 const filteredList = computed(() => {
-    const text = searchTextStore.searchText.trim().toLowerCase()
+    const text = searchbarStore.text.trim().toLowerCase()
     if (!text) return addons.value
 
     return addons.value.filter((item) => item.Name.toLowerCase().includes(text))

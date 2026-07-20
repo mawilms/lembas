@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Search, Settings } from '@lucide/vue'
 import NavLink from '@/components/NavLink.vue'
-import { useSearchTextStore } from '@/stores/counter.ts'
+import { useSearchbarStore } from '@/stores/searchbar.ts'
 
-const searchText = useSearchTextStore()
+const searchbarStore = useSearchbarStore()
 </script>
 
 <template>
@@ -16,11 +16,11 @@ const searchText = useSearchTextStore()
                 <input
                     class="flex-1"
                     placeholder="Search for addons...."
-                    :value="searchText.searchText"
+                    :value="searchbarStore.text"
                     @input="
                         (event) => {
                             const el = (event.target as HTMLInputElement).value
-                            searchText.changeSearchText(el)
+                            searchbarStore.changeSearchText(el)
                         }
                     "
                 />

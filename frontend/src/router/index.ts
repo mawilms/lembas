@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import PluginView from '../views/PluginView.vue'
+import { useSearchbarStore } from '@/stores/searchbar.ts'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,6 +19,11 @@ const router = createRouter({
             component: () => import('../views/BrowserView.vue')
         },
     ],
+})
+
+router.beforeEach(() => {
+    const searchbarStore = useSearchbarStore()
+    searchbarStore.reset()
 })
 
 export default router
