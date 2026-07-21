@@ -6,7 +6,12 @@ defineProps({
 
 <template>
     <router-link :to="to" custom v-slot="{ isActive, navigate, href }">
-        <a :href="href" @click="navigate" class="relative inline-block cursor-pointer">
+        <a
+            :href="href"
+            @click="navigate"
+            class="relative inline-block cursor-pointer"
+            :class="{ 'text-gray-300': !isActive }"
+        >
             <slot />
             <span
                 v-if="isActive"

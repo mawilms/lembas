@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { Computer } from '@lucide/vue'
-import { entities } from '../../../wailsjs/go/models.ts'
 
 const props = defineProps({
     addon: {
-        type: entities.LocalPluginEntity,
+        type: Object,
         required: true,
     },
 })

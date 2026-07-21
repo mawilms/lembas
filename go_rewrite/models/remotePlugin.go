@@ -3,8 +3,9 @@ package models
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/mawilms/lembas/internal/entities"
 	"time"
+
+	"github.com/mawilms/lembas/go_rewrite/entities"
 )
 
 type RemotePluginModel struct {

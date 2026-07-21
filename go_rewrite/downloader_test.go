@@ -1,4 +1,4 @@
-package internal
+package go_rewrite
 
 import (
 	"fmt"

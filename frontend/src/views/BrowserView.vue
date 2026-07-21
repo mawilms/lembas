@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ArrowDownZA, ArrowUpAZ, Funnel } from '@lucide/vue'
+import { ArrowDownZA, ArrowUpAZ } from '@lucide/vue'
 import { remote } from '../../wailsjs/go/models.ts'
 
-import { GetNewRemotePlugins } from '../../wailsjs/go/main/App'
+import { GetRemotePlugins } from '../../wailsjs/go/main/App'
 import AddonList from '@/components/browse/AddonList.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
@@ -18,7 +18,7 @@ const sorting = ref<number>(1)
 
 onMounted(async () => {
     try {
-        const fetchedAddons = await GetNewRemotePlugins()
+        const fetchedAddons = await GetRemotePlugins()
         addons.value = sortAddons(fetchedAddons, false)
     } catch (e) {
         console.log(e)
@@ -65,9 +65,6 @@ const sortAddons = (addons: RemoteAddon[], reverse: boolean) => {
                         class="h-5 w-5 hover:bg-light-brown-hover"
                         @click="sortAddons(filteredList, true)"
                     />
-                </div>
-                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                    <Funnel class="h-5 w-5" />
                 </div>
             </div>
         </section>

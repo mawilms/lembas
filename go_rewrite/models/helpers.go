@@ -2,7 +2,8 @@ package models
 
 import (
 	"fmt"
-	"github.com/mawilms/lembas/internal/entities"
+
+	"github.com/mawilms/lembas/go_rewrite/entities"
 )
 
 func NewBasePlugin(id int, name, description, author, currentVersion, latestVersion string) entities.BasePluginEntity {

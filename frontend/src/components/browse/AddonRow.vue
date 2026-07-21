@@ -15,7 +15,7 @@ const extractFirstLetter = () => {
 <template>
     <li class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4">
         <div
-            class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-gold"
+            class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-secondary"
         >
             {{ extractFirstLetter() }}
         </div>

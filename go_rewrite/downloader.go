@@ -1,15 +1,16 @@
-package internal
+package go_rewrite
 
 import (
 	"archive/zip"
 	"bytes"
-	"github.com/mawilms/lembas/internal/entities"
-	"github.com/mawilms/lembas/internal/models"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mawilms/lembas/go_rewrite/entities"
+	models2 "github.com/mawilms/lembas/go_rewrite/models"
 )
 
 func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, error) {
@@ -21,15 +22,15 @@ func DownloadPackageInformation(url string) ([]entities.RemotePluginEntity, erro
 	content, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 
-	plugins, err := models.ParseFeed(content)
+	plugins, err := models2.ParseFeed(content)
 
 	return plugins, err
 }
 
-func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, error) {
+func DownloadPlugin(url, pluginDirectory string) (models2.DatastoreEntryModel, error) {
 	response, err := http.Get(url)
 	if err != nil {
-		return models.DatastoreEntryModel{}, err
+		return models2.DatastoreEntryModel{}, err
 	}
 
 	body, _ := io.ReadAll(response.Body)
@@ -50,8 +51,8 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 		err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 		if err != nil {
-			return models.DatastoreEntryModel{
-				Plugin: models.LocalPluginModel{},
+			return models2.DatastoreEntryModel{
+				Plugin: models2.LocalPluginModel{},
 				Files:  nil,
 			}, err
 		}
@@ -64,8 +65,8 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 
 		_, err = io.Copy(dstFile, archiveFile)
 		if err != nil {
-			return models.DatastoreEntryModel{
-				Plugin: models.LocalPluginModel{},
+			return models2.DatastoreEntryModel{
+				Plugin: models2.LocalPluginModel{},
 				Files:  nil,
 			}, err
 		}
@@ -89,11 +90,11 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		dstFile.Close()
 	}
 
-	model := models.LocalPluginModel{}
+	model := models2.LocalPluginModel{}
 	if len(pluginCompendiumFileContent) != 0 {
-		model, _ = models.ParsePluginConfig(pluginCompendiumFileContent)
+		model, _ = models2.ParsePluginConfig(pluginCompendiumFileContent)
 	} else {
-		model, _ = models.ParseFallbackConfig(pluginFileContent)
+		model, _ = models2.ParseFallbackConfig(pluginFileContent)
 	}
 
 	var files []string
@@ -102,13 +103,13 @@ func DownloadPlugin(url, pluginDirectory string) (models.DatastoreEntryModel, er
 		files = append(files, key)
 	}
 
-	return models.DatastoreEntryModel{
+	return models2.DatastoreEntryModel{
 		Plugin: model,
 		Files:  files,
 	}, nil
 }
 
-func DeletePlugin(entry models.DatastoreEntryModel, pluginDirectory string) error {
+func DeletePlugin(entry models2.DatastoreEntryModel, pluginDirectory string) error {
 	rootDirectory := ""
 
 	for _, file := range entry.Files {

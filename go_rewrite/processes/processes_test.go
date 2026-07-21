@@ -2,8 +2,6 @@ package processes
 
 import (
 	"fmt"
-	"github.com/mawilms/lembas/internal/entities"
-	"github.com/mawilms/lembas/internal/models"
 	"io"
 	"log/slog"
 	"net/http"
@@ -13,6 +11,9 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/mawilms/lembas/go_rewrite/entities"
+	models2 "github.com/mawilms/lembas/go_rewrite/models"
 )
 
 var (
@@ -91,10 +92,10 @@ func TestGetRemotePlugins(t *testing.T) {
 type dummyDatastore struct {
 }
 
-func (d dummyDatastore) Open() (models.DatastoreModel, error) {
-	model := make(models.DatastoreModel)
-	model["alholic-some author"] = models.DatastoreEntryModel{
-		Plugin: models.LocalPluginModel{
+func (d dummyDatastore) Open() (models2.DatastoreModel, error) {
+	model := make(models2.DatastoreModel)
+	model["alholic-some author"] = models2.DatastoreEntryModel{
+		Plugin: models2.LocalPluginModel{
 			Id:             366,
 			Name:           "AltHolic",
 			CurrentVersion: "1.0",
@@ -112,12 +113,12 @@ func (d dummyDatastore) Open() (models.DatastoreModel, error) {
 	return model, nil
 }
 
-func (d dummyDatastore) Store(string, models.DatastoreEntryModel) error {
+func (d dummyDatastore) Store(string, models2.DatastoreEntryModel) error {
 	return nil
 }
 
-func (d dummyDatastore) Get() ([]models.LocalPluginModel, error) {
-	plugins := []models.LocalPluginModel{{
+func (d dummyDatastore) Get() ([]models2.LocalPluginModel, error) {
+	plugins := []models2.LocalPluginModel{{
 		Id:             366,
 		Name:           "AltHolic",
 		CurrentVersion: "1.0",
@@ -139,7 +140,7 @@ func (d dummyDatastore) DeleteById(string) error {
 
 func TestGetInstalledPlugins(t *testing.T) {
 	expectedPlugins := []entities.LocalPluginEntity{{
-		Base:         models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		Base:         models2.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		Descriptors:  nil,
 		Dependencies: nil,
 	}}
@@ -167,7 +168,7 @@ func TestInstallPlugin(t *testing.T) {
 	}))
 	defer server.Close()
 	expectedPlugins := []entities.RemotePluginEntity{{
-		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		Base:             models2.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		IsInstalled:      true,
 		UpdatedTimestamp: "2023-12-28",
 		Downloads:        0,
@@ -178,7 +179,7 @@ func TestInstallPlugin(t *testing.T) {
 	process := Process{Logger: logger}
 
 	plugins, err := process.InstallPlugin(dummyDatastore{}, server.URL, tmpDir, []entities.RemotePluginEntity{{
-		Base:             models.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
+		Base:             models2.NewBasePlugin(366, "AltHolic", "Hello World", "Some Author", "1.0", "1.0"),
 		IsInstalled:      false,
 		UpdatedTimestamp: "2023-12-28",
 		Downloads:        0,
@@ -211,17 +212,17 @@ func TestDeletePlugin(t *testing.T) {
 
 func TestSearch(t *testing.T) {
 	expectedOutput := []entities.LocalPluginEntity{{
-		Base:         models.NewBasePlugin(1, "ABC", "", "", "", ""),
+		Base:         models2.NewBasePlugin(1, "ABC", "", "", "", ""),
 		Descriptors:  nil,
 		Dependencies: nil,
 	}}
 
 	inputPlugins := []entities.LocalPluginEntity{{
-		Base:         models.NewBasePlugin(1, "ABC", "", "", "", ""),
+		Base:         models2.NewBasePlugin(1, "ABC", "", "", "", ""),
 		Descriptors:  nil,
 		Dependencies: nil,
 	}, {
-		Base:         models.NewBasePlugin(2, "XYZ", "", "", "", ""),
+		Base:         models2.NewBasePlugin(2, "XYZ", "", "", "", ""),
 		Descriptors:  nil,
 		Dependencies: nil,
 	}}

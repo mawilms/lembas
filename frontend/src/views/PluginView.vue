@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import AddonList from '@/components/plugins/AddonList.vue'
 import { ArrowDownToLine, ArrowUpAZ, RefreshCw } from '@lucide/vue'
-import { entities } from '../../wailsjs/go/models.ts'
 
 // import { GetInstalledPlugins } from '../../wailsjs/go/main/App'
 
-const addons: entities.LocalPluginEntity[] = []
+// const addons: entities.LocalPluginEntity[] = []
 </script>
 
 <template>
@@ -29,6 +27,6 @@ const addons: entities.LocalPluginEntity[] = []
             </div>
         </section>
 
-        <AddonList class="p-4" :addons="addons" />
+        <!--        <AddonList class="p-4" :addons="addons" />-->
     </main>
 </template>

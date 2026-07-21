@@ -2,12 +2,13 @@ package processes
 
 import (
 	"fmt"
-	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/entities"
-	"github.com/mawilms/lembas/internal/models"
 	"log/slog"
 	"sort"
 	"strings"
+
+	"github.com/mawilms/lembas/go_rewrite"
+	"github.com/mawilms/lembas/go_rewrite/entities"
+	models2 "github.com/mawilms/lembas/go_rewrite/models"
 )
 
 type Process struct {
@@ -50,8 +51,8 @@ func (p Process) SearchRemote(input string, plugins []entities.RemotePluginEntit
 	return filteredPlugins
 }
 
-func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
-	entry, _ := internal.DownloadPlugin(url, pluginDirectory)
+func (p Process) InstallPlugin(datastore models2.DatastoreInterface, url, pluginDirectory string, remotePlugins []entities.RemotePluginEntity) ([]entities.RemotePluginEntity, error) {
+	entry, _ := go_rewrite.DownloadPlugin(url, pluginDirectory)
 	id := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
 	err := datastore.Store(id, entry)
 	if err != nil {
@@ -61,7 +62,7 @@ func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginD
 
 	for _, dependency := range entry.Plugin.Dependencies {
 		url := fmt.Sprintf("https://www.lotrointerface.com/downloads/download%v", dependency)
-		entry, _ = internal.DownloadPlugin(url, pluginDirectory)
+		entry, _ = go_rewrite.DownloadPlugin(url, pluginDirectory)
 		identifier := BuildPluginIndex(entry.Plugin.Name, entry.Plugin.Author)
 		err = datastore.Store(identifier, entry)
 		if err != nil {
@@ -97,7 +98,7 @@ func (p Process) InstallPlugin(datastore models.DatastoreInterface, url, pluginD
 }
 
 func (p Process) GetRemotePlugins(url string, localPlugins []entities.LocalPluginEntity) ([]entities.RemotePluginEntity, error) {
-	remotePlugins, err := internal.DownloadPackageInformation(url)
+	remotePlugins, err := go_rewrite.DownloadPackageInformation(url)
 	if err != nil {
 		p.Logger.Error("failure in the plugin downloading process", slog.String("url", url), slog.String("error", err.Error()))
 		return make([]entities.RemotePluginEntity, 0), err
@@ -128,7 +129,7 @@ func (p Process) GetRemotePlugins(url string, localPlugins []entities.LocalPlugi
 	return remotePlugins, nil
 }
 
-func (p Process) GetInstalledPlugins(datastore models.DatastoreInterface) ([]entities.LocalPluginEntity, error) {
+func (p Process) GetInstalledPlugins(datastore models2.DatastoreInterface) ([]entities.LocalPluginEntity, error) {
 	localPlugins := make([]entities.LocalPluginEntity, 0)
 
 	storedPlugins, err := datastore.Get()
@@ -139,7 +140,7 @@ func (p Process) GetInstalledPlugins(datastore models.DatastoreInterface) ([]ent
 
 	for _, plugin := range storedPlugins {
 		localPlugins = append(localPlugins, entities.LocalPluginEntity{
-			Base:         models.NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, plugin.CurrentVersion, plugin.LatestVersion),
+			Base:         models2.NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, plugin.CurrentVersion, plugin.LatestVersion),
 			Descriptors:  plugin.Descriptors,
 			Dependencies: plugin.Dependencies,
 		})
@@ -152,14 +153,14 @@ func (p Process) GetInstalledPlugins(datastore models.DatastoreInterface) ([]ent
 	return localPlugins, nil
 }
 
-func (p Process) DeletePlugin(datastore models.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
+func (p Process) DeletePlugin(datastore models2.DatastoreInterface, name, author, pluginDirectory string) ([]entities.LocalPluginEntity, error) {
 	plugins := make([]entities.LocalPluginEntity, 0)
 	id := BuildPluginIndex(name, author)
 
 	pluginDatastore, err := datastore.Open()
 	plugin := pluginDatastore[id]
 
-	err = internal.DeletePlugin(plugin, pluginDirectory)
+	err = go_rewrite.DeletePlugin(plugin, pluginDirectory)
 	if err != nil {
 		p.Logger.Error("failed to delete plugin", slog.String("name", name), slog.String("author", author), slog.String("error", err.Error()))
 		return plugins, err
@@ -181,7 +182,7 @@ func (p Process) DeletePlugin(datastore models.DatastoreInterface, name, author,
 
 	for _, plugin := range localPlugins {
 		plugins = append(plugins, entities.LocalPluginEntity{
-			Base:         models.NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, plugin.CurrentVersion, plugin.LatestVersion),
+			Base:         models2.NewBasePlugin(plugin.Id, plugin.Name, plugin.Description, plugin.Author, plugin.CurrentVersion, plugin.LatestVersion),
 			Descriptors:  plugin.Descriptors,
 			Dependencies: plugin.Dependencies,
 		})
