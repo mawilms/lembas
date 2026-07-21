@@ -48,24 +48,27 @@ const sortAddons = (addons: RemoteAddon[], reverse: boolean) => {
 
 <template>
     <main class="flex flex-col overflow-hidden">
-        <section class="flex justify-between bg-light-brown p-4">
-            <div class="flex">
+        <section class="flex justify-between bg-light-brown p-4 text-gray-300">
+            <div class="flex text-sm items-center">
                 <p>{{ totalAddons }} addons found</p>
             </div>
 
-            <div class="flex items-center justify-end gap-4">
-                <ArrowUpAZ
-                    v-if="sorting == 1"
-                    class="h-5 w-5 hover:bg-light-brown-hover"
-                    @click="sortAddons(filteredList, true)"
-                />
-                <ArrowDownZA
-                    v-else
-                    class="h-5 w-5 hover:bg-light-brown-hover"
-                    @click="sortAddons(filteredList, true)"
-                />
-
-                <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
+            <div class="flex items-center justify-end">
+                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                    <ArrowUpAZ
+                        v-if="sorting == 1"
+                        class="h-5 w-5 hover:bg-light-brown-hover"
+                        @click="sortAddons(filteredList, true)"
+                    />
+                    <ArrowDownZA
+                        v-else
+                        class="h-5 w-5 hover:bg-light-brown-hover"
+                        @click="sortAddons(filteredList, true)"
+                    />
+                </div>
+                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                    <Funnel class="h-5 w-5" />
+                </div>
             </div>
         </section>
 

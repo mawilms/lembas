@@ -38,7 +38,7 @@ const extractFirstLetter = () => {
 
             <div class="h-px bg-gray-300 my-2"></div>
 
-            <div class="flex items-center justify-between text-sm">
+            <div class="flex items-center justify-between text-sm text-gray-300">
                 <div>
                     <p>{{ props.addon.Category }}</p>
                 </div>

@@ -30,8 +30,6 @@ const searchbarStore = useSearchbarStore()
                 <NavLink to="/">Plugins</NavLink>
                 <NavLink to="/browse">Browse</NavLink>
             </div>
-
-            <Settings />
         </section>
     </header>
 </template>
