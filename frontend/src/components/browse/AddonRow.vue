@@ -2,14 +2,11 @@
 import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
 import { remote } from '../../../wailsjs/go/models.ts'
 import RemoteAddon = remote.RemoteAddon
+import { extractFirstLetter } from '@/utils.ts'
 
 const props = defineProps<{
     addon: RemoteAddon
 }>()
-
-const extractFirstLetter = () => {
-    return props.addon.Name.substring(0, 1)
-}
 </script>
 
 <template>
@@ -17,7 +14,7 @@ const extractFirstLetter = () => {
         <div
             class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-secondary"
         >
-            {{ extractFirstLetter() }}
+            {{ extractFirstLetter(props.addon.Name) }}
         </div>
 
         <div class="flex-1">

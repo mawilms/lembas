@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import AddonRow from './AddonRow.vue'
 import { ref } from 'vue'
+import type { ExtendedAddon } from '@/types/plugin.ts'
 
 const props = defineProps<{
-    addons: never
+    addons: ExtendedAddon[]
 }>()
 
 const activeRow = ref<number | null>(null)
@@ -14,7 +15,7 @@ const activeRow = ref<number | null>(null)
         <AddonRow
             class="border cursor-pointer"
             v-for="(addon, index) in props.addons"
-            :key="addon.base.id"
+            :key="addon.Id"
             :addon="addon"
             :class="{
                 'border-primary': activeRow === index,

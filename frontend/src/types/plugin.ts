@@ -1,23 +1,11 @@
-export interface BasePlugin {
-    id: number
-    name: string
-    author: string
-    description: string
-    currentVersion: string
-    latestVersion: string
-    infoUrl: string
-    downloadUrl: string
+import { database, remote } from '../../wailsjs/go/models.ts'
+import Addon = database.Addon
+import RemoteAddon = remote.RemoteAddon
+
+export interface ExtendedAddon extends Addon {
+    HasUpdate: boolean
 }
 
-export interface Plugin {
-    base: BasePlugin
-}
-
-export interface RemotePlugin {
-    base: BasePlugin
-    totalDownloads: number
-    category: string
-    filename: string
-    isInstalled: boolean
-    lastUpdated: string
+export interface ExtendedRemoteAddon extends RemoteAddon {
+    IsInstalled: boolean
 }

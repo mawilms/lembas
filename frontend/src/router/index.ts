@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import PluginView from '../views/PluginView.vue'
+import AddonView from '../views/AddonView.vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 
 const router = createRouter({
@@ -8,7 +8,7 @@ const router = createRouter({
         {
             path: '/',
             name: 'home',
-            component: PluginView,
+            component: AddonView,
         },
         {
             path: '/browse',

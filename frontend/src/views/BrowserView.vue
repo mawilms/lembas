@@ -1,49 +1,17 @@
 <script setup lang="ts">
 import { ArrowDownZA, ArrowUpAZ } from '@lucide/vue'
-import { remote } from '../../wailsjs/go/models.ts'
 
-import { GetRemotePlugins } from '../../wailsjs/go/main/App'
 import AddonList from '@/components/browse/AddonList.vue'
-import { computed, onMounted, ref } from 'vue'
-import { useSearchbarStore } from '@/stores/searchbar.ts'
-import RemoteAddon = remote.RemoteAddon
 
-const searchbarStore = useSearchbarStore()
+import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
 
-const addons = ref<RemoteAddon[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+import { useRemoteAddonsStore } from '@/stores/addons.ts'
 
-const sorting = ref<number>(1)
+const remoteAddonsStore = useRemoteAddonsStore()
 
-onMounted(async () => {
-    try {
-        const fetchedAddons = await GetRemotePlugins()
-        addons.value = sortAddons(fetchedAddons, false)
-    } catch (e) {
-        console.log(e)
-        error.value = 'Error while loading addons'
-    } finally {
-        isLoading.value = false
-    }
-})
-
-const totalAddons = computed(() => {
-    return addons.value.length
-})
-
-const filteredList = computed(() => {
-    const text = searchbarStore.text.trim().toLowerCase()
-    if (!text) return addons.value
-
-    return addons.value.filter((item) => item.Name.toLowerCase().includes(text))
-})
-
-const sortAddons = (addons: RemoteAddon[], reverse: boolean) => {
-    if (reverse) sorting.value = sorting.value * -1
-
-    return addons.sort((a, b) => sorting.value * a.Name.localeCompare(b.Name))
-}
+const { sorting, sortAddons } = useSort()
+const totalAddons = useTotalAddons(remoteAddonsStore.addons)
+const filteredList = useFilteredList(remoteAddonsStore.addons)
 </script>
 
 <template>
@@ -68,9 +36,6 @@ const sortAddons = (addons: RemoteAddon[], reverse: boolean) => {
                 </div>
             </div>
         </section>
-
-        <div v-if="isLoading">Loading addons...</div>
-        <div v-else-if="error">{{ error }}</div>
 
         <AddonList class="p-4" :addons="filteredList" />
     </main>

@@ -5,3 +5,4 @@ frontend/build
 .vscode
 coverage.out
 go_rewrite/
+documentation/

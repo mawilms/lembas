@@ -5,12 +5,14 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/mawilms/lembas/internal/database"
 	"github.com/mawilms/lembas/internal/remote"
 )
 
 type App struct {
-	ctx    context.Context
-	logger *slog.Logger
+	ctx         context.Context
+	logger      *slog.Logger
+	pluginModel *database.AddonModel
 }
 
 func NewApp() *App {
@@ -24,7 +26,17 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) GetRemotePlugins() []remote.RemoteAddon {
+func (a *App) GetLocalAddons() []database.Addon {
+	addons, err := a.pluginModel.Get()
+	if err != nil {
+		a.logger.Error("failed to get local plugins", err.Error())
+		return nil
+	}
+
+	return addons
+}
+
+func (a *App) GetRemoteAddons() []remote.RemoteAddon {
 	api := remote.Api{}
 	url := "https://api.lotrointerface.com/fav/plugincompendium.xml"
 
