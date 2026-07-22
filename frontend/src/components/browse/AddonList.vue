@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { remote } from '../../../wailsjs/go/models.ts'
 import AddonRow from '@/components/browse/AddonRow.vue'
-import RemoteAddon = remote.RemoteAddon
+
+import type { ExtendedRemoteAddon } from '@/types/plugin.ts'
 
 const props = defineProps<{
-    addons: RemoteAddon[]
+    addons: ExtendedRemoteAddon[]
 }>()
 
 const activeRow = ref<number | null>(null)

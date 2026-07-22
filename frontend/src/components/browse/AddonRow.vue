@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
-import { remote } from '../../../wailsjs/go/models.ts'
-import RemoteAddon = remote.RemoteAddon
+
 import { extractFirstLetter } from '@/utils.ts'
+import type { ExtendedRemoteAddon } from '@/types/plugin.ts'
 
 const props = defineProps<{
-    addon: RemoteAddon
+    addon: ExtendedRemoteAddon
 }>()
 </script>
 
@@ -24,7 +24,8 @@ const props = defineProps<{
                     <span class="text-xs">by {{ props.addon.Author }}</span>
                 </div>
 
-                <button class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer">
+                <p v-if="props.addon.IsInstalled">Installed</p>
+                <button v-else class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer">
                     Install
                 </button>
             </div>

@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref, ref } from 'vue'
+import { computed, type ComputedRef, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 
 interface Named {

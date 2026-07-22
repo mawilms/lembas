@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, Settings } from '@lucide/vue'
+import { Search } from '@lucide/vue'
 import NavLink from '@/components/NavLink.vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 

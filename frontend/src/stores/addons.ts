@@ -1,11 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { database, remote } from '../../wailsjs/go/models.ts'
-import Addon = database.Addon
-import RemoteAddon = remote.RemoteAddon
-import type { ExtendedAddon } from '@/types/plugin.ts'
+import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
 
-export const useLocalAddonsStoreNew = defineStore('localAddons', () => {
+export const useLocalAddonsStore = defineStore('localAddons', () => {
     const addons = ref<ExtendedAddon[]>([])
 
     function setAddons(newAddons: ExtendedAddon[]) {
@@ -15,20 +12,10 @@ export const useLocalAddonsStoreNew = defineStore('localAddons', () => {
     return { addons, setAddons }
 })
 
-export const useLocalAddonsStore = defineStore('localAddons', () => {
-    const addons = ref<Addon[]>([])
-
-    function setAddons(newAddons: Addon[]) {
-        addons.value = newAddons
-    }
-
-    return { addons, setAddons }
-})
-
 export const useRemoteAddonsStore = defineStore('remoteAddons', () => {
-    const addons = ref<RemoteAddon[]>([])
+    const addons = ref<ExtendedRemoteAddon[]>([])
 
-    function setAddons(newAddons: RemoteAddon[]) {
+    function setAddons(newAddons: ExtendedRemoteAddon[]) {
         addons.value = newAddons
     }
 

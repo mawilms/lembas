@@ -2,10 +2,10 @@
 import { ArrowDownToLine, ArrowDownZA, ArrowUpAZ, RefreshCw } from '@lucide/vue'
 import AddonList from '@/components/addons/AddonList.vue'
 import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
-import { useLocalAddonsStoreNew } from '@/stores/addons.ts'
+import { useLocalAddonsStore } from '@/stores/addons.ts'
 // import { GetLocalAddons } from '../../wailsjs/go/main/App'
 
-const localAddonsStore = useLocalAddonsStoreNew()
+const localAddonsStore = useLocalAddonsStore()
 
 const { sorting, sortAddons } = useSort()
 const totalAddons = useTotalAddons(localAddonsStore.addons)

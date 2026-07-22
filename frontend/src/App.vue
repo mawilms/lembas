@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import Header from '@/components/Header.vue'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { GetLocalAddons, GetRemoteAddons } from '../wailsjs/go/main/App'
-import { useLocalAddonsStoreNew, useRemoteAddonsStore } from '@/stores/addons.ts'
+import { useLocalAddonsStore, useRemoteAddonsStore } from '@/stores/addons.ts'
 import { useSort } from '@/utils.ts'
-import { database, remote } from '../wailsjs/go/models.ts'
-import RemoteAddon = remote.RemoteAddon
-import Addon = database.Addon
+import { buildAddonsMap, hasUpdate } from '@/utils/versioning.ts'
 
 const { sortAddons } = useSort()
-const localAddonStoreNew = useLocalAddonsStoreNew()
+const localAddonStoreNew = useLocalAddonsStore()
 const remoteAddonsStore = useRemoteAddonsStore()
 
 const isLoading = ref(true)
@@ -20,15 +18,24 @@ onMounted(async () => {
     try {
         const localAddons = await GetLocalAddons()
         const remoteAddons = await GetRemoteAddons()
-        remoteAddonsStore.setAddons(sortAddons(remoteAddons, false))
 
         const extendedAddons = localAddons.map((addon) => {
-            const remote = remoteAddonsMap.value.get(addon.Id)
+            const remote = buildAddonsMap(remoteAddons).get(addon.Id)
             return {
                 ...addon,
                 HasUpdate: remote ? hasUpdate(addon, remote) : false,
             }
         })
+
+        const extendedRemoteAddons = remoteAddons.map((remote) => {
+            const local = buildAddonsMap(localAddons).get(remote.Id)
+            return {
+                ...remote,
+                IsInstalled: !!local,
+            }
+        })
+
+        remoteAddonsStore.setAddons(sortAddons(extendedRemoteAddons, false))
         localAddonStoreNew.setAddons(sortAddons(extendedAddons, false))
     } catch (e) {
         console.log(e)
@@ -36,45 +43,6 @@ onMounted(async () => {
     } finally {
         isLoading.value = false
     }
-})
-
-function normalizeVersion(version: string): number[] {
-    return version
-        .trim()
-        .replace(/^v/i, '') // "v1.4" -> "1.4"
-        .split('.')
-        .map((part) => {
-            const num = parseInt(part, 10)
-            return Number.isNaN(num) ? 0 : num
-        })
-}
-
-function compareVersions(a: string, b: string): number {
-    const partsA = normalizeVersion(a)
-    const partsB = normalizeVersion(b)
-    const length = Math.max(partsA.length, partsB.length)
-
-    for (let i = 0; i < length; i++) {
-        const numA = partsA[i] ?? 0
-        const numB = partsB[i] ?? 0
-
-        if (numA > numB) return 1
-        if (numA < numB) return -1
-    }
-
-    return 0
-}
-
-function hasUpdate(local: Addon, remote: RemoteAddon): boolean {
-    return compareVersions(remote.Version, local.Version) > 0
-}
-
-const remoteAddonsMap = computed(() => {
-    const map = new Map<number, RemoteAddon>()
-    for (const r of remoteAddonsStore.addons) {
-        map.set(r.Id, r)
-    }
-    return map
 })
 </script>
 
