@@ -1,17 +1,31 @@
 <script setup lang="ts">
-import { ArrowDownZA, ArrowUpAZ } from '@lucide/vue'
+import { ArrowDownZA, ArrowUpAZ, ChevronDown, Funnel } from '@lucide/vue'
 
 import AddonList from '@/components/browse/AddonList.vue'
 
 import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
 
 import { useRemoteAddonsStore } from '@/stores/addons.ts'
+import { computed, ref } from 'vue'
 
 const remoteAddonsStore = useRemoteAddonsStore()
 
 const { sorting, sortAddons } = useSort()
 const totalAddons = useTotalAddons(remoteAddonsStore.addons)
 const filteredList = useFilteredList(remoteAddonsStore.addons)
+
+const categories = computed(() => {
+    return [
+        ...new Set(
+            remoteAddonsStore.addons.map((a) => {
+                return a.Category
+            })
+        ),
+    ]
+})
+
+const items = ref(categories)
+const value = ref([])
 </script>
 
 <template>
@@ -36,10 +50,29 @@ const filteredList = useFilteredList(remoteAddonsStore.addons)
                 </div>
 
                 <UPopover>
-                    <UButton label="Open" color="neutral" variant="subtle" />
+                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                        <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
+                    </div>
 
                     <template #content>
-                        <Placeholder class="size-48 m-4 inline-flex" />
+                        <div class="flex flex-col gap-4 bg-light-brown-hover p-4">
+                            <div>Filter by</div>
+                            <UCollapsible class="flex flex-col w-60">
+                                <div class="flex justify-between mb-4">
+                                    <span>Categories</span>
+                                    <ChevronDown />
+                                </div>
+
+                                <template #content>
+                                    <UCheckboxGroup
+                                        :size="'sm'"
+                                        v-model="value"
+                                        :items="items"
+                                        :ui="{ label: 'font-normal', base: 'bg-gray-300' }"
+                                    />
+                                </template>
+                            </UCollapsible>
+                        </div>
                     </template>
                 </UPopover>
             </div>

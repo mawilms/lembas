@@ -12,9 +12,7 @@ export default defineConfig({
         tailwindcss(),
         vue(),
         vueDevTools(),
-        ui({
-            root: fileURLToPath(new URL('.', import.meta.url)), // Ordner, in dem diese vite.config.ts liegt
-        }),
+        ui(),
     ],
     resolve: {
         alias: {

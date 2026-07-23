@@ -53,9 +53,9 @@ onMounted(async () => {
 
             <div v-if="isLoading">Loading addons...</div>
             <div v-else-if="error">{{ error }}</div>
-            <div v-else>
+
                 <RouterView />
-            </div>
+
         </div>
     </UApp>
 </template>
