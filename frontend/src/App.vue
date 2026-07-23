@@ -47,13 +47,15 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="flex flex-col h-screen bg-dark-brown text-white">
-        <Header />
+    <UApp>
+        <div class="flex flex-col h-screen bg-dark-brown text-white">
+            <Header />
 
-        <div v-if="isLoading">Loading addons...</div>
-        <div v-else-if="error">{{ error }}</div>
-        <div v-else>
-            <RouterView />
+            <div v-if="isLoading">Loading addons...</div>
+            <div v-else-if="error">{{ error }}</div>
+            <div v-else>
+                <RouterView />
+            </div>
         </div>
-    </div>
+    </UApp>
 </template>
