@@ -5,7 +5,7 @@ import RemoteAddon = remote.RemoteAddon
 export const normalizeVersion = (version: string): number[] => {
     return version
         .trim()
-        .replace(/^v/i, '') // "v1.4" -> "1.4"
+        .replace('v', '')
         .split('.')
         .map((part) => {
             const num = parseInt(part, 10)
@@ -13,17 +13,17 @@ export const normalizeVersion = (version: string): number[] => {
         })
 }
 
-export const compareVersions = (a: string, b: string): number => {
-    const partsA = normalizeVersion(a)
-    const partsB = normalizeVersion(b)
-    const length = Math.max(partsA.length, partsB.length)
+export const compareVersions = (remoteVersion: string, localVersion: string): number => {
+    const normRemote = normalizeVersion(remoteVersion)
+    const normLocal = normalizeVersion(localVersion)
+    const length = Math.max(normRemote.length, normLocal.length)
 
     for (let i = 0; i < length; i++) {
-        const numA = partsA[i] ?? 0
-        const numB = partsB[i] ?? 0
+        const versionRemote = normRemote[i] ?? 0
+        const versionLocal = normLocal[i] ?? 0
 
-        if (numA > numB) return 1
-        if (numA < numB) return -1
+        if (versionRemote > versionLocal) return 1
+        if (versionRemote < versionLocal) return -1
     }
 
     return 0
