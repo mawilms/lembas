@@ -1,8 +1,9 @@
-import { computed, type ComputedRef, ref } from 'vue'
+import { computed, type ComputedRef, type Ref, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 
 interface Named {
     Name: string
+    Category: string
 }
 
 export const extractFirstLetter = (name: string) => {
@@ -21,14 +22,27 @@ export function useSort() {
     return { sorting, sortAddons }
 }
 
-export function useFilteredList<T extends Named>(addons: T[]): ComputedRef<T[]> {
+export function useFilteredList<T extends Named>(
+    addons: T[],
+    categories: Ref<string[]>
+): ComputedRef<T[]> {
     const searchbarStore = useSearchbarStore()
 
     return computed(() => {
         const text = searchbarStore.text.trim().toLowerCase()
-        if (!text) return addons
+        const hasCategories = (categories?.value?.length ?? 0) > 0
 
-        return addons.filter((item) => item.Name.toLowerCase().includes(text))
+        if (!text && !hasCategories) return addons
+
+        let filteredAddons = addons
+
+        if (hasCategories) {
+            filteredAddons = filteredAddons.filter((item) =>
+                categories.value.includes(item.Category)
+            )
+        }
+
+        return filteredAddons.filter((item) => item.Name.toLowerCase().includes(text))
     })
 }
 
