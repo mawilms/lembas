@@ -18,10 +18,14 @@ const error = ref<string | null>(null)
 onMounted(async () => {
     try {
         const localAddons = await GetLocalAddons()
+        const localAddonsMap = buildAddonsMap(localAddons)
+
         const remoteAddons = await GetRemoteAddons()
+        const remoteAddonsMap = buildAddonsMap(remoteAddons)
 
         const extendedAddons: ExtendedAddon[] = localAddons.map((addon) => {
-            const remote = buildAddonsMap(remoteAddons).get(addon.Id)
+            const remote = remoteAddonsMap.get(addon.Id)
+
             return {
                 ...addon,
                 HasUpdate: remote ? hasUpdate(addon, remote) : false,
@@ -30,10 +34,11 @@ onMounted(async () => {
         })
 
         const extendedRemoteAddons: ExtendedRemoteAddon[] = remoteAddons.map((remote) => {
-            const local = buildAddonsMap(localAddons).get(remote.Id)
+            const local = localAddonsMap.get(remote.Id)
             return {
                 ...remote,
                 IsInstalled: !!local,
+                HasUpdate: local ? hasUpdate(local, remote) : false,
                 Type: 'remote',
             }
         })

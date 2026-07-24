@@ -36,7 +36,13 @@ const uninstall = () => {}
         >
             <template v-slot:status>
                 <div v-if="addon.Type === 'remote'">
-                    <p v-if="addon.IsInstalled">Installed</p>
+                    <button
+                        v-if="addon.HasUpdate"
+                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                    >
+                        Update
+                    </button>
+                    <p v-else-if="addon.IsInstalled">Installed</p>
                     <button
                         v-else
                         class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"

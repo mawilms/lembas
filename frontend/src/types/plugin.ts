@@ -19,5 +19,6 @@ export interface ExtendedAddon extends Addon {
 
 export interface ExtendedRemoteAddon extends RemoteAddon {
     Type: 'remote'
+    HasUpdate: boolean
     IsInstalled: boolean
 }
