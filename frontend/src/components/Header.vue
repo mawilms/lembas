@@ -14,7 +14,7 @@ const searchbarStore = useSearchbarStore()
             <div class="flex-1 flex items-center gap-2 rounded-md bg-light-brown-hover px-3 py-2">
                 <Search class="h-5 w-5 text-gray-300" />
                 <input
-                    class="flex-1 focus:outline-none"
+                    class="flex-1 focus:outline-none text-sm"
                     placeholder="Search for addons...."
                     :value="searchbarStore.text"
                     @input="
