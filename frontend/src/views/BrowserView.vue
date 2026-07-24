@@ -30,7 +30,7 @@ const removeCategory = (category: string) => {
 </script>
 
 <template>
-    <main class="flex flex-col overflow-hidden">
+    <main class="flex flex-col overflow-hidden select-none">
         <section class="flex flex-col bg-light-brown p-4 text-gray-300">
             <section class="flex justify-between">
                 <div class="flex text-sm items-center">
@@ -57,10 +57,10 @@ const removeCategory = (category: string) => {
                         </div>
 
                         <template #content>
-                            <div class="flex flex-col gap-4 bg-light-brown-hover p-4">
+                            <div class="flex flex-col gap-4 bg-light-brown-hover p-4 select-none">
                                 <div>Filter by</div>
                                 <UCollapsible class="flex flex-col w-60">
-                                    <div class="flex justify-between mb-4">
+                                    <div class="flex justify-between mb-4 cursor-pointer">
                                         <span>Categories</span>
                                         <ChevronDown />
                                     </div>

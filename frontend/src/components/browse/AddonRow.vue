@@ -10,7 +10,9 @@ const props = defineProps<{
 </script>
 
 <template>
-    <li class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4">
+    <li
+        class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4 select-none"
+    >
         <div
             class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-secondary"
         >
