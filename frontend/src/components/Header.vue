@@ -11,10 +11,10 @@ const searchbarStore = useSearchbarStore()
         <section class="flex items-center gap-4">
             <img class="w-12 h-12" src="../assets/logo.png" alt="logo" />
 
-            <div class="flex-1 flex items-center gap-2 border border-border rounded-md px-3 py-2">
-                <Search />
+            <div class="flex-1 flex items-center gap-2 rounded-md bg-light-brown-hover px-3 py-2">
+                <Search class="h-5 w-5 text-gray-300" />
                 <input
-                    class="flex-1"
+                    class="flex-1 focus:outline-none"
                     placeholder="Search for addons...."
                     :value="searchbarStore.text"
                     @input="

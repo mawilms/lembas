@@ -27,7 +27,7 @@ const reloadAddons = async () => {
 </script>
 
 <template>
-    <section class="flex flex-col bg-light-brown p-4 text-gray-300">
+    <section class="flex flex-col bg-light-brown py-2 px-4 text-gray-300">
         <section class="grid grid-cols-3">
             <div>
                 <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">

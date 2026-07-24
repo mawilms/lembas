@@ -16,7 +16,7 @@ const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategorie
 </script>
 
 <template>
-    <section class="flex flex-col bg-light-brown p-4 text-gray-300">
+    <section class="flex flex-col bg-light-brown py-2 px-4 text-gray-300">
         <section class="flex justify-between">
             <div class="flex text-sm items-center">
                 <p>{{ filteredList.length }} addons found</p>

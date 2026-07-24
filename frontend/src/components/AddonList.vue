@@ -30,21 +30,21 @@ const resetRow = () => {
                 <div v-if="addon.Type === 'remote'">
                     <button
                         v-if="addon.HasUpdate"
-                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                     >
                         Update
                     </button>
                     <p v-else-if="addon.IsInstalled">Installed</p>
                     <button
                         v-else
-                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                     >
                         Install
                     </button>
                 </div>
                 <div v-else>
                     <button
-                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                        class="bg-primary hover: text-sm py-1 px-2 rounded cursor-pointer"
                         v-if="addon.HasUpdate"
                     >
                         Update
