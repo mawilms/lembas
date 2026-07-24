@@ -50,12 +50,12 @@ export namespace remote {
 	    Name: string;
 	    Author: string;
 	    Version: string;
-	    Updated: string;
+	    UpdatedAt: string;
 	    Downloads: number;
 	    Category: string;
 	    Description: string;
-	    File: string;
-	    Size: string;
+	    ArchiveName: string;
+	    ArchiveSize: string;
 	    FileURL: string;
 	
 	    static createFrom(source: any = {}) {
@@ -68,12 +68,12 @@ export namespace remote {
 	        this.Name = source["Name"];
 	        this.Author = source["Author"];
 	        this.Version = source["Version"];
-	        this.Updated = source["Updated"];
+	        this.UpdatedAt = source["UpdatedAt"];
 	        this.Downloads = source["Downloads"];
 	        this.Category = source["Category"];
 	        this.Description = source["Description"];
-	        this.File = source["File"];
-	        this.Size = source["Size"];
+	        this.ArchiveName = source["ArchiveName"];
+	        this.ArchiveSize = source["ArchiveSize"];
 	        this.FileURL = source["FileURL"];
 	    }
 	}

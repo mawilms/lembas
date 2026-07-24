@@ -10,12 +10,12 @@ type RemoteAddon struct {
 	Name        string
 	Author      string
 	Version     string
-	Updated     string
+	UpdatedAt   string
 	Downloads   int
 	Category    string
 	Description string
-	File        string
-	Size        string
+	ArchiveName string
+	ArchiveSize string
 	FileURL     string
 }
 
@@ -34,12 +34,12 @@ func New(apiModel ApiXmlModel) RemoteAddon {
 		Name:        apiModel.Name,
 		Author:      apiModel.Author,
 		Version:     apiModel.Version,
-		Updated:     time.Unix(apiModel.Updated, 0).Local().Format("01/02/2006"),
+		UpdatedAt:   time.Unix(apiModel.Updated, 0).Local().Format("01/02/2006"),
 		Downloads:   apiModel.Downloads,
 		Category:    apiModel.Category,
 		Description: apiModel.Description,
-		File:        apiModel.File,
-		Size:        convertedSize,
+		ArchiveName: apiModel.File,
+		ArchiveSize: convertedSize,
 		FileURL:     apiModel.FileURL,
 	}
 }
