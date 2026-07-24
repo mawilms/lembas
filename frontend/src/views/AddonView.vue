@@ -9,35 +9,20 @@ import {
     X,
 } from '@lucide/vue'
 import AddonList from '@/components/AddonList.vue'
-import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
+import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
-import { computed, ref } from 'vue'
 
 const addonsStore = useAddonsStore()
 
-const selectedCategories = ref<string[]>([])
+const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
-const totalAddons = useTotalAddons(addonsStore.addons)
 const filteredList = useFilteredList(addonsStore.addons, selectedCategories)
+const categories = useCategories(addonsStore.addons)
 
 const reloadAddons = async () => {
     // const newAddons = await GetLocalAddons()
     // localAddonsStore.setAddons(newAddons)
-}
-
-const categories = computed(() => {
-    return [
-        ...new Set(
-            addonsStore.addons.map((a) => {
-                return a.Category
-            })
-        ),
-    ]
-})
-
-const removeCategory = (category: string) => {
-    selectedCategories.value = selectedCategories.value.filter((v) => v !== category)
 }
 </script>
 
@@ -52,7 +37,7 @@ const removeCategory = (category: string) => {
             </div>
 
             <span class="flex items-center justify-center text-sm"
-                >{{ totalAddons }} addons installed</span
+                >{{ filteredList.length }} addons installed</span
             >
 
             <div class="flex items-center justify-end">

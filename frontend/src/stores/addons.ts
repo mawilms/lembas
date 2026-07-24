@@ -9,7 +9,7 @@ export const useAddonsStore = defineStore('addons', () => {
     const addons = ref<ExtendedAddon[]>([])
     const remoteAddons = ref<ExtendedRemoteAddon[]>([])
 
-    async function getAddons() {
+    const getAddons = async () => {
         if (remoteAddons.value.length > 0) {
             return
         }

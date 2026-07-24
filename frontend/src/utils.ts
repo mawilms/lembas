@@ -1,5 +1,6 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
+import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
 
 interface Named {
     Name: string
@@ -10,7 +11,7 @@ export const extractFirstLetter = (name: string) => {
     return name.substring(0, 1)
 }
 
-export function useSort() {
+export const useSort = () => {
     const sorting = ref<1 | -1>(1)
 
     const sortAddons = <T extends Named>(addons: T[], reverse: boolean): T[] => {
@@ -22,10 +23,10 @@ export function useSort() {
     return { sorting, sortAddons }
 }
 
-export function useFilteredList<T extends Named>(
+export const useFilteredList = <T extends Named>(
     addons: T[],
     categories: Ref<string[]>
-): ComputedRef<T[]> {
+): ComputedRef<T[]> => {
     const searchbarStore = useSearchbarStore()
 
     return computed(() => {
@@ -46,8 +47,24 @@ export function useFilteredList<T extends Named>(
     })
 }
 
-export function useTotalAddons<T extends Named>(addons: T[]) {
+export const useRemoveCategory = () => {
+    const selectedCategories = ref<string[]>([])
+
+    const removeCategory = (category: string) => {
+        selectedCategories.value = selectedCategories.value.filter((v) => v !== category)
+    }
+
+    return { selectedCategories, removeCategory }
+}
+
+export const useCategories = (addons: ExtendedAddon[] | ExtendedRemoteAddon[]) => {
     return computed(() => {
-        return addons.length
+        return [
+            ...new Set(
+                addons.map((a) => {
+                    return a.Category
+                })
+            ),
+        ]
     })
 }

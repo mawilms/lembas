@@ -3,30 +3,16 @@ import { ArrowDownZA, ArrowUpAZ, ChevronDown, Funnel, X } from '@lucide/vue'
 
 import AddonList from '@/components/AddonList.vue'
 
-import { useFilteredList, useSort } from '@/utils.ts'
+import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 
 import { useAddonsStore } from '@/stores/addons.ts'
-import { computed, ref } from 'vue'
 
 const addonsStore = useAddonsStore()
-const selectedCategories = ref<string[]>([])
+const categories = useCategories(addonsStore.remoteAddons)
+const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategories)
-
-const categories = computed(() => {
-    return [
-        ...new Set(
-            addonsStore.remoteAddons.map((a) => {
-                return a.Category
-            })
-        ),
-    ]
-})
-
-const removeCategory = (category: string) => {
-    selectedCategories.value = selectedCategories.value.filter((v) => v !== category)
-}
 </script>
 
 <template>

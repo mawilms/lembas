@@ -1,24 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ArrowDownToLine, Trash2, X } from '@lucide/vue'
 import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
-import { useRoute } from 'vue-router'
 
 const props = defineProps<{
     addons: ExtendedAddon[] | ExtendedRemoteAddon[]
 }>()
-
-const route = useRoute()
 
 const activeRow = ref<number | null>(null)
 
 const resetRow = () => {
     activeRow.value = null
 }
-
-const forceInstall = () => {}
-
-const uninstall = () => {}
 </script>
 
 <template>
@@ -72,42 +64,5 @@ const uninstall = () => {}
         </AddonRow>
     </ul>
 
-    <Transition
-        v-if="route.fullPath === '/'"
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 translate-y-4"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-4"
-    >
-        <div
-            v-if="activeRow !== null"
-            class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-sm"
-        >
-            <UCard :ui="{ body: 'flex items-center gap-2 bg-light-brown shadow-none' }">
-                <span class="text-sm text-white">1 ausgewählt</span>
-
-                <button
-                    @click="forceInstall"
-                    class="flex items-center gap-2 hover:bg-gold py-1 px-2 rounded cursor-pointer"
-                >
-                    <ArrowDownToLine class="h-4 w-4" />
-                    <span>Reinstall</span>
-                </button>
-
-                <button
-                    @click="uninstall"
-                    class="flex items-center gap-2 hover:bg-gold py-1 px-2 rounded cursor-pointer"
-                >
-                    <Trash2 class="h-4 w-4" />
-                    <span>Delete</span>
-                </button>
-
-                <button class="hover:bg-gold py-1 px-2 rounded cursor-pointer" @click="resetRow()">
-                    <X class="h-4 w-4" />
-                </button>
-            </UCard>
-        </div>
-    </Transition>
+    <SelectPopover :activeRow="activeRow" @reset-row="resetRow" />
 </template>

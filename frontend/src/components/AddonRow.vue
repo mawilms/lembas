@@ -34,7 +34,7 @@ const props = defineProps<{
                 </section>
             </section>
 
-            <div class="h-px bg-gray-300 my-4"></div>
+            <div class="h-[0.1px] bg-gray-300 my-4"></div>
 
             <div class="flex items-center justify-between text-sm text-gray-300">
                 <div>
