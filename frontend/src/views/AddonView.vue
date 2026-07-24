@@ -10,16 +10,16 @@ import {
 } from '@lucide/vue'
 import AddonList from '@/components/AddonList.vue'
 import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
-import { useLocalAddonsStore } from '@/stores/addons.ts'
+import { useAddonsStore } from '@/stores/addons.ts'
 import { computed, ref } from 'vue'
 
-const localAddonsStore = useLocalAddonsStore()
+const addonsStore = useAddonsStore()
 
 const selectedCategories = ref<string[]>([])
 
 const { sorting, sortAddons } = useSort()
-const totalAddons = useTotalAddons(localAddonsStore.addons)
-const filteredList = useFilteredList(localAddonsStore.addons, selectedCategories)
+const totalAddons = useTotalAddons(addonsStore.addons)
+const filteredList = useFilteredList(addonsStore.addons, selectedCategories)
 
 const reloadAddons = async () => {
     // const newAddons = await GetLocalAddons()
@@ -29,7 +29,7 @@ const reloadAddons = async () => {
 const categories = computed(() => {
     return [
         ...new Set(
-            localAddonsStore.addons.map((a) => {
+            addonsStore.addons.map((a) => {
                 return a.Category
             })
         ),

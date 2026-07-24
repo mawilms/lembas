@@ -5,19 +5,19 @@ import AddonList from '@/components/AddonList.vue'
 
 import { useFilteredList, useSort } from '@/utils.ts'
 
-import { useRemoteAddonsStore } from '@/stores/addons.ts'
+import { useAddonsStore } from '@/stores/addons.ts'
 import { computed, ref } from 'vue'
 
-const remoteAddonsStore = useRemoteAddonsStore()
+const addonsStore = useAddonsStore()
 const selectedCategories = ref<string[]>([])
 
 const { sorting, sortAddons } = useSort()
-const filteredList = useFilteredList(remoteAddonsStore.addons, selectedCategories)
+const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategories)
 
 const categories = computed(() => {
     return [
         ...new Set(
-            remoteAddonsStore.addons.map((a) => {
+            addonsStore.remoteAddons.map((a) => {
                 return a.Category
             })
         ),

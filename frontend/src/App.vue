@@ -2,49 +2,16 @@
 import { RouterView } from 'vue-router'
 import Header from '@/components/Header.vue'
 import { onMounted, ref } from 'vue'
-import { GetLocalAddons, GetRemoteAddons } from './wailsjs/go/main/App'
-import { useLocalAddonsStore, useRemoteAddonsStore } from '@/stores/addons.ts'
-import { useSort } from '@/utils.ts'
-import { buildAddonsMap, hasUpdate } from '@/utils/versioning.ts'
-import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
+import { useAddonsStore } from '@/stores/addons.ts'
 
-const { sortAddons } = useSort()
-const localAddonStoreNew = useLocalAddonsStore()
-const remoteAddonsStore = useRemoteAddonsStore()
+const localAddonStoreNew = useAddonsStore()
 
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
 onMounted(async () => {
     try {
-        const localAddons = await GetLocalAddons()
-        const localAddonsMap = buildAddonsMap(localAddons)
-
-        const remoteAddons = await GetRemoteAddons()
-        const remoteAddonsMap = buildAddonsMap(remoteAddons)
-
-        const extendedAddons: ExtendedAddon[] = localAddons.map((addon) => {
-            const remote = remoteAddonsMap.get(addon.Id)
-
-            return {
-                ...addon,
-                HasUpdate: remote ? hasUpdate(addon, remote) : false,
-                Type: 'local',
-            }
-        })
-
-        const extendedRemoteAddons: ExtendedRemoteAddon[] = remoteAddons.map((remote) => {
-            const local = localAddonsMap.get(remote.Id)
-            return {
-                ...remote,
-                IsInstalled: !!local,
-                HasUpdate: local ? hasUpdate(local, remote) : false,
-                Type: 'remote',
-            }
-        })
-
-        remoteAddonsStore.setAddons(sortAddons(extendedRemoteAddons, false))
-        localAddonStoreNew.setAddons(sortAddons(extendedAddons, false))
+        await localAddonStoreNew.getAddons()
     } catch (e) {
         console.log(e)
         error.value = 'Error while loading addons'
