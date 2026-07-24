@@ -46,7 +46,7 @@ const removeCategory = (category: string) => {
     <section class="flex flex-col bg-light-brown p-4 text-gray-300">
         <section class="grid grid-cols-3">
             <div>
-                <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2">
+                <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">
                     <ArrowDownToLine class="h-5 w-5" />
                     <button class="text-sm cursor-pointer">Update all</button>
                 </div>
@@ -57,23 +57,27 @@ const removeCategory = (category: string) => {
             >
 
             <div class="flex items-center justify-end">
-                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                    <ArrowUpAZ
-                        v-if="sorting == 1"
-                        class="h-5 w-5 hover:bg-light-brown-hover"
-                        @click="sortAddons(filteredList, true)"
-                    />
-                    <ArrowDownZA
-                        v-else
-                        class="h-5 w-5 hover:bg-light-brown-hover"
-                        @click="sortAddons(filteredList, true)"
-                    />
-                </div>
+                <UTooltip arrow text="Sort">
+                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                        <ArrowUpAZ
+                            v-if="sorting == 1"
+                            class="h-5 w-5 hover:bg-light-brown-hover"
+                            @click="sortAddons(filteredList, true)"
+                        />
+                        <ArrowDownZA
+                            v-else
+                            class="h-5 w-5 hover:bg-light-brown-hover"
+                            @click="sortAddons(filteredList, true)"
+                        />
+                    </div>
+                </UTooltip>
 
                 <UPopover>
-                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                        <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
-                    </div>
+                    <UTooltip arrow text="Filter by">
+                        <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                            <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
+                        </div>
+                    </UTooltip>
 
                     <template #content>
                         <div class="flex flex-col gap-4 bg-light-brown-hover p-4 select-none">
@@ -97,9 +101,11 @@ const removeCategory = (category: string) => {
                     </template>
                 </UPopover>
 
-                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                    <RefreshCw class="h-5 w-5" @click="reloadAddons" />
-                </div>
+                <UTooltip arrow text="Synchronize">
+                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                        <RefreshCw class="h-5 w-5" @click="reloadAddons" />
+                    </div>
+                </UTooltip>
             </div>
         </section>
 

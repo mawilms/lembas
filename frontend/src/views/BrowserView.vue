@@ -37,23 +37,27 @@ const removeCategory = (category: string) => {
             </div>
 
             <div class="flex items-center justify-end">
-                <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                    <ArrowUpAZ
-                        v-if="sorting == 1"
-                        class="h-5 w-5 hover:bg-light-brown-hover"
-                        @click="sortAddons(filteredList, true)"
-                    />
-                    <ArrowDownZA
-                        v-else
-                        class="h-5 w-5 hover:bg-light-brown-hover"
-                        @click="sortAddons(filteredList, true)"
-                    />
-                </div>
+                <UTooltip arrow text="Sort">
+                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                        <ArrowUpAZ
+                            v-if="sorting == 1"
+                            class="h-5 w-5 hover:bg-light-brown-hover"
+                            @click="sortAddons(filteredList, true)"
+                        />
+                        <ArrowDownZA
+                            v-else
+                            class="h-5 w-5 hover:bg-light-brown-hover"
+                            @click="sortAddons(filteredList, true)"
+                        />
+                    </div>
+                </UTooltip>
 
                 <UPopover>
-                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                        <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
-                    </div>
+                    <UTooltip arrow text="Filter by">
+                        <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                            <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
+                        </div>
+                    </UTooltip>
 
                     <template #content>
                         <div class="flex flex-col gap-4 bg-light-brown-hover p-4 select-none">

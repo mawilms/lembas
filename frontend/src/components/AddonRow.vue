@@ -21,9 +21,11 @@ const props = defineProps<{
 
         <div class="flex-1 min-w-0">
             <section class="grid grid-cols-10 grid-rows-2">
-                <section class=" col-span-9 row-span-2">
-                    <span class="font-semibold">{{ props.addon.Name }}</span>
-                    <span class="text-xs">by {{ props.addon.Author }}</span>
+                <section class="col-span-9 row-span-2 gap-y-2">
+                    <div class="flex gap-4 items-center mb-1">
+                        <span class="font-semibold">{{ props.addon.Name }}</span>
+                        <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>
+                    </div>
                     <slot name="center"></slot>
                 </section>
 
