@@ -9,10 +9,6 @@ export const useAddonsStore = defineStore('addons', () => {
     const addons = ref<ExtendedAddon[]>([])
     const remoteAddons = ref<ExtendedRemoteAddon[]>([])
 
-    function setAddons(newAddons: ExtendedAddon[]) {
-        addons.value = newAddons
-    }
-
     async function getAddons() {
         if (remoteAddons.value.length > 0) {
             return
@@ -50,5 +46,5 @@ export const useAddonsStore = defineStore('addons', () => {
         remoteAddons.value = sortAddons(extendedRemoteAddons, false)
     }
 
-    return { addons, remoteAddons, setAddons, getAddons }
+    return { addons, remoteAddons, getAddons }
 })
