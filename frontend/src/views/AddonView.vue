@@ -12,7 +12,6 @@ import AddonList from '@/components/AddonList.vue'
 import { useFilteredList, useSort, useTotalAddons } from '@/utils.ts'
 import { useLocalAddonsStore } from '@/stores/addons.ts'
 import { computed, ref } from 'vue'
-// import { GetLocalAddons } from '../../wailsjs/go/main/App'
 
 const localAddonsStore = useLocalAddonsStore()
 

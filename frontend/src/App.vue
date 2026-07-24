@@ -2,7 +2,7 @@
 import { RouterView } from 'vue-router'
 import Header from '@/components/Header.vue'
 import { onMounted, ref } from 'vue'
-import { GetLocalAddons, GetRemoteAddons } from '../wailsjs/go/main/App'
+import { GetLocalAddons, GetRemoteAddons } from './wailsjs/go/main/App'
 import { useLocalAddonsStore, useRemoteAddonsStore } from '@/stores/addons.ts'
 import { useSort } from '@/utils.ts'
 import { buildAddonsMap, hasUpdate } from '@/utils/versioning.ts'

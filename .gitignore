@@ -6,3 +6,4 @@ frontend/build
 coverage.out
 go_rewrite/
 documentation/
+go_rewrite
