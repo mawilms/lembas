@@ -20,18 +20,19 @@ const props = defineProps<{
         </div>
 
         <div class="flex-1 min-w-0">
-            <div class="flex justify-between">
-                <div class="flex items-center gap-4">
+            <section class="grid grid-cols-10 grid-rows-2">
+                <section class=" col-span-9 row-span-2">
                     <span class="font-semibold">{{ props.addon.Name }}</span>
                     <span class="text-xs">by {{ props.addon.Author }}</span>
-                </div>
+                    <slot name="center"></slot>
+                </section>
 
-                <slot name="status"></slot>
-            </div>
+                <section class="row-span-2 text-end">
+                    <slot name="status"></slot>
+                </section>
+            </section>
 
-            <slot name="center"></slot>
-
-            <div class="h-px bg-gray-300 my-2"></div>
+            <div class="h-px bg-gray-300 my-4"></div>
 
             <div class="flex items-center justify-between text-sm text-gray-300">
                 <div>
