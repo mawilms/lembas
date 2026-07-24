@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import {
-    ArrowDownToLine,
-    ArrowDownZA,
-    ArrowUpAZ,
-    ChevronDown,
-    Funnel,
-    RefreshCw,
-    X,
-} from '@lucide/vue'
+import { ArrowDownToLine, ArrowDownZA, ArrowUpAZ, RefreshCw, X } from '@lucide/vue'
 import AddonList from '@/components/AddonList.vue'
+import Filter from '@/components/Filter.vue'
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
 
 const addonsStore = useAddonsStore()
 
+const categories = useCategories(addonsStore.addons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(addonsStore.addons, selectedCategories)
-const categories = useCategories(addonsStore.addons)
 
 const reloadAddons = async () => {
     // const newAddons = await GetLocalAddons()
@@ -56,34 +49,10 @@ const reloadAddons = async () => {
                     </div>
                 </UTooltip>
 
-                <UPopover>
-                    <UTooltip arrow text="Filter by">
-                        <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                            <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
-                        </div>
-                    </UTooltip>
-
-                    <template #content>
-                        <div class="flex flex-col gap-4 bg-light-brown-hover p-4 select-none">
-                            <div>Filter by</div>
-                            <UCollapsible class="flex flex-col w-60">
-                                <div class="flex justify-between mb-4 cursor-pointer">
-                                    <span>Categories</span>
-                                    <ChevronDown />
-                                </div>
-
-                                <template #content>
-                                    <UCheckboxGroup
-                                        :size="'sm'"
-                                        v-model="selectedCategories"
-                                        :items="categories"
-                                        :ui="{ label: 'font-normal', base: 'bg-gray-300' }"
-                                    />
-                                </template>
-                            </UCollapsible>
-                        </div>
-                    </template>
-                </UPopover>
+                <Filter
+                    v-model:selected-categories="selectedCategories"
+                    v-model:categories="categories"
+                />
 
                 <UTooltip arrow text="Synchronize">
                     <div class="p-2 hover:bg-light-brown-hover cursor-pointer">

@@ -28,7 +28,11 @@ const openPluginPage = (id: number) => {
             <section class="grid grid-cols-10 grid-rows-2">
                 <section class="col-span-9 row-span-2 gap-y-2">
                     <div class="flex gap-4 items-center mb-1">
-                        <a class="font-bold hover:underline" @click="openPluginPage(props.addon.Id)">{{ props.addon.Name }}</a>
+                        <a
+                            class="font-bold hover:underline"
+                            @click="openPluginPage(props.addon.Id)"
+                            >{{ props.addon.Name }}</a
+                        >
                         <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>
                     </div>
                     <slot name="center"></slot>

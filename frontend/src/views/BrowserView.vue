@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ArrowDownZA, ArrowUpAZ, ChevronDown, Funnel, X } from '@lucide/vue'
+import { ArrowDownZA, ArrowUpAZ, X } from '@lucide/vue'
 
 import AddonList from '@/components/AddonList.vue'
 
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 
 import { useAddonsStore } from '@/stores/addons.ts'
+import Filter from '@/components/Filter.vue'
 
 const addonsStore = useAddonsStore()
 const categories = useCategories(addonsStore.remoteAddons)
@@ -38,34 +39,10 @@ const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategorie
                     </div>
                 </UTooltip>
 
-                <UPopover>
-                    <UTooltip arrow text="Filter by">
-                        <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                            <Funnel class="h-5 w-5 hover:bg-light-brown-hover" />
-                        </div>
-                    </UTooltip>
-
-                    <template #content>
-                        <div class="flex flex-col gap-4 bg-light-brown-hover p-4 select-none">
-                            <div>Filter by</div>
-                            <UCollapsible class="flex flex-col w-60">
-                                <div class="flex justify-between mb-4 cursor-pointer">
-                                    <span>Categories</span>
-                                    <ChevronDown />
-                                </div>
-
-                                <template #content>
-                                    <UCheckboxGroup
-                                        :size="'sm'"
-                                        v-model="selectedCategories"
-                                        :items="categories"
-                                        :ui="{ label: 'font-normal', base: 'bg-gray-300' }"
-                                    />
-                                </template>
-                            </UCollapsible>
-                        </div>
-                    </template>
-                </UPopover>
+                <Filter
+                    v-model:selected-categories="selectedCategories"
+                    v-model:categories="categories"
+                />
             </div>
         </section>
 
