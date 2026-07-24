@@ -14,8 +14,6 @@ export const useAddonsStore = defineStore('addons', () => {
     }
 
     async function getAddons() {
-        console.log(remoteAddons.value)
-
         if (remoteAddons.value.length > 0) {
             return
         }
