@@ -19,7 +19,7 @@ const openPluginPage = (id: number) => {
         class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4 select-none"
     >
         <div
-            class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-secondary"
+            class="flex items-center justify-center w-22 h-full rounded-lg text-2xl font-bold bg-secondary"
         >
             {{ extractFirstLetter(props.addon.Name) }}
         </div>
