@@ -1,8 +1,9 @@
-import { database, remote } from '../../wailsjs/go/models.ts'
+import { database, remote } from '@/wailsjs/go/models.ts'
 import Addon = database.Addon
 import RemoteAddon = remote.RemoteAddon
 
 export interface IAddon {
+    Id: number
     Name: string
     Author: string
     Version: string
@@ -19,5 +20,6 @@ export interface ExtendedAddon extends Addon {
 
 export interface ExtendedRemoteAddon extends RemoteAddon {
     Type: 'remote'
+    HasUpdate: boolean
     IsInstalled: boolean
 }

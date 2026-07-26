@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-
 import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
 
 const props = defineProps<{
@@ -8,6 +7,10 @@ const props = defineProps<{
 }>()
 
 const activeRow = ref<number | null>(null)
+
+const resetRow = () => {
+    activeRow.value = null
+}
 </script>
 
 <template>
@@ -25,17 +28,23 @@ const activeRow = ref<number | null>(null)
         >
             <template v-slot:status>
                 <div v-if="addon.Type === 'remote'">
-                    <p v-if="addon.IsInstalled">Installed</p>
+                    <button
+                        v-if="addon.HasUpdate"
+                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
+                    >
+                        Update
+                    </button>
+                    <p v-else-if="addon.IsInstalled">Installed</p>
                     <button
                         v-else
-                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                     >
                         Install
                     </button>
                 </div>
                 <div v-else>
                     <button
-                        class="bg-primary hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                        class="bg-primary hover: text-sm py-1 px-2 rounded cursor-pointer"
                         v-if="addon.HasUpdate"
                     >
                         Update
@@ -54,4 +63,6 @@ const activeRow = ref<number | null>(null)
             </template>
         </AddonRow>
     </ul>
+
+    <SelectPopover :activeRow="activeRow" @reset-row="resetRow" />
 </template>

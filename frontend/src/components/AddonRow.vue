@@ -3,10 +3,15 @@ import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
 
 import { extractFirstLetter } from '@/utils.ts'
 import type { IAddon } from '@/types/plugin.ts'
+import { BrowserOpenURL } from '@/wailsjs/runtime'
 
 const props = defineProps<{
     addon: IAddon
 }>()
+
+const openPluginPage = (id: number) => {
+    BrowserOpenURL(`https://www.lotrointerface.com/downloads/info${id}`)
+}
 </script>
 
 <template>
@@ -14,7 +19,7 @@ const props = defineProps<{
         class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4 select-none"
     >
         <div
-            class="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center text-2xl font-bold bg-secondary"
+            class="flex items-center justify-center w-22 h-full rounded-lg text-2xl font-bold bg-secondary"
         >
             {{ extractFirstLetter(props.addon.Name) }}
         </div>
@@ -23,7 +28,11 @@ const props = defineProps<{
             <section class="grid grid-cols-10 grid-rows-2">
                 <section class="col-span-9 row-span-2 gap-y-2">
                     <div class="flex gap-4 items-center mb-1">
-                        <span class="font-semibold">{{ props.addon.Name }}</span>
+                        <a
+                            class="font-bold hover:underline"
+                            @click="openPluginPage(props.addon.Id)"
+                            >{{ props.addon.Name }}</a
+                        >
                         <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>
                     </div>
                     <slot name="center"></slot>
@@ -34,7 +43,7 @@ const props = defineProps<{
                 </section>
             </section>
 
-            <div class="h-px bg-gray-300 my-4"></div>
+            <div class="h-[0.1px] bg-gray-500 my-4"></div>
 
             <div class="flex items-center justify-between text-sm text-gray-300">
                 <div>
