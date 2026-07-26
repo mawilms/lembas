@@ -4,3 +4,6 @@ frontend/build
 .idea
 .vscode
 coverage.out
+go_rewrite/
+documentation/
+go_rewrite

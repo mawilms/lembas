@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1536 1024"
+     preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Warm parchment base -->
+    <linearGradient id="parchment" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d5a85d"/>
+      <stop offset="45%" stop-color="#e0b873"/>
+      <stop offset="100%" stop-color="#c9984e"/>
+    </linearGradient>
+
+    <!-- Subtle central illumination -->
+    <radialGradient id="softLight" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#f0d18f" stop-opacity=".34"/>
+      <stop offset="58%" stop-color="#e4bd78" stop-opacity=".08"/>
+      <stop offset="100%" stop-color="#9a6a2d" stop-opacity=".16"/>
+    </radialGradient>
+
+    <!-- Scalable paper texture -->
+    <filter id="paperTexture" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise"
+                    baseFrequency="0.018 0.035"
+                    numOctaves="4"
+                    seed="17"
+                    result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 .12"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+    </filter>
+
+    <filter id="fineGrain" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise"
+                    baseFrequency="0.12"
+                    numOctaves="2"
+                    seed="8"
+                    result="grain"/>
+      <feColorMatrix in="grain" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 .055"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="grain" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <rect width="1536" height="1024" fill="url(#parchment)"/>
+  <rect width="1536" height="1024" fill="url(#softLight)"/>
+  <rect width="1536" height="1024" filter="url(#paperTexture)" opacity=".8"/>
+  <rect width="1536" height="1024" filter="url(#fineGrain)" opacity=".55"/>
+</svg>

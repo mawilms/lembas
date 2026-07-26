@@ -3,10 +3,10 @@
   "name": "lembas",
   "outputfilename": "lembas",
   "frontend:install": "pnpm install",
-  "frontend:build": "pnpm run build",
+  "frontend:build": "pnpm run build-only",
   "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "auto",
-  "wailsjsdir": "./frontend/src/lib",
+  "wailsjsdir": "./frontend/src",
   "author": {
     "name": "Marius Wilms",
     "email": "info@mariuswilms.dev"

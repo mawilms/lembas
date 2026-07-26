@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+@theme {
+    --color-primary: #73984b;
+    --color-primary-transparent: rgba(159, 194, 0, 0.2);
+    --color-secondary: #465e3e;
+    --color-gold: #eea900;
+    --color-gold-transparent: rgba(238, 169, 0, 0.2);
+    --color-light-brown: #371f19;
+    --color-light-brown-hover: #4a2a22;
+    --color-dark-brown: rgb(36, 21, 18);
+
+    --animate-underline: underline 0.2s ease-out forwards;
+
+    @keyframes underline {
+        0% {
+            transform: scaleX(0);
+        }
+        100% {
+            transform: scaleX(1);
+        }
+    }
+}
