@@ -21,6 +21,16 @@ func NewApp() *App {
 	loggerHandler := slog.NewTextHandler(os.Stdout, nil)
 	logger := slog.New(loggerHandler)
 
+	userDirectory := internal.UserDirectory{}
+	if err := userDirectory.CreatePluginsDir(); err != nil {
+		return nil
+	}
+
+	appDataDirectory := internal.AppDataDirectory{}
+	if err := appDataDirectory.CreateLembasDir(); err != nil {
+		return nil
+	}
+
 	return &App{
 		logger:      logger,
 		pluginModel: &database.AddonModel{},
