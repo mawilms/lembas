@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
+import { internal } from '@/wailsjs/go/models.ts'
+import ParentAddon = internal.ParentAddon
 
 const props = defineProps<{
-    addons: ExtendedAddon[] | ExtendedRemoteAddon[]
+    addons: ParentAddon[]
 }>()
 
 const activeRow = ref<number | null>(null)

@@ -1,6 +1,5 @@
-import { database, remote } from '@/wailsjs/go/models.ts'
-import Addon = database.Addon
-import RemoteAddon = remote.RemoteAddon
+import { internal } from '@/wailsjs/go/models.ts'
+import ParentAddon = internal.ParentAddon
 
 export const normalizeVersion = (version: string): number[] => {
     return version
@@ -29,7 +28,7 @@ export const compareVersions = (remoteVersion: string, localVersion: string): nu
     return 0
 }
 
-export const hasUpdate = (local: Addon, remote: RemoteAddon): boolean => {
+export const hasUpdate = (local: ParentAddon, remote: ParentAddon): boolean => {
     return compareVersions(remote.Version, local.Version) > 0
 }
 
