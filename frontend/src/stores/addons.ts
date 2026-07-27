@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { GetLocalAddons, GetRemoteAddons } from '@/wailsjs/go/main/App'
-import { hasUpdate } from '@/utils/versioning.ts'
+import { GetAddons } from '@/wailsjs/go/main/App'
 import { useSort } from '@/utils.ts'
-import { internal, main } from '@/wailsjs/go/models.ts'
+import { internal } from '@/wailsjs/go/models.ts'
 import ParentAddon = internal.ParentAddon
-import ParentAddonMap = main.ParentAddonMap
 
 export const useAddonsStore = defineStore('addons', () => {
     const addons = ref<ParentAddon[]>([])
@@ -18,33 +16,13 @@ export const useAddonsStore = defineStore('addons', () => {
 
         const { sortAddons } = useSort()
 
-        const fetchedLocalAddons: ParentAddonMap = await GetLocalAddons()
-        const fetchedRemoteAddons: ParentAddonMap = await GetRemoteAddons()
+        const fetchedLocalAddons = Object.values((await GetAddons()).items)
 
-        const extendedAddons: ParentAddon[] = Object.values(fetchedLocalAddons.items).map(
-            (local) => {
-                const remote = fetchedRemoteAddons.items[`${local.Name}_${local.Author}`]
-
-                return {
-                    ...local,
-                    HasUpdate: remote ? hasUpdate(local, remote) : false,
-                }
-            }
+        addons.value = sortAddons(
+            fetchedLocalAddons.filter((value) => value.IsInstalled),
+            false
         )
-
-        const extendedRemoteAddons: ParentAddon[] = Object.values(fetchedRemoteAddons.items).map(
-            (remote) => {
-                const local = fetchedLocalAddons.items[`${remote.Name}_${remote.Author}`]
-                return {
-                    ...remote,
-                    IsInstalled: !!local,
-                    HasUpdate: local ? hasUpdate(local, remote) : false,
-                }
-            }
-        )
-
-        addons.value = sortAddons(extendedAddons, false)
-        remoteAddons.value = sortAddons(extendedRemoteAddons, false)
+        remoteAddons.value = sortAddons(fetchedLocalAddons, false)
     }
 
     return { addons, remoteAddons, getAddons }

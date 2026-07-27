@@ -93,3 +93,12 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 
 	return ParentAddonMap{Items: addons}
 }
+
+func (a *App) GetAddons() ParentAddonMap {
+	localAddons := a.GetLocalAddons()
+	remoteAddons := a.GetRemoteAddons()
+
+	return ParentAddonMap{
+		Items: internal.MergeAddons(localAddons.Items, remoteAddons.Items),
+	}
+}
