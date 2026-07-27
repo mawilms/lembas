@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
 	"github.com/mawilms/lembas/internal/remote"
 )
@@ -101,4 +102,16 @@ func (a *App) GetAddons() ParentAddonMap {
 	return ParentAddonMap{
 		Items: internal.MergeAddons(localAddons.Items, remoteAddons.Items),
 	}
+}
+
+func (a *App) InstallAddon(id int, force bool) {
+	log.Infof("%v", id)
+}
+
+func (a *App) UpdateAddon(id int) {
+	log.Infof("%v", id)
+}
+
+func (a *App) DeleteAddon(id int) {
+	log.Infof("%v", id)
 }
