@@ -14,6 +14,10 @@ type ParentAddonMap struct {
 }
 
 func (a *App) GetLocalAddons() ParentAddonMap {
+	if len(a.localAddons) > 0 {
+		return ParentAddonMap{Items: a.localAddons}
+	}
+
 	dbAddons, err := a.pluginModel.Get()
 	if err != nil {
 		return ParentAddonMap{}
@@ -45,6 +49,10 @@ func (a *App) GetLocalAddons() ParentAddonMap {
 }
 
 func (a *App) GetRemoteAddons() ParentAddonMap {
+	if len(a.remoteAddons) > 0 {
+		return ParentAddonMap{Items: a.remoteAddons}
+	}
+
 	api := remote.Api{
 		Url: "https://api.lotrointerface.com/fav/plugincompendium.xml",
 	}
@@ -80,6 +88,8 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 			IsInstalled: false,
 		}
 	}
+
+	a.remoteAddons = addons
 
 	return ParentAddonMap{Items: addons}
 }
