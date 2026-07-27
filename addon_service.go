@@ -55,7 +55,7 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 	}
 
 	api := remote.Api{
-		Url: "https://api.lotrointerface.com/fav/plugincompendium.xml",
+		Url: a.settings.FavoritesUrl,
 	}
 
 	response, err := api.GetSourceXml()

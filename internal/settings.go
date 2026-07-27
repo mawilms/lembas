@@ -1,9 +1,35 @@
 package internal
 
 import (
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 )
+
+type Settings struct {
+	FavoritesUrl string `json:"favoritesUrl"`
+	BaseUrl      string `json:"baseUrl"`
+}
+
+func WriteSettings(settings Settings, path string) error {
+	content, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	settingsPath := filepath.Join(path, "settings.json")
+
+	if _, err := os.Stat(settingsPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err = os.WriteFile(settingsPath, content, os.ModePerm); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 
 type UserDirectoryInterface interface {
 	GetDocumentsDir() (string, error)
