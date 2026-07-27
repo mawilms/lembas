@@ -49,12 +49,14 @@ type ApiInterface interface {
 	GetSourceXml(url string) (string, error)
 }
 
-type Api struct{}
+type Api struct {
+	Url string
+}
 
-func (a *Api) GetSourceXml(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+func (a *Api) GetSourceXml() ([]byte, error) {
+	resp, err := http.Get(a.Url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch xml payload from %s: %w", url, err)
+		return nil, fmt.Errorf("failed to fetch xml payload from %s: %w", a.Url, err)
 	}
 	defer resp.Body.Close()
 

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
+import { internal } from '@/wailsjs/go/models.ts'
+import ParentAddon = internal.ParentAddon
+import { InstallAddon, UpdateAddon } from '@/wailsjs/go/main/App'
 
 const props = defineProps<{
-    addons: ExtendedAddon[] | ExtendedRemoteAddon[]
+    addons: ParentAddon[]
 }>()
 
 const activeRow = ref<number | null>(null)
@@ -14,12 +16,19 @@ const resetRow = () => {
 </script>
 
 <template>
-    <ul class="flex flex-col flex-1 gap-4 overflow-y-auto p-4">
+    <UScrollArea
+        v-slot="{ item, index }"
+        :items="props.addons"
+        orientation="vertical"
+        :virtualize="{
+            gap: 16,
+        }"
+        class="p-4"
+    >
         <AddonRow
             class="border cursor-pointer"
-            v-for="(addon, index) in props.addons"
-            :key="addon.Id"
-            :addon="addon"
+            :key="index"
+            :addon="item"
             :class="{
                 'border-primary': activeRow === index,
                 'border-transparent': activeRow !== index,
@@ -27,17 +36,18 @@ const resetRow = () => {
             @click="activeRow = index"
         >
             <template v-slot:status>
-                <div v-if="addon.Type === 'remote'">
+                <div v-if="item.Type === 'remote'">
                     <button
-                        v-if="addon.HasUpdate"
+                        v-if="item.HasUpdate"
                         class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                     >
                         Update
                     </button>
-                    <p v-else-if="addon.IsInstalled">Installed</p>
+                    <p v-else-if="item.IsInstalled">Installed</p>
                     <button
                         v-else
                         class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
+                        @click="async () => await InstallAddon(item.Id, false)"
                     >
                         Install
                     </button>
@@ -45,7 +55,8 @@ const resetRow = () => {
                 <div v-else>
                     <button
                         class="bg-primary hover: text-sm py-1 px-2 rounded cursor-pointer"
-                        v-if="addon.HasUpdate"
+                        v-if="item.HasUpdate"
+                        @click="async () => await UpdateAddon(item.Id)"
                     >
                         Update
                     </button>
@@ -55,14 +66,14 @@ const resetRow = () => {
 
             <template v-slot:center>
                 <div class="flex min-w-0 flex-1 text-xs text-gray-300">
-                    <span v-if="addon.Type === 'local'" class="min-w-0 truncate">{{
-                        addon.ArchiveName
+                    <span v-if="item.Type === 'local'" class="min-w-0 truncate">{{
+                        item.ArchiveName
                     }}</span>
-                    <span v-else class="min-w-0 flex-1 truncate">{{ addon.Description }}</span>
+                    <span v-else class="min-w-0 flex-1 truncate">{{ item.Description }}</span>
                 </div>
             </template>
         </AddonRow>
-    </ul>
+    </UScrollArea>
 
-    <SelectPopover :activeRow="activeRow" @reset-row="resetRow" />
+    <SelectPopover :addon="props.addons[activeRow!]!" :activeRow="activeRow" @reset-row="resetRow" />
 </template>

@@ -2,9 +2,9 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
+	"github.com/mawilms/lembas/internal"
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
@@ -26,11 +26,13 @@ type Addon struct {
 	Category         string
 }
 
-type AddonModel struct {
-	Db *sql.DB
+type AddonModel struct{}
+
+type IAddonModel interface {
+	Get() ([]Addon, error)
 }
 
-func (p *AddonModel) Get() ([]Addon, error) {
+func (a *AddonModel) Get() ([]Addon, error) {
 	db, err := sql.Open("sqlite3", "file:C:\\Users\\mariu\\Documents\\Programmierung\\lembas\\internal\\database\\example.sqlite?cache=shared")
 	if err != nil {
 		return nil, err
@@ -51,7 +53,7 @@ func (p *AddonModel) Get() ([]Addon, error) {
 
 	for rows.Next() {
 		var p Addon
-		var archiveSize int
+		var archiveSize int64
 		var updatedTimestamp int64
 
 		if err := rows.Scan(&p.Name, &p.Author, &p.Version, &p.Description, &p.IsManaged, &p.Plugin,
@@ -60,7 +62,7 @@ func (p *AddonModel) Get() ([]Addon, error) {
 			return nil, err
 		}
 
-		p.ArchiveSize = formatArchiveSize(archiveSize)
+		p.ArchiveSize = internal.FormatArchiveSize(archiveSize)
 		p.UpdatedAt = time.Unix(updatedTimestamp, 0).Local().Format("01/02/2006")
 
 		addons = append(addons, p)
@@ -72,12 +74,4 @@ func (p *AddonModel) Get() ([]Addon, error) {
 
 	return addons, nil
 
-}
-
-func formatArchiveSize(bytes int) string {
-	kb := bytes / 1000
-	if kb > 1000 {
-		return fmt.Sprintf("%v MB", kb/1000)
-	}
-	return fmt.Sprintf("%v KB", kb)
 }
