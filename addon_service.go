@@ -11,7 +11,7 @@ import (
 )
 
 type ParentAddonMap struct {
-	Items map[string]internal.ParentAddon `json:"items"`
+	Items map[string]internal.Addon `json:"items"`
 }
 
 func (a *App) GetLocalAddons() ParentAddonMap {
@@ -24,24 +24,10 @@ func (a *App) GetLocalAddons() ParentAddonMap {
 		return ParentAddonMap{}
 	}
 
-	var addons = make(map[string]internal.ParentAddon)
+	var addons = make(map[string]internal.Addon)
 
 	for _, e := range dbAddons {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.ParentAddon{
-			Id:          e.Id,
-			Type:        "local",
-			Name:        e.Name,
-			Author:      e.Author,
-			Description: e.Description,
-			Version:     e.Version,
-			Category:    e.Category,
-			Downloads:   e.Downloads,
-			UpdatedAt:   e.UpdatedAt,
-			ArchiveName: e.ArchiveName,
-			ArchiveSize: e.ArchiveSize,
-			HasUpdate:   false, // Check before
-			IsInstalled: true,
-		}
+		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = e
 	}
 
 	a.localAddons = addons
@@ -70,10 +56,10 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 		return ParentAddonMap{}
 	}
 
-	addons := make(map[string]internal.ParentAddon)
+	addons := make(map[string]internal.Addon)
 
 	for _, e := range xmlModel {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.ParentAddon{
+		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.Addon{
 			Id:          e.Uid,
 			Type:        "remote",
 			Name:        e.Name,
@@ -100,7 +86,7 @@ func (a *App) GetAddons() ParentAddonMap {
 	remoteAddons := a.GetRemoteAddons()
 
 	return ParentAddonMap{
-		Items: internal.MergeAddons(localAddons.Items, remoteAddons.Items),
+		Items: internal.UpdateVersions(localAddons.Items, remoteAddons.Items),
 	}
 }
 

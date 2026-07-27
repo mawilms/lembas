@@ -1,6 +1,6 @@
 export namespace internal {
 	
-	export class ParentAddon {
+	export class Addon {
 	    Id: number;
 	    Type: string;
 	    Name: string;
@@ -16,7 +16,7 @@ export namespace internal {
 	    IsInstalled: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new ParentAddon(source);
+	        return new Addon(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -42,7 +42,7 @@ export namespace internal {
 export namespace main {
 	
 	export class ParentAddonMap {
-	    items: Record<string, internal.ParentAddon>;
+	    items: Record<string, internal.Addon>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ParentAddonMap(source);
@@ -50,7 +50,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.items = this.convertValues(source["items"], internal.ParentAddon, true);
+	        this.items = this.convertValues(source["items"], internal.Addon, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

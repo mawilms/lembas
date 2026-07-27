@@ -1,7 +1,7 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 
 interface Named {
     Name: string
@@ -58,7 +58,7 @@ export const useRemoveCategory = () => {
     return { selectedCategories, removeCategory }
 }
 
-export const useCategories = (addons: ParentAddon[]) => {
+export const useCategories = (addons: Addon[]) => {
     return computed(() => {
         return [
             ...new Set(

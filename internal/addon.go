@@ -4,7 +4,7 @@ import "maps"
 
 import "fmt"
 
-type ParentAddon struct {
+type Addon struct {
 	Id          int
 	Type        string
 	Name        string
@@ -28,22 +28,18 @@ func FormatArchiveSize(bytes int64) string {
 	return fmt.Sprintf("%v KB", kb)
 }
 
-func MergeAddons(installed, remote map[string]ParentAddon) map[string]ParentAddon {
-	merged := make(map[string]ParentAddon, len(remote))
+func UpdateVersions(installed, remote map[string]Addon) map[string]Addon {
+	mergedAddons := make(map[string]Addon, len(remote))
 
-	maps.Copy(merged, remote)
+	maps.Copy(mergedAddons, remote)
 
 	for key, localAddon := range installed {
-		if remoteAddon, exists := merged[key]; exists {
+		if remoteAddon, exists := mergedAddons[key]; exists {
 			remoteAddon.IsInstalled = true
 			remoteAddon.HasUpdate = remoteAddon.Version != localAddon.Version
-			merged[key] = remoteAddon
-		} else {
-			localAddon.IsInstalled = true
-			localAddon.HasUpdate = false
-			merged[key] = localAddon
+			mergedAddons[key] = remoteAddon
 		}
 	}
 
-	return merged
+	return mergedAddons
 }

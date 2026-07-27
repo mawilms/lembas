@@ -14,8 +14,8 @@ type App struct {
 	logger       *slog.Logger
 	settings     *internal.Settings
 	pluginModel  database.IAddonModel
-	localAddons  map[string]internal.ParentAddon
-	remoteAddons map[string]internal.ParentAddon
+	localAddons  map[string]internal.Addon
+	remoteAddons map[string]internal.Addon
 }
 
 func NewApp() *App {

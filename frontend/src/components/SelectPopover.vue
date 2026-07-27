@@ -3,11 +3,11 @@ import { ArrowDownToLine, Trash2, X } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { DeleteAddon, InstallAddon } from '@/wailsjs/go/main/App'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 
 const props = defineProps<{
     activeRow: number | null
-    addon: ParentAddon
+    addon: Addon
 }>()
 const emit = defineEmits(['reset-row'])
 

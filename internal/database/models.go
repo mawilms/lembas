@@ -8,7 +8,7 @@ import (
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
-type Addon struct {
+type Row struct {
 	Id               int
 	Name             string
 	Author           string
@@ -29,10 +29,10 @@ type Addon struct {
 type AddonModel struct{}
 
 type IAddonModel interface {
-	Get() ([]Addon, error)
+	Get() ([]internal.Addon, error)
 }
 
-func (a *AddonModel) Get() ([]Addon, error) {
+func (a *AddonModel) Get() ([]internal.Addon, error) {
 	db, err := sql.Open("sqlite3", "file:C:\\Users\\mariu\\Documents\\Programmierung\\lembas\\internal\\database\\example.sqlite?cache=shared")
 	if err != nil {
 		return nil, err
@@ -49,10 +49,10 @@ func (a *AddonModel) Get() ([]Addon, error) {
 	}
 	defer rows.Close()
 
-	var addons []Addon
+	var addons []internal.Addon
 
 	for rows.Next() {
-		var p Addon
+		var p Row
 		var archiveSize int64
 		var updatedTimestamp int64
 
@@ -65,7 +65,21 @@ func (a *AddonModel) Get() ([]Addon, error) {
 		p.ArchiveSize = internal.FormatArchiveSize(archiveSize)
 		p.UpdatedAt = time.Unix(updatedTimestamp, 0).Local().Format("01/02/2006")
 
-		addons = append(addons, p)
+		addons = append(addons, internal.Addon{
+			Id:          p.Id,
+			Type:        "local",
+			Name:        p.Name,
+			Author:      p.Author,
+			Description: p.Description,
+			Version:     p.Version,
+			Category:    p.Category,
+			Downloads:   p.Downloads,
+			UpdatedAt:   p.UpdatedAt,
+			ArchiveName: p.ArchiveName,
+			ArchiveSize: p.ArchiveSize,
+			HasUpdate:   false,
+			IsInstalled: true,
+		})
 	}
 
 	if err = rows.Err(); err != nil {

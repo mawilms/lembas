@@ -10,8 +10,8 @@ import (
 
 type MockAddonModel struct{}
 
-func (p *MockAddonModel) Get() ([]database.Addon, error) {
-	return []database.Addon{
+func (p *MockAddonModel) Get() ([]database.Row, error) {
+	return []database.Row{
 		{
 			Id:               12345,
 			Name:             "WhereToPlay",
@@ -39,7 +39,7 @@ func TestGetLocalAddons(t *testing.T) {
 
 	got := app.GetLocalAddons()
 
-	expected := map[string]internal.ParentAddon{
+	expected := map[string]internal.Addon{
 		"WhereToPlay_Dean": {
 			Id:          12345,
 			Type:        "local",

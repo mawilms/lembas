@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 import { InstallAddon, UpdateAddon } from '@/wailsjs/go/main/App'
 
 const props = defineProps<{
-    addons: ParentAddon[]
+    addons: Addon[]
 }>()
 
 const activeRow = ref<number | null>(null)

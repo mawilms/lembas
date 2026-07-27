@@ -4,10 +4,10 @@ import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
 import { extractFirstLetter } from '@/utils.ts'
 import { BrowserOpenURL } from '@/wailsjs/runtime'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 
 const props = defineProps<{
-    addon: ParentAddon
+    addon: Addon
 }>()
 
 const openPluginPage = (id: number) => {
