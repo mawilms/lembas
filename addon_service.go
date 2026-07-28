@@ -34,6 +34,7 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 
 	if len(a.remoteAddons) > 0 {
 		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
+
 	} else {
 		a.localAddons = addons
 	}
@@ -41,8 +42,8 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }
 
-func (a *App) GetRemoteAddons(force bool) AddonMap {
-	if len(a.remoteAddons) > 0 && !force {
+func (a *App) GetRemoteAddons(forceReload bool) AddonMap {
+	if len(a.remoteAddons) > 0 && !forceReload {
 		return AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
 	}
 
@@ -113,6 +114,22 @@ func (a *App) InstallAddon(id int, force bool) AddonMap {
 	}
 
 	a.localAddons[id] = newAddon
+	a.remoteAddons[id] = internal.Addon{
+		Id:             a.remoteAddons[id].Id,
+		Type:           a.remoteAddons[id].Type,
+		Name:           a.remoteAddons[id].Name,
+		Author:         a.remoteAddons[id].Author,
+		Description:    a.remoteAddons[id].Description,
+		CurrentVersion: a.remoteAddons[id].LatestVersion,
+		LatestVersion:  a.remoteAddons[id].CurrentVersion,
+		Category:       a.remoteAddons[id].Category,
+		Downloads:      a.remoteAddons[id].Downloads,
+		UpdatedAt:      a.remoteAddons[id].UpdatedAt,
+		ArchiveName:    a.remoteAddons[id].ArchiveSize,
+		ArchiveSize:    a.remoteAddons[id].ArchiveSize,
+		HasUpdate:      false,
+		IsInstalled:    true,
+	}
 
 	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }

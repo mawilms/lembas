@@ -8,7 +8,7 @@ import { storeToRefs } from 'pinia'
 import { GetLocalAddons } from '@/wailsjs/go/main/App'
 
 const { addons } = storeToRefs(useAddonsStore())
-const { setAddons } = useAddonsStore()
+const { setAddons, setRemoteAddons } = useAddonsStore()
 
 const categories = useCategories(addons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
@@ -20,6 +20,7 @@ const reloadAddons = async () => {
     const newAddons = await GetLocalAddons(true)
     console.log(newAddons)
     setAddons(Object.values(newAddons.localAddons))
+    setRemoteAddons(Object.values(newAddons.remoteAddons))
 }
 </script>
 

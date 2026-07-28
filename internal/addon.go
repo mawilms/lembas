@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"maps"
 	"regexp"
 	"strconv"
 	"strings"
@@ -52,7 +51,10 @@ func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {
 func UpdateVersions(localAddons, remoteAddons map[int]Addon) map[int]Addon {
 	mergedAddons := make(map[int]Addon, len(remoteAddons))
 
-	maps.Copy(mergedAddons, remoteAddons)
+	for key, remoteAddon := range remoteAddons {
+		remoteAddon.IsInstalled = false // TODO: Dirty workaround because of the instability after the installing of addons. fix later
+		mergedAddons[key] = remoteAddon
+	}
 
 	for key, localAddon := range localAddons {
 		if remoteAddon, exists := mergedAddons[key]; exists {

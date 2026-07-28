@@ -98,3 +98,160 @@ func TestVersionSuffix(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateVersions(t *testing.T) {
+	localAddons := map[int]Addon{
+		1138: {
+			Id:             1138,
+			Type:           "local",
+			Name:           "WhereToPlay",
+			Author:         "homeopatix",
+			Description:    "hello world",
+			CurrentVersion: "1.33",
+			LatestVersion:  "",
+			Category:       "Others",
+			Downloads:      154896,
+			UpdatedAt:      "07/28/2026",
+			ArchiveName:    "WhereToPlayV1.34.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      false,
+			IsInstalled:    true,
+		},
+	}
+
+	remoteAddons := map[int]Addon{
+		1138: {
+			Id:             1138,
+			Type:           "remote",
+			Name:           "WhereToPlay",
+			Author:         "homeopatix",
+			Description:    "hello world",
+			CurrentVersion: "1.34",
+			LatestVersion:  "1.34",
+			Category:       "Others",
+			Downloads:      154896,
+			UpdatedAt:      "07/28/2026",
+			ArchiveName:    "WhereToPlayV1.34.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      false,
+			IsInstalled:    false,
+		},
+		1238: {
+			Id:             1238,
+			Type:           "remote",
+			Name:           "Fishing Lot",
+			Author:         "Vinny",
+			Description:    "hello world",
+			CurrentVersion: "1.3",
+			LatestVersion:  "1.3",
+			Category:       "Others",
+			Downloads:      564,
+			UpdatedAt:      "05/25/2026",
+			ArchiveName:    "FishingLog_1.3.zip",
+			ArchiveSize:    "125 KB",
+			HasUpdate:      false,
+			IsInstalled:    false,
+		},
+	}
+
+	expected := map[int]Addon{
+		1138: {
+			Id:             1138,
+			Type:           "remote",
+			Name:           "WhereToPlay",
+			Author:         "homeopatix",
+			Description:    "hello world",
+			CurrentVersion: "1.33",
+			LatestVersion:  "1.34",
+			Category:       "Others",
+			Downloads:      154896,
+			UpdatedAt:      "07/28/2026",
+			ArchiveName:    "WhereToPlayV1.34.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      true,
+			IsInstalled:    true,
+		},
+		1238: {
+			Id:             1238,
+			Type:           "remote",
+			Name:           "Fishing Lot",
+			Author:         "Vinny",
+			Description:    "hello world",
+			CurrentVersion: "1.3",
+			LatestVersion:  "1.3",
+			Category:       "Others",
+			Downloads:      564,
+			UpdatedAt:      "05/25/2026",
+			ArchiveName:    "FishingLog_1.3.zip",
+			ArchiveSize:    "125 KB",
+			HasUpdate:      false,
+			IsInstalled:    false,
+		},
+	}
+
+	got := UpdateVersions(localAddons, remoteAddons)
+	if !reflect.DeepEqual(got, expected) {
+		t.Fatalf("version comparison has failed; got %v, expected %v", got, expected)
+	}
+}
+
+func TestUpdateLocalAddons(t *testing.T) {
+	mergedAddons := map[int]Addon{
+		1138: {
+			Id:             1138,
+			Type:           "local",
+			Name:           "WhereToPlay",
+			Author:         "homeopatix",
+			Description:    "hello world",
+			CurrentVersion: "1.33",
+			LatestVersion:  "1.34",
+			Category:       "Others",
+			Downloads:      154896,
+			UpdatedAt:      "07/28/2026",
+			ArchiveName:    "WhereToPlayV1.34.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      true,
+			IsInstalled:    true,
+		},
+		1238: {
+			Id:             1238,
+			Type:           "local",
+			Name:           "Fishing Lot",
+			Author:         "Vinny",
+			Description:    "hello world",
+			CurrentVersion: "1.3",
+			LatestVersion:  "1.3",
+			Category:       "Others",
+			Downloads:      564,
+			UpdatedAt:      "05/25/2026",
+			ArchiveName:    "FishingLog_1.3.zip",
+			ArchiveSize:    "125 KB",
+			HasUpdate:      false,
+			IsInstalled:    false,
+		},
+	}
+
+	expected := map[int]Addon{
+		1138: {
+			Id:             1138,
+			Type:           "local",
+			Name:           "WhereToPlay",
+			Author:         "homeopatix",
+			Description:    "hello world",
+			CurrentVersion: "1.33",
+			LatestVersion:  "1.34",
+			Category:       "Others",
+			Downloads:      154896,
+			UpdatedAt:      "07/28/2026",
+			ArchiveName:    "WhereToPlayV1.34.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      true,
+			IsInstalled:    true,
+		},
+	}
+
+	got := UpdateLocalAddons(mergedAddons)
+	if !reflect.DeepEqual(got, expected) {
+		t.Fatalf("Couldn't remove remote only addons: got %v, expected %v", got, expected)
+	}
+}

@@ -26,5 +26,9 @@ export const useAddonsStore = defineStore('addons', () => {
         addons.value = sortAddons(newAddons, false)
     }
 
-    return { addons, setAddons, remoteAddons, getAddons }
+    const setRemoteAddons = (newAddons: Addon[]) => {
+        remoteAddons.value = sortAddons(Object.values(newAddons), false)
+    }
+
+    return { addons, remoteAddons, setAddons, setRemoteAddons, getAddons }
 })
