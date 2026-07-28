@@ -1,10 +1,10 @@
-package database
+package internal
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
-	"github.com/mawilms/lembas/internal"
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
@@ -29,11 +29,11 @@ type Row struct {
 type AddonModel struct{}
 
 type IAddonModel interface {
-	Get() ([]internal.Addon, error)
+	Get(dbPath string) ([]Addon, error)
 }
 
-func (a *AddonModel) Get() ([]internal.Addon, error) {
-	db, err := sql.Open("sqlite3", "file:C:\\Users\\mariu\\Documents\\Programmierung\\lembas\\internal\\database\\example.sqlite?cache=shared")
+func (a *AddonModel) Get(dbPath string) ([]Addon, error) {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", dbPath))
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (a *AddonModel) Get() ([]internal.Addon, error) {
 	}
 	defer rows.Close()
 
-	var addons []internal.Addon
+	var addons []Addon
 
 	for rows.Next() {
 		var p Row
@@ -62,10 +62,10 @@ func (a *AddonModel) Get() ([]internal.Addon, error) {
 			return nil, err
 		}
 
-		p.ArchiveSize = internal.FormatArchiveSize(archiveSize)
+		p.ArchiveSize = FormatArchiveSize(archiveSize)
 		p.UpdatedAt = time.Unix(updatedTimestamp, 0).Local().Format("01/02/2006")
 
-		addons = append(addons, internal.Addon{
+		addons = append(addons, Addon{
 			Id:          p.Id,
 			Type:        "local",
 			Name:        p.Name,

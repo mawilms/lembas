@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/database"
 )
 
 type MockAddonModel struct{}
 
-func (p *MockAddonModel) Get() ([]database.Row, error) {
-	return []database.Row{
+func (p *MockAddonModel) Get() ([]internal.Row, error) {
+	return []internal.Row{
 		{
 			Id:               12345,
 			Name:             "WhereToPlay",

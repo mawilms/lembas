@@ -6,14 +6,13 @@ import (
 	"os"
 
 	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/database"
 )
 
 type App struct {
 	ctx          context.Context
 	logger       *slog.Logger
 	settings     *internal.Settings
-	pluginModel  database.IAddonModel
+	pluginModel  internal.IAddonModel
 	localAddons  map[string]internal.Addon
 	remoteAddons map[string]internal.Addon
 }
@@ -21,10 +20,6 @@ type App struct {
 func NewApp() *App {
 	loggerHandler := slog.NewTextHandler(os.Stdout, nil)
 	logger := slog.New(loggerHandler)
-
-	settings := internal.Settings{
-		FavoritesUrl: "https://api.lotrointerface.com/fav/plugincompendium.xml",
-		BaseUrl:      "https://www.lotrointerface.com/downloads"}
 
 	userDirectory := internal.UserDirectory{}
 	if err := userDirectory.CreatePluginsDir(); err != nil {
@@ -41,6 +36,11 @@ func NewApp() *App {
 		return nil
 	}
 
+	settings := internal.Settings{
+		FavoritesUrl:  "https://api.lotrointerface.com/fav/plugincompendium.xml",
+		BaseUrl:       "https://www.lotrointerface.com/downloads",
+		DownloadPath:  os.TempDir(),
+		DataDirectory: lembasDirectory}
 	if err = internal.WriteSettings(settings, lembasDirectory); err != nil {
 		return nil
 	}
@@ -48,7 +48,7 @@ func NewApp() *App {
 	return &App{
 		logger:      logger,
 		settings:    &settings,
-		pluginModel: &database.AddonModel{},
+		pluginModel: &internal.AddonModel{},
 	}
 }
 

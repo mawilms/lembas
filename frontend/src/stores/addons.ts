@@ -17,7 +17,6 @@ export const useAddonsStore = defineStore('addons', () => {
         const { sortAddons } = useSort()
 
         const fetchedLocalAddons = Object.values((await GetAddons()).items)
-        console.log(fetchedLocalAddons)
 
         addons.value = sortAddons(
             fetchedLocalAddons.filter((value) => value.IsInstalled),

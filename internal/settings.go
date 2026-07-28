@@ -8,8 +8,10 @@ import (
 )
 
 type Settings struct {
-	FavoritesUrl string `json:"favoritesUrl"`
-	BaseUrl      string `json:"baseUrl"`
+	FavoritesUrl  string `json:"favoritesUrl"`
+	BaseUrl       string `json:"baseUrl"`
+	DownloadPath  string `json:"downloadPath"`
+	DataDirectory string
 }
 
 func WriteSettings(settings Settings, path string) error {

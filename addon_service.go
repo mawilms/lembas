@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"time"
 
 	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/remote"
 )
 
 type ParentAddonMap struct {
@@ -19,7 +19,9 @@ func (a *App) GetLocalAddons() ParentAddonMap {
 		return ParentAddonMap{Items: a.localAddons}
 	}
 
-	dbAddons, err := a.pluginModel.Get()
+	dbPath := filepath.Join(a.settings.DataDirectory, "db.sqlite")
+
+	dbAddons, err := a.pluginModel.Get(dbPath)
 	if err != nil {
 		return ParentAddonMap{}
 	}
@@ -40,7 +42,7 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 		return ParentAddonMap{Items: a.remoteAddons}
 	}
 
-	api := remote.Api{
+	api := internal.Api{
 		Url: a.settings.FavoritesUrl,
 	}
 
@@ -50,7 +52,7 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 		return ParentAddonMap{}
 	}
 
-	xmlModel, err := remote.ParseXmlResponse(response)
+	xmlModel, err := internal.ParseXmlResponse(response)
 	if err != nil {
 		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
 		return ParentAddonMap{}
