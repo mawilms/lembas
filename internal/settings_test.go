@@ -21,7 +21,7 @@ func TestUserDirectory_CreatePluginsDir(t *testing.T) {
 
 	u := &UserDirectory{}
 
-	if err := u.CreatePluginsDir(); err != nil {
+	if _, err := u.CreateAddonsDir(); err != nil {
 		t.Fatalf("Failed to create directory: %v", err)
 	}
 

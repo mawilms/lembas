@@ -4,12 +4,12 @@ import {main} from '../models';
 
 export function DeleteAddon(arg1:number):Promise<void>;
 
-export function GetAddons():Promise<main.ParentAddonMap>;
+export function GetAddons():Promise<main.AddonMap>;
 
-export function GetLocalAddons():Promise<main.ParentAddonMap>;
+export function GetLocalAddons():Promise<main.AddonMap>;
 
-export function GetRemoteAddons():Promise<main.ParentAddonMap>;
+export function GetRemoteAddons():Promise<main.AddonMap>;
 
-export function InstallAddon(arg1:number,arg2:boolean):Promise<void>;
+export function InstallAddon(arg1:number,arg2:boolean):Promise<main.AddonMap>;
 
 export function UpdateAddon(arg1:number):Promise<void>;

@@ -12,19 +12,20 @@ import "fmt"
 var leadingDigits = regexp.MustCompile(`^\d+`)
 
 type Addon struct {
-	Id          int
-	Type        string
-	Name        string
-	Author      string
-	Description string
-	Version     string
-	Category    string
-	Downloads   int
-	UpdatedAt   string
-	ArchiveName string
-	ArchiveSize string
-	HasUpdate   bool
-	IsInstalled bool
+	Id             int
+	Type           string
+	Name           string
+	Author         string
+	Description    string
+	CurrentVersion string
+	LatestVersion  string
+	Category       string
+	Downloads      int
+	UpdatedAt      string
+	ArchiveName    string
+	ArchiveSize    string
+	HasUpdate      bool
+	IsInstalled    bool
 }
 
 func FormatArchiveSize(bytes int64) string {
@@ -35,14 +36,15 @@ func FormatArchiveSize(bytes int64) string {
 	return fmt.Sprintf("%v KB", kb)
 }
 
-func UpdateVersions(installed, remote map[string]Addon) map[string]Addon {
-	mergedAddons := make(map[string]Addon, len(remote))
+func UpdateVersions(localAddons, remoteAddons map[int]Addon) map[int]Addon {
+	mergedAddons := make(map[int]Addon, len(remoteAddons))
 
-	maps.Copy(mergedAddons, remote)
+	maps.Copy(mergedAddons, remoteAddons)
 
-	for key, localAddon := range installed {
+	for key, localAddon := range localAddons {
 		if remoteAddon, exists := mergedAddons[key]; exists {
 			remoteAddon.IsInstalled = true
+			remoteAddon.CurrentVersion = localAddon.CurrentVersion
 			remoteAddon.HasUpdate = hasUpdate(localAddon, remoteAddon)
 			mergedAddons[key] = remoteAddon
 		}
@@ -119,10 +121,9 @@ func compareVersions(remoteVersion, localVersion string) int {
 	}
 
 	return 0
-
 }
 
 // hasUpdate reports whether remote has a newer version than local.
 func hasUpdate(local, remote Addon) bool {
-	return compareVersions(remote.Version, local.Version) > 0
+	return compareVersions(remote.LatestVersion, local.CurrentVersion) > 0
 }

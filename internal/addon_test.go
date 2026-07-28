@@ -61,9 +61,9 @@ func TestHasUpdate(t *testing.T) {
 		remote Addon
 		want   bool
 	}{
-		{"remote is newer", Addon{Version: "v1.3.0"}, Addon{Version: "v1.3.1"}, true},
-		{"remote is older", Addon{Version: "v1.3.1"}, Addon{Version: "v1.3.0"}, false},
-		{"versions are equal", Addon{Version: "v1.3.0"}, Addon{Version: "v1.3.0"}, false},
+		{"remote is newer", Addon{CurrentVersion: "v1.3.0"}, Addon{CurrentVersion: "v1.3.1"}, true},
+		{"remote is older", Addon{CurrentVersion: "v1.3.1"}, Addon{CurrentVersion: "v1.3.0"}, false},
+		{"versions are equal", Addon{CurrentVersion: "v1.3.0"}, Addon{CurrentVersion: "v1.3.0"}, false},
 	}
 
 	for _, tt := range tests {

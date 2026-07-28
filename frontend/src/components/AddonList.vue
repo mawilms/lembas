@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { internal } from '@/wailsjs/go/models.ts'
-import Addon = internal.Addon
 import { InstallAddon, UpdateAddon } from '@/wailsjs/go/main/App'
+import { useAddonsStore } from '@/stores/addons.ts'
+import Addon = internal.Addon
+import { useRoute } from 'vue-router'
 
 const props = defineProps<{
     addons: Addon[]
 }>()
+
+const route = useRoute()
+const { setAddons } = useAddonsStore()
 
 const activeRow = ref<number | null>(null)
 
@@ -47,7 +52,12 @@ const resetRow = () => {
                     <button
                         v-else
                         class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                        @click="async () => await InstallAddon(item.Id, false)"
+                        @click="
+                            async () =>
+                                InstallAddon(item.Id, false).then((addons) => {
+                                    setAddons(Object.values(addons))
+                                })
+                        "
                     >
                         Install
                     </button>
@@ -72,8 +82,17 @@ const resetRow = () => {
                     <span v-else class="min-w-0 flex-1 truncate">{{ item.Description }}</span>
                 </div>
             </template>
+
+            <template v-slot:version>
+                <span v-if="route.fullPath === '/'">{{ item.CurrentVersion }}</span>
+                <span v-else >{{ item.LatestVersion }}</span>
+            </template>
         </AddonRow>
     </UScrollArea>
 
-    <SelectPopover :addon="props.addons[activeRow!]!" :activeRow="activeRow" @reset-row="resetRow" />
+    <SelectPopover
+        :addon="props.addons[activeRow!]!"
+        :activeRow="activeRow"
+        @reset-row="resetRow"
+    />
 </template>

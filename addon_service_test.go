@@ -33,26 +33,26 @@ func (p *MockAddonModel) Get() ([]internal.Row, error) {
 
 func TestGetLocalAddons(t *testing.T) {
 	app := App{
-		pluginModel: &MockAddonModel{},
+		addonModel: &MockAddonModel{},
 	}
 
 	got := app.GetLocalAddons()
 
 	expected := map[string]internal.Addon{
 		"WhereToPlay_Dean": {
-			Id:          12345,
-			Type:        "local",
-			Name:        "WhereToPlay",
-			Author:      "Dean",
-			Description: "Hello World",
-			Version:     "1.2.3",
-			Category:    "Others",
-			Downloads:   2534,
-			UpdatedAt:   "07/27/2026",
-			ArchiveName: "WhereToPlay.zip",
-			ArchiveSize: "5 MB",
-			HasUpdate:   false,
-			IsInstalled: true,
+			Id:             12345,
+			Type:           "local",
+			Name:           "WhereToPlay",
+			Author:         "Dean",
+			Description:    "Hello World",
+			CurrentVersion: "1.2.3",
+			Category:       "Others",
+			Downloads:      2534,
+			UpdatedAt:      "07/27/2026",
+			ArchiveName:    "WhereToPlay.zip",
+			ArchiveSize:    "5 MB",
+			HasUpdate:      false,
+			IsInstalled:    true,
 		},
 	}
 

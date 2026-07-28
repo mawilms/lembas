@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"path/filepath"
 	"time"
@@ -11,7 +10,7 @@ import (
 )
 
 type AddonMap struct {
-	Items map[string]internal.Addon `json:"items"`
+	Items map[int]internal.Addon `json:"items"`
 }
 
 func (a *App) GetLocalAddons() AddonMap {
@@ -21,15 +20,15 @@ func (a *App) GetLocalAddons() AddonMap {
 
 	dbPath := filepath.Join(a.settings.DataDirectory, "db.sqlite")
 
-	dbAddons, err := a.pluginModel.Get(dbPath)
+	dbAddons, err := a.addonModel.Get(dbPath)
 	if err != nil {
 		return AddonMap{}
 	}
 
-	var addons = make(map[string]internal.Addon)
+	var addons = make(map[int]internal.Addon)
 
 	for _, e := range dbAddons {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = e
+		addons[e.Id] = e
 	}
 
 	a.localAddons = addons
@@ -58,23 +57,24 @@ func (a *App) GetRemoteAddons() AddonMap {
 		return AddonMap{}
 	}
 
-	addons := make(map[string]internal.Addon)
+	addons := make(map[int]internal.Addon)
 
 	for _, e := range xmlModel {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.Addon{
-			Id:          e.Uid,
-			Type:        "remote",
-			Name:        e.Name,
-			Author:      e.Author,
-			Description: e.Description,
-			Version:     e.Version,
-			Category:    e.Category,
-			Downloads:   e.Downloads,
-			UpdatedAt:   time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
-			ArchiveName: e.File,
-			ArchiveSize: internal.FormatArchiveSize(e.Size),
-			HasUpdate:   false,
-			IsInstalled: false,
+		addons[e.Uid] = internal.Addon{
+			Id:             e.Uid,
+			Type:           "remote",
+			Name:           e.Name,
+			Author:         e.Author,
+			Description:    e.Description,
+			CurrentVersion: e.Version,
+			LatestVersion:  e.Version,
+			Category:       e.Category,
+			Downloads:      e.Downloads,
+			UpdatedAt:      time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
+			ArchiveName:    e.File,
+			ArchiveSize:    internal.FormatArchiveSize(e.Size),
+			HasUpdate:      false,
+			IsInstalled:    false,
 		}
 	}
 
@@ -92,8 +92,15 @@ func (a *App) GetAddons() AddonMap {
 	}
 }
 
-func (a *App) InstallAddon(id int, force bool) {
-	log.Infof("%v", id)
+func (a *App) InstallAddon(id int, force bool) AddonMap {
+	addon := a.remoteAddons[id]
+
+	err := internal.Install(addon, *a.settings, a.addonModel)
+	if err != nil {
+		return AddonMap{}
+	}
+
+	return a.GetLocalAddons()
 }
 
 func (a *App) UpdateAddon(id int) {

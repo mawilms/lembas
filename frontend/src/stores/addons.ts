@@ -22,8 +22,13 @@ export const useAddonsStore = defineStore('addons', () => {
             fetchedLocalAddons.filter((value) => value.IsInstalled),
             false
         )
+
         remoteAddons.value = sortAddons(fetchedLocalAddons, false)
     }
 
-    return { addons, remoteAddons, getAddons }
+    const setAddons = (newAddons: Addon[]) => {
+        addons.value = newAddons
+    }
+
+    return { addons, setAddons, remoteAddons, getAddons }
 })

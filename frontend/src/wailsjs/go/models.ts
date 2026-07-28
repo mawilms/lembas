@@ -6,7 +6,8 @@ export namespace internal {
 	    Name: string;
 	    Author: string;
 	    Description: string;
-	    Version: string;
+	    CurrentVersion: string;
+	    LatestVersion: string;
 	    Category: string;
 	    Downloads: number;
 	    UpdatedAt: string;
@@ -26,7 +27,8 @@ export namespace internal {
 	        this.Name = source["Name"];
 	        this.Author = source["Author"];
 	        this.Description = source["Description"];
-	        this.Version = source["Version"];
+	        this.CurrentVersion = source["CurrentVersion"];
+	        this.LatestVersion = source["LatestVersion"];
 	        this.Category = source["Category"];
 	        this.Downloads = source["Downloads"];
 	        this.UpdatedAt = source["UpdatedAt"];
@@ -41,11 +43,11 @@ export namespace internal {
 
 export namespace main {
 	
-	export class ParentAddonMap {
-	    items: Record<string, internal.Addon>;
+	export class AddonMap {
+	    items: Record<number, internal.Addon>;
 	
 	    static createFrom(source: any = {}) {
-	        return new ParentAddonMap(source);
+	        return new AddonMap(source);
 	    }
 	
 	    constructor(source: any = {}) {

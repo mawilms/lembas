@@ -12,9 +12,9 @@ type App struct {
 	ctx          context.Context
 	logger       *slog.Logger
 	settings     *internal.Settings
-	pluginModel  internal.IAddonModel
-	localAddons  map[string]internal.Addon
-	remoteAddons map[string]internal.Addon
+	addonModel   internal.DatabaseInterface
+	localAddons  map[int]internal.Addon
+	remoteAddons map[int]internal.Addon
 }
 
 func NewApp() *App {
@@ -22,7 +22,8 @@ func NewApp() *App {
 	logger := slog.New(loggerHandler)
 
 	userDirectory := internal.UserDirectory{}
-	if err := userDirectory.CreatePluginsDir(); err != nil {
+	addonsDirecotry, err := userDirectory.CreateAddonsDir()
+	if err != nil {
 		return nil
 	}
 
@@ -37,18 +38,19 @@ func NewApp() *App {
 	}
 
 	settings := internal.Settings{
-		FavoritesUrl:  "https://api.lotrointerface.com/fav/plugincompendium.xml",
-		BaseUrl:       "https://www.lotrointerface.com/downloads",
-		DownloadPath:  os.TempDir(),
-		DataDirectory: lembasDirectory}
+		FavoritesUrl:   "https://api.lotrointerface.com/fav/plugincompendium.xml",
+		BaseUrl:        "https://www.lotrointerface.com/downloads",
+		DownloadPath:   os.TempDir(),
+		DataDirectory:  lembasDirectory,
+		AddonDirectory: addonsDirecotry}
 	if err = internal.WriteSettings(settings, lembasDirectory); err != nil {
 		return nil
 	}
 
 	return &App{
-		logger:      logger,
-		settings:    &settings,
-		pluginModel: &internal.AddonModel{},
+		logger:     logger,
+		settings:   &settings,
+		addonModel: &internal.Database{},
 	}
 }
 
