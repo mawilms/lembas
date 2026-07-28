@@ -10,20 +10,20 @@ import (
 	"github.com/mawilms/lembas/internal"
 )
 
-type ParentAddonMap struct {
+type AddonMap struct {
 	Items map[string]internal.Addon `json:"items"`
 }
 
-func (a *App) GetLocalAddons() ParentAddonMap {
+func (a *App) GetLocalAddons() AddonMap {
 	if len(a.localAddons) > 0 {
-		return ParentAddonMap{Items: a.localAddons}
+		return AddonMap{Items: a.localAddons}
 	}
 
 	dbPath := filepath.Join(a.settings.DataDirectory, "db.sqlite")
 
 	dbAddons, err := a.pluginModel.Get(dbPath)
 	if err != nil {
-		return ParentAddonMap{}
+		return AddonMap{}
 	}
 
 	var addons = make(map[string]internal.Addon)
@@ -34,12 +34,12 @@ func (a *App) GetLocalAddons() ParentAddonMap {
 
 	a.localAddons = addons
 
-	return ParentAddonMap{Items: addons}
+	return AddonMap{Items: addons}
 }
 
-func (a *App) GetRemoteAddons() ParentAddonMap {
+func (a *App) GetRemoteAddons() AddonMap {
 	if len(a.remoteAddons) > 0 {
-		return ParentAddonMap{Items: a.remoteAddons}
+		return AddonMap{Items: a.remoteAddons}
 	}
 
 	api := internal.Api{
@@ -49,13 +49,13 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 	response, err := api.GetSourceXml()
 	if err != nil {
 		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
-		return ParentAddonMap{}
+		return AddonMap{}
 	}
 
 	xmlModel, err := internal.ParseXmlResponse(response)
 	if err != nil {
 		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
-		return ParentAddonMap{}
+		return AddonMap{}
 	}
 
 	addons := make(map[string]internal.Addon)
@@ -80,14 +80,14 @@ func (a *App) GetRemoteAddons() ParentAddonMap {
 
 	a.remoteAddons = addons
 
-	return ParentAddonMap{Items: addons}
+	return AddonMap{Items: addons}
 }
 
-func (a *App) GetAddons() ParentAddonMap {
+func (a *App) GetAddons() AddonMap {
 	localAddons := a.GetLocalAddons()
 	remoteAddons := a.GetRemoteAddons()
 
-	return ParentAddonMap{
+	return AddonMap{
 		Items: internal.UpdateVersions(localAddons.Items, remoteAddons.Items),
 	}
 }
