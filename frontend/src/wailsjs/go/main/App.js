@@ -10,12 +10,12 @@ export function GetAddons() {
   return window['go']['main']['App']['GetAddons']();
 }
 
-export function GetLocalAddons() {
-  return window['go']['main']['App']['GetLocalAddons']();
+export function GetLocalAddons(arg1) {
+  return window['go']['main']['App']['GetLocalAddons'](arg1);
 }
 
-export function GetRemoteAddons() {
-  return window['go']['main']['App']['GetRemoteAddons']();
+export function GetRemoteAddons(arg1) {
+  return window['go']['main']['App']['GetRemoteAddons'](arg1);
 }
 
 export function InstallAddon(arg1, arg2) {

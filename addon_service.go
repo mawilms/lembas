@@ -10,12 +10,13 @@ import (
 )
 
 type AddonMap struct {
-	Items map[int]internal.Addon `json:"items"`
+	LocalAddons  map[int]internal.Addon `json:"localAddons"`
+	RemoteAddons map[int]internal.Addon `json:"remoteAddons"`
 }
 
-func (a *App) GetLocalAddons() AddonMap {
-	if len(a.localAddons) > 0 {
-		return AddonMap{Items: a.localAddons}
+func (a *App) GetLocalAddons(forceReload bool) AddonMap {
+	if len(a.localAddons) > 0 && !forceReload {
+		return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 	}
 
 	dbPath := filepath.Join(a.settings.DataDirectory, "db.sqlite")
@@ -33,12 +34,12 @@ func (a *App) GetLocalAddons() AddonMap {
 
 	a.localAddons = addons
 
-	return AddonMap{Items: addons}
+	return AddonMap{LocalAddons: addons, RemoteAddons: a.remoteAddons}
 }
 
-func (a *App) GetRemoteAddons() AddonMap {
-	if len(a.remoteAddons) > 0 {
-		return AddonMap{Items: a.remoteAddons}
+func (a *App) GetRemoteAddons(force bool) AddonMap {
+	if len(a.remoteAddons) > 0 && !force {
+		return AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
 	}
 
 	api := internal.Api{
@@ -80,27 +81,36 @@ func (a *App) GetRemoteAddons() AddonMap {
 
 	a.remoteAddons = addons
 
-	return AddonMap{Items: addons}
+	return AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
 }
 
 func (a *App) GetAddons() AddonMap {
-	localAddons := a.GetLocalAddons()
-	remoteAddons := a.GetRemoteAddons()
+	localAddons := a.GetLocalAddons(false)
+	remoteAddons := a.GetRemoteAddons(false)
+
+	mergedAddons := internal.UpdateVersions(localAddons.LocalAddons, remoteAddons.RemoteAddons)
+
+	a.localAddons = internal.UpdateLocalAddons(mergedAddons)
+	a.remoteAddons = mergedAddons
 
 	return AddonMap{
-		Items: internal.UpdateVersions(localAddons.Items, remoteAddons.Items),
+		LocalAddons:  a.localAddons,
+		RemoteAddons: a.remoteAddons,
 	}
 }
 
 func (a *App) InstallAddon(id int, force bool) AddonMap {
 	addon := a.remoteAddons[id]
 
-	err := internal.Install(addon, *a.settings, a.addonModel)
+	newAddon, err := internal.Install(addon, *a.settings, a.addonModel)
 	if err != nil {
+		log.Infof("%v", err)
 		return AddonMap{}
 	}
 
-	return a.GetLocalAddons()
+	a.localAddons[id] = newAddon
+
+	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }
 
 func (a *App) UpdateAddon(id int) {

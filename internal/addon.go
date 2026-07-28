@@ -36,6 +36,18 @@ func FormatArchiveSize(bytes int64) string {
 	return fmt.Sprintf("%v KB", kb)
 }
 
+func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {
+	updatedAddons := make(map[int]Addon)
+
+	for _, addon := range mergedAddons {
+		if addon.IsInstalled {
+			updatedAddons[addon.Id] = addon
+		}
+	}
+
+	return updatedAddons
+}
+
 func UpdateVersions(localAddons, remoteAddons map[int]Addon) map[int]Addon {
 	mergedAddons := make(map[int]Addon, len(remoteAddons))
 

@@ -47,6 +47,11 @@ func NewApp() *App {
 		return nil
 	}
 
+	database := &internal.Database{}
+	if err = database.SetupDb(lembasDirectory); err != nil {
+		return nil
+	}
+
 	return &App{
 		logger:     logger,
 		settings:   &settings,

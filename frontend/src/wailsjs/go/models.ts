@@ -44,7 +44,8 @@ export namespace internal {
 export namespace main {
 	
 	export class AddonMap {
-	    items: Record<number, internal.Addon>;
+	    localAddons: Record<number, internal.Addon>;
+	    remoteAddons: Record<number, internal.Addon>;
 	
 	    static createFrom(source: any = {}) {
 	        return new AddonMap(source);
@@ -52,7 +53,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.items = this.convertValues(source["items"], internal.Addon, true);
+	        this.localAddons = this.convertValues(source["localAddons"], internal.Addon, true);
+	        this.remoteAddons = this.convertValues(source["remoteAddons"], internal.Addon, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

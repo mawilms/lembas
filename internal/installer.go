@@ -17,16 +17,16 @@ type ArchiveInfo struct {
 	PluginCompendiumFile string // z.B. "example.file"
 }
 
-func Install(addon Addon, settings Settings, database DatabaseInterface) error {
+func Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error) {
 	zipPath, err := downloadZip(settings.BaseUrl, settings.DownloadPath, addon.Id)
 	if err != nil {
-		return err
+		return Addon{}, err
 	}
 	defer os.Remove(zipPath)
 
 	info, err := analyzeZip(zipPath)
 	if err != nil {
-		return err
+		return Addon{}, err
 	}
 
 	//if err := extractZip(zipPath, settings.AddonDirectory); err != nil {
@@ -35,10 +35,25 @@ func Install(addon Addon, settings Settings, database DatabaseInterface) error {
 
 	dbPath := filepath.Join(settings.DataDirectory, "db.sqlite")
 	if err := database.Insert(dbPath, addon, *info); err != nil {
-		return err
+		return Addon{}, err
 	}
 
-	return nil
+	return Addon{
+		Id:             addon.Id,
+		Type:           "local",
+		Name:           addon.Name,
+		Author:         addon.Author,
+		Description:    addon.Description,
+		CurrentVersion: addon.LatestVersion,
+		LatestVersion:  addon.LatestVersion,
+		Category:       addon.Category,
+		Downloads:      addon.Downloads,
+		UpdatedAt:      addon.UpdatedAt,
+		ArchiveName:    addon.ArchiveName,
+		ArchiveSize:    addon.ArchiveSize,
+		HasUpdate:      false,
+		IsInstalled:    true,
+	}, nil
 }
 
 func downloadZip(downloadUrl, downloadDestination string, id int) (string, error) {

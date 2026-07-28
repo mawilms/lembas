@@ -7,13 +7,14 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 
 import { useAddonsStore } from '@/stores/addons.ts'
 import Filter from '@/components/Filter.vue'
+import { storeToRefs } from 'pinia'
 
-const addonsStore = useAddonsStore()
-const categories = useCategories(addonsStore.remoteAddons)
+const { remoteAddons } = storeToRefs(useAddonsStore())
+const categories = useCategories(remoteAddons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
-const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategories)
+const filteredList = useFilteredList(remoteAddons, selectedCategories)
 </script>
 
 <template>

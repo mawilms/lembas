@@ -4,14 +4,14 @@ import Header from '@/components/Header.vue'
 import { onMounted, ref } from 'vue'
 import { useAddonsStore } from '@/stores/addons.ts'
 
-const localAddonStoreNew = useAddonsStore()
+const { getAddons } = useAddonsStore()
 
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
 onMounted(async () => {
     try {
-        await localAddonStoreNew.getAddons()
+        await getAddons()
     } catch (e) {
         console.log(e)
         error.value = 'Error while loading addons'

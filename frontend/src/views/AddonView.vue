@@ -4,14 +4,15 @@ import AddonList from '@/components/AddonList.vue'
 import Filter from '@/components/Filter.vue'
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
+import { storeToRefs } from 'pinia'
 
-const addonsStore = useAddonsStore()
+const { addons } = storeToRefs(useAddonsStore())
 
-const categories = useCategories(addonsStore.addons)
+const categories = useCategories(addons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
-const filteredList = useFilteredList(addonsStore.addons, selectedCategories)
+const filteredList = useFilteredList(addons, selectedCategories)
 
 const reloadAddons = async () => {
     // const newAddons = await GetLocalAddons()

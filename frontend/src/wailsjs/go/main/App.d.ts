@@ -6,9 +6,9 @@ export function DeleteAddon(arg1:number):Promise<void>;
 
 export function GetAddons():Promise<main.AddonMap>;
 
-export function GetLocalAddons():Promise<main.AddonMap>;
+export function GetLocalAddons(arg1:boolean):Promise<main.AddonMap>;
 
-export function GetRemoteAddons():Promise<main.AddonMap>;
+export function GetRemoteAddons(arg1:boolean):Promise<main.AddonMap>;
 
 export function InstallAddon(arg1:number,arg2:boolean):Promise<main.AddonMap>;
 

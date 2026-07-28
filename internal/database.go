@@ -3,6 +3,7 @@ package internal
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
@@ -28,8 +29,53 @@ type Row struct {
 type Database struct{}
 
 type DatabaseInterface interface {
+	SetupDb(dbPath string) error
 	Get(dbPath string) ([]Addon, error)
 	Insert(dbPath string, addon Addon, info ArchiveInfo) error
+}
+
+func (d *Database) SetupDb(dataDirectory string) error {
+	dbPath := filepath.Join(dataDirectory, "db.sqlite")
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", dbPath))
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+CREATE TABLE IF NOT EXISTS plugins
+(
+    id                     INTEGER not null
+        constraint plugins_pk
+            primary key AUTOINCREMENT,
+    name                   TEXT    not null,
+    author                 TEXT    not null,
+    version                TEXT    not null,
+    is_managed             INTEGER not null,
+    plugin_file            TEXT    not null,
+    plugin_compendium_file TEXT    not null,
+    root_folder            TEXT    not null,
+    plugin_folder          TEXT    not null,
+    plugin_id              INTEGER,
+    downloads              INTEGER not null,
+    updated_at             INTEGER not null,
+    archive_name           TEXT    not null,
+    archive_size           TEXT    not null,
+    category               TEXT    not null,
+    description            TEXT
+);
+`)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+CREATE VIEW plugins_view AS
+SELECT name, author, version, description, is_managed, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category 
+FROM plugins;
+`)
+
+	return nil
 }
 
 func (d *Database) Insert(dbPath string, addon Addon, info ArchiveInfo) error {
