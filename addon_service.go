@@ -32,9 +32,13 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 		addons[e.Id] = e
 	}
 
-	a.localAddons = addons
+	if len(a.remoteAddons) > 0 {
+		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
+	} else {
+		a.localAddons = addons
+	}
 
-	return AddonMap{LocalAddons: addons, RemoteAddons: a.remoteAddons}
+	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }
 
 func (a *App) GetRemoteAddons(force bool) AddonMap {

@@ -5,8 +5,10 @@ import Filter from '@/components/Filter.vue'
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
 import { storeToRefs } from 'pinia'
+import { GetLocalAddons } from '@/wailsjs/go/main/App'
 
 const { addons } = storeToRefs(useAddonsStore())
+const { setAddons } = useAddonsStore()
 
 const categories = useCategories(addons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
@@ -15,8 +17,9 @@ const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(addons, selectedCategories)
 
 const reloadAddons = async () => {
-    // const newAddons = await GetLocalAddons()
-    // localAddonsStore.setAddons(newAddons)
+    const newAddons = await GetLocalAddons(true)
+    console.log(newAddons)
+    setAddons(Object.values(newAddons.localAddons))
 }
 </script>
 

@@ -41,6 +41,7 @@ func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {
 
 	for _, addon := range mergedAddons {
 		if addon.IsInstalled {
+			addon.Type = "local"
 			updatedAddons[addon.Id] = addon
 		}
 	}
