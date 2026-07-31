@@ -15,6 +15,7 @@ type App struct {
 	settings     *internal.Settings
 	addonModel   internal.DatabaseInterface
 	installer    internal.InstallerInterface
+	api          internal.ApiInterface
 	localAddons  map[int]internal.Addon
 	remoteAddons map[int]internal.Addon
 }
@@ -54,13 +55,13 @@ func NewApp() *App {
 		return nil
 	}
 
-	installer := &internal.Installer{}
-
 	return &App{
 		logger:     logger,
 		settings:   &settings,
 		addonModel: database,
-		installer:  installer,
+		installer:  &internal.Installer{},
+		api: &internal.Api{
+			Url: settings.FavoritesUrl},
 	}
 }
 

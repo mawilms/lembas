@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"time"
 )
 
 type Favorites struct {
@@ -46,7 +47,8 @@ func ParseXmlResponse(response []byte) ([]ApiXmlModel, error) {
 }
 
 type ApiInterface interface {
-	GetSourceXml(url string) (string, error)
+	GetSourceXml() ([]byte, error)
+	Get() ([]Addon, error)
 }
 
 type Api struct {
@@ -65,4 +67,41 @@ func (a *Api) GetSourceXml() ([]byte, error) {
 		return nil, fmt.Errorf("fehler beim lesen des response body: %w", err)
 	}
 	return data, nil
+}
+
+func (a *Api) Get() ([]Addon, error) {
+	response, err := a.GetSourceXml()
+	if err != nil {
+		//a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
+		return nil, nil
+	}
+
+	xmlModel, err := ParseXmlResponse(response)
+	if err != nil {
+		//a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
+		return nil, nil
+	}
+
+	addons := make([]Addon, 0)
+
+	for _, e := range xmlModel {
+		addons = append(addons, Addon{
+			Id:             e.Uid,
+			Type:           "remote",
+			Name:           e.Name,
+			Author:         e.Author,
+			Description:    e.Description,
+			CurrentVersion: e.Version,
+			LatestVersion:  e.Version,
+			Category:       e.Category,
+			Downloads:      e.Downloads,
+			UpdatedAt:      time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
+			ArchiveName:    e.File,
+			ArchiveSize:    FormatArchiveSize(e.Size),
+			HasUpdate:      false,
+			IsInstalled:    false,
+		})
+	}
+
+	return addons, nil
 }

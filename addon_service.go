@@ -1,9 +1,6 @@
 package main
 
 import (
-	"log/slog"
-	"time"
-
 	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
 )
@@ -31,6 +28,7 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 
 	if len(a.remoteAddons) > 0 {
 		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
+		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
 
 	} else {
 		a.localAddons = addons
@@ -44,41 +42,15 @@ func (a *App) GetRemoteAddons(forceReload bool) AddonMap {
 		return AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
 	}
 
-	api := internal.Api{
-		Url: a.settings.FavoritesUrl,
-	}
-
-	response, err := api.GetSourceXml()
+	remoteAddons, err := a.api.Get()
 	if err != nil {
-		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
-		return AddonMap{}
-	}
-
-	xmlModel, err := internal.ParseXmlResponse(response)
-	if err != nil {
-		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
 		return AddonMap{}
 	}
 
 	addons := make(map[int]internal.Addon)
 
-	for _, e := range xmlModel {
-		addons[e.Uid] = internal.Addon{
-			Id:             e.Uid,
-			Type:           "remote",
-			Name:           e.Name,
-			Author:         e.Author,
-			Description:    e.Description,
-			CurrentVersion: e.Version,
-			LatestVersion:  e.Version,
-			Category:       e.Category,
-			Downloads:      e.Downloads,
-			UpdatedAt:      time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
-			ArchiveName:    e.File,
-			ArchiveSize:    internal.FormatArchiveSize(e.Size),
-			HasUpdate:      false,
-			IsInstalled:    false,
-		}
+	for _, a := range remoteAddons {
+		addons[a.Id] = a
 	}
 
 	a.remoteAddons = addons
