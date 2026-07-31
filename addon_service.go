@@ -2,7 +2,6 @@ package main
 
 import (
 	"log/slog"
-	"path/filepath"
 	"time"
 
 	"github.com/labstack/gommon/log"
@@ -19,9 +18,7 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 		return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 	}
 
-	dbPath := filepath.Join(a.settings.DataDirectory, "db.sqlite")
-
-	dbAddons, err := a.addonModel.Get(dbPath)
+	dbAddons, err := a.addonModel.Get()
 	if err != nil {
 		return AddonMap{}
 	}

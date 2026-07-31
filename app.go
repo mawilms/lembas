@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/mawilms/lembas/internal"
 )
@@ -13,6 +14,7 @@ type App struct {
 	logger       *slog.Logger
 	settings     *internal.Settings
 	addonModel   internal.DatabaseInterface
+	installer    internal.InstallerInterface
 	localAddons  map[int]internal.Addon
 	remoteAddons map[int]internal.Addon
 }
@@ -22,7 +24,7 @@ func NewApp() *App {
 	logger := slog.New(loggerHandler)
 
 	userDirectory := internal.UserDirectory{}
-	addonsDirecotry, err := userDirectory.CreateAddonsDir()
+	addonsDirectory, err := userDirectory.CreateAddonsDir()
 	if err != nil {
 		return nil
 	}
@@ -42,20 +44,23 @@ func NewApp() *App {
 		BaseUrl:        "https://www.lotrointerface.com/downloads",
 		DownloadPath:   os.TempDir(),
 		DataDirectory:  lembasDirectory,
-		AddonDirectory: addonsDirecotry}
+		AddonDirectory: addonsDirectory}
 	if err = internal.WriteSettings(settings, lembasDirectory); err != nil {
 		return nil
 	}
 
-	database := &internal.Database{}
-	if err = database.SetupDb(lembasDirectory); err != nil {
+	database := &internal.Database{DbUrl: filepath.Join(lembasDirectory, "db.sqlite")}
+	if err = database.SetupDb(); err != nil {
 		return nil
 	}
+
+	installer := &internal.Installer{}
 
 	return &App{
 		logger:     logger,
 		settings:   &settings,
-		addonModel: &internal.Database{},
+		addonModel: database,
+		installer:  installer,
 	}
 }
 

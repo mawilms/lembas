@@ -11,14 +11,22 @@ import (
 )
 
 type ArchiveInfo struct {
-	RootFolder           string // z.B. "Bla" (oberster Ordner im ZIP)
-	PluginFolder         string // z.B. "example"
-	PluginFile           string // z.B. "example.file"
-	PluginCompendiumFile string // z.B. "example.file"
+	RootFolder           string
+	PluginFolder         string
+	PluginFile           string
+	PluginCompendiumFile string
 }
 
-func Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error) {
-	zipPath, err := downloadZip(settings.BaseUrl, settings.DownloadPath, addon.Id)
+type Installer struct {
+}
+
+type InstallerInterface interface {
+	Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error)
+	downloadZip(downloadUrl, downloadDestination string, id int) (string, error)
+}
+
+func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error) {
+	zipPath, err := i.downloadZip(settings.BaseUrl, settings.DownloadPath, addon.Id)
 	if err != nil {
 		return Addon{}, err
 	}
@@ -33,8 +41,7 @@ func Install(addon Addon, settings Settings, database DatabaseInterface) (Addon,
 	//	return err
 	//}
 
-	dbPath := filepath.Join(settings.DataDirectory, "db.sqlite")
-	if err := database.Insert(dbPath, addon, *info); err != nil {
+	if err := database.Insert(addon, *info); err != nil {
 		return Addon{}, err
 	}
 
@@ -56,7 +63,7 @@ func Install(addon Addon, settings Settings, database DatabaseInterface) (Addon,
 	}, nil
 }
 
-func downloadZip(downloadUrl, downloadDestination string, id int) (string, error) {
+func (i *Installer) downloadZip(downloadUrl, downloadDestination string, id int) (string, error) {
 	url := fmt.Sprintf("%s/download%d", downloadUrl, id)
 
 	resp, err := http.Get(url)

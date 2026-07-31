@@ -3,7 +3,6 @@ package internal
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
@@ -26,17 +25,18 @@ type Row struct {
 	Category         string
 }
 
-type Database struct{}
-
-type DatabaseInterface interface {
-	SetupDb(dbPath string) error
-	Get(dbPath string) ([]Addon, error)
-	Insert(dbPath string, addon Addon, info ArchiveInfo) error
+type Database struct {
+	DbUrl string
 }
 
-func (d *Database) SetupDb(dataDirectory string) error {
-	dbPath := filepath.Join(dataDirectory, "db.sqlite")
-	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", dbPath))
+type DatabaseInterface interface {
+	SetupDb() error
+	Get() ([]Addon, error)
+	Insert(addon Addon, info ArchiveInfo) error
+}
+
+func (d *Database) SetupDb() error {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", d.DbUrl))
 	if err != nil {
 		return err
 	}
@@ -78,8 +78,8 @@ FROM plugins;
 	return nil
 }
 
-func (d *Database) Insert(dbPath string, addon Addon, info ArchiveInfo) error {
-	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", dbPath))
+func (d *Database) Insert(addon Addon, info ArchiveInfo) error {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", d.DbUrl))
 	if err != nil {
 		return err
 	}
@@ -116,8 +116,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 	return nil
 }
 
-func (d *Database) Get(dbPath string) ([]Addon, error) {
-	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", dbPath))
+func (d *Database) Get() ([]Addon, error) {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", d.DbUrl))
 	if err != nil {
 		return nil, err
 	}

@@ -1,51 +1,28 @@
 package main
 
 import (
-	"maps"
+	"reflect"
 	"testing"
 
 	"github.com/mawilms/lembas/internal"
 )
 
-type MockAddonModel struct{}
+type MockDatabaseModel struct{}
 
-func (p *MockAddonModel) Get() ([]internal.Row, error) {
-	return []internal.Row{
-		{
-			Id:               12345,
-			Name:             "WhereToPlay",
-			Author:           "Dean",
-			Version:          "1.2.3",
-			Description:      "Hello World",
-			IsManaged:        true,
-			Plugin:           "WhereToPlay.plugin",
-			PluginCompendium: "WhereToPlay.plugincompendium",
-			RootFolder:       "WhereToPlay",
-			PluginFolder:     "WhereToPlay",
-			Downloads:        2534,
-			UpdatedAt:        "07/27/2026",
-			ArchiveName:      "WhereToPlay.zip",
-			ArchiveSize:      "5 MB",
-			Category:         "Others",
-		},
-	}, nil
+func (m *MockDatabaseModel) SetupDb() error {
+	return nil
 }
 
-func TestGetLocalAddons(t *testing.T) {
-	app := App{
-		addonModel: &MockAddonModel{},
-	}
-
-	got := app.GetLocalAddons()
-
-	expected := map[string]internal.Addon{
-		"WhereToPlay_Dean": {
+func (m *MockDatabaseModel) Get() ([]internal.Addon, error) {
+	return []internal.Addon{
+		{
 			Id:             12345,
 			Type:           "local",
 			Name:           "WhereToPlay",
 			Author:         "Dean",
 			Description:    "Hello World",
 			CurrentVersion: "1.2.3",
+			LatestVersion:  "1.2.3",
 			Category:       "Others",
 			Downloads:      2534,
 			UpdatedAt:      "07/27/2026",
@@ -54,9 +31,100 @@ func TestGetLocalAddons(t *testing.T) {
 			HasUpdate:      false,
 			IsInstalled:    true,
 		},
+	}, nil
+}
+
+func (m *MockDatabaseModel) Insert(addon internal.Addon, info internal.ArchiveInfo) error {
+	return nil
+}
+
+func TestGetLocalAddons(t *testing.T) {
+	app := App{
+		addonModel:   &MockDatabaseModel{},
+		localAddons:  make(map[int]internal.Addon),
+		remoteAddons: make(map[int]internal.Addon),
+		settings:     &internal.Settings{DataDirectory: ""},
 	}
 
-	if maps.Equal(got, expected) != true {
-		t.Errorf("Result is invalid. Got %v, expected %v", got, expected)
+	got := app.GetLocalAddons(false)
+
+	expected := AddonMap{
+		LocalAddons: map[int]internal.Addon{
+			12345: {
+				Id:             12345,
+				Type:           "local",
+				Name:           "WhereToPlay",
+				Author:         "Dean",
+				Description:    "Hello World",
+				CurrentVersion: "1.2.3",
+				LatestVersion:  "1.2.3",
+				Category:       "Others",
+				Downloads:      2534,
+				UpdatedAt:      "07/27/2026",
+				ArchiveName:    "WhereToPlay.zip",
+				ArchiveSize:    "5 MB",
+				HasUpdate:      false,
+				IsInstalled:    true,
+			},
+		},
+		RemoteAddons: make(map[int]internal.Addon),
+	}
+
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("unable to fetch local addons. Got %v, expected %v", got, expected)
+	}
+}
+
+func TestGetRemoteAddons(t *testing.T) {
+	app := App{
+		addonModel:   &MockDatabaseModel{},
+		localAddons:  make(map[int]internal.Addon),
+		remoteAddons: make(map[int]internal.Addon),
+		settings:     &internal.Settings{DataDirectory: ""},
+	}
+
+	got := app.GetRemoteAddons(false)
+
+	expected := AddonMap{
+		LocalAddons: map[int]internal.Addon{
+			12345: {
+				Id:             12345,
+				Type:           "local",
+				Name:           "WhereToPlay",
+				Author:         "Dean",
+				Description:    "Hello World",
+				CurrentVersion: "1.2.3",
+				LatestVersion:  "",
+				Category:       "Others",
+				Downloads:      2534,
+				UpdatedAt:      "07/27/2026",
+				ArchiveName:    "WhereToPlay.zip",
+				ArchiveSize:    "5 MB",
+				HasUpdate:      false,
+				IsInstalled:    true,
+			},
+		},
+		RemoteAddons: map[int]internal.Addon{
+			12345: {
+				Id:             12345,
+				Type:           "local",
+				Name:           "WhereToPlay",
+				Author:         "Dean",
+				Description:    "Hello World",
+				CurrentVersion: "1.2.3",
+				LatestVersion:  "1.2.4",
+				Category:       "Others",
+				Downloads:      2534,
+				UpdatedAt:      "07/27/2026",
+				ArchiveName:    "WhereToPlay.zip",
+				ArchiveSize:    "5 MB",
+				HasUpdate:      false,
+				IsInstalled:    true,
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("unable to fetch local addons. Got %v, expected %v", got, expected)
 	}
 }
