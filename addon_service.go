@@ -104,7 +104,7 @@ func (a *App) GetAddons() AddonMap {
 func (a *App) InstallAddon(id int, force bool) AddonMap {
 	addon := a.remoteAddons[id]
 
-	newAddon, err := internal.Install(addon, *a.settings, a.addonModel)
+	newAddon, err := a.installer.Install(addon, *a.settings, a.addonModel)
 	if err != nil {
 		log.Infof("%v", err)
 		return AddonMap{}
