@@ -12,17 +12,11 @@ type Row struct {
 	Name             string
 	Author           string
 	Version          string
-	Description      string
-	IsManaged        bool
 	Plugin           string
 	PluginCompendium string
 	RootFolder       string
 	PluginFolder     string
-	Downloads        int
-	UpdatedAt        string
 	ArchiveName      string
-	ArchiveSize      string
-	Category         string
 }
 
 type Database struct {
@@ -50,18 +44,12 @@ CREATE TABLE IF NOT EXISTS plugins
     name                   TEXT    not null,
     author                 TEXT    not null,
     version                TEXT    not null,
-    is_managed             INTEGER not null,
     plugin_file            TEXT    not null,
     plugin_compendium_file TEXT    not null,
     root_folder            TEXT    not null,
     plugin_folder          TEXT    not null,
     plugin_id              INTEGER,
-    downloads              INTEGER not null,
-    updated_at             INTEGER not null,
-    archive_name           TEXT    not null,
-    archive_size           TEXT    not null,
-    category               TEXT    not null,
-    description            TEXT
+    archive_name           TEXT    not null
 );
 `)
 
@@ -71,7 +59,7 @@ CREATE TABLE IF NOT EXISTS plugins
 
 	_, err = db.Exec(`
 CREATE VIEW plugins_view AS
-SELECT name, author, version, description, is_managed, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category 
+SELECT name, author, version, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, archive_name 
 FROM plugins;
 `)
 	db.Close()
@@ -91,25 +79,18 @@ func (d *Database) Insert(addon Addon, info ArchiveInfo) error {
 		Name:             addon.Name,
 		Author:           addon.Author,
 		Version:          addon.CurrentVersion,
-		Description:      addon.Description,
-		IsManaged:        true,
 		Plugin:           info.PluginFile,
 		PluginCompendium: info.PluginCompendiumFile,
 		RootFolder:       info.RootFolder,
 		PluginFolder:     info.PluginFolder,
-		Downloads:        addon.Downloads,
-		UpdatedAt:        addon.UpdatedAt,
 		ArchiveName:      addon.ArchiveName,
-		ArchiveSize:      addon.ArchiveSize,
-		Category:         addon.Category,
 	}
 
-	stmt := `INSERT INTO plugins (name, author, version, is_managed, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category, description) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	stmt := `INSERT INTO plugins (name, author, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, archive_name) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
 
-	_, err = db.Exec(stmt, row.Name, row.Author, row.Version, row.IsManaged, row.Plugin, row.PluginCompendium,
-		row.RootFolder, row.PluginFolder, row.Id, row.Downloads, row.UpdatedAt, row.ArchiveName, row.ArchiveSize,
-		row.Category, row.Description)
+	_, err = db.Exec(stmt, row.Name, row.Author, row.Version, row.Plugin, row.PluginCompendium,
+		row.RootFolder, row.PluginFolder, row.Id, row.ArchiveName)
 	if err != nil {
 		return err
 	}
@@ -124,8 +105,8 @@ func (d *Database) Get() ([]Addon, error) {
 	}
 	defer db.Close()
 
-	query := `SELECT name, author, version, description, is_managed, plugin_file, plugin_compendium_file, root_folder, 
-       plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category FROM plugins_view;`
+	query := `SELECT name, author, version, plugin_file, plugin_compendium_file, root_folder, 
+       plugin_folder, plugin_id, archive_name FROM plugins_view;`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -139,9 +120,8 @@ func (d *Database) Get() ([]Addon, error) {
 	for rows.Next() {
 		var p Row
 
-		if err := rows.Scan(&p.Name, &p.Author, &p.Version, &p.Description, &p.IsManaged, &p.Plugin,
-			&p.PluginCompendium, &p.RootFolder, &p.PluginFolder, &p.Id, &p.Downloads, &p.UpdatedAt,
-			&p.ArchiveName, &p.ArchiveSize, &p.Category); err != nil {
+		if err := rows.Scan(&p.Name, &p.Author, &p.Version, &p.Plugin, &p.PluginCompendium, &p.RootFolder,
+			&p.PluginFolder, &p.Id, &p.ArchiveName); err != nil {
 			return nil, err
 		}
 
@@ -150,14 +130,9 @@ func (d *Database) Get() ([]Addon, error) {
 			Type:           "local",
 			Name:           p.Name,
 			Author:         p.Author,
-			Description:    p.Description,
 			CurrentVersion: p.Version,
 			LatestVersion:  "",
-			Category:       p.Category,
-			Downloads:      p.Downloads,
-			UpdatedAt:      p.UpdatedAt,
 			ArchiveName:    p.ArchiveName,
-			ArchiveSize:    p.ArchiveSize,
 			HasUpdate:      false,
 			IsInstalled:    true,
 		})
