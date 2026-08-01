@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-import "fmt"
-
 var leadingDigits = regexp.MustCompile(`^\d+`)
 
 type Addon struct {
@@ -25,14 +23,6 @@ type Addon struct {
 	ArchiveSize    string
 	HasUpdate      bool
 	IsInstalled    bool
-}
-
-func FormatArchiveSize(bytes int64) string {
-	kb := bytes / 1000
-	if kb > 1000 {
-		return fmt.Sprintf("%v MB", kb/1000)
-	}
-	return fmt.Sprintf("%v KB", kb)
 }
 
 func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {

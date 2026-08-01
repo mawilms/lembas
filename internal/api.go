@@ -97,11 +97,19 @@ func (a *Api) Get() ([]Addon, error) {
 			Downloads:      e.Downloads,
 			UpdatedAt:      time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
 			ArchiveName:    e.File,
-			ArchiveSize:    FormatArchiveSize(e.Size),
+			ArchiveSize:    formatArchiveSize(e.Size),
 			HasUpdate:      false,
 			IsInstalled:    false,
 		})
 	}
 
 	return addons, nil
+}
+
+func formatArchiveSize(bytes int64) string {
+	kb := bytes / 1000
+	if kb > 1000 {
+		return fmt.Sprintf("%v MB", kb/1000)
+	}
+	return fmt.Sprintf("%v KB", kb)
 }
