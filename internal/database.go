@@ -74,6 +74,7 @@ CREATE VIEW plugins_view AS
 SELECT name, author, version, description, is_managed, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category 
 FROM plugins;
 `)
+	db.Close()
 
 	return nil
 }

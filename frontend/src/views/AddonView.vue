@@ -6,6 +6,9 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 import { useAddonsStore } from '@/stores/addons.ts'
 import { storeToRefs } from 'pinia'
 import { GetLocalAddons } from '@/wailsjs/go/main/App'
+import { computed } from 'vue'
+import { internal } from '@/wailsjs/go/models.ts'
+import Addon = internal.Addon
 
 const { addons } = storeToRefs(useAddonsStore())
 const { setAddons, setRemoteAddons } = useAddonsStore()
@@ -22,16 +25,28 @@ const reloadAddons = async () => {
     setAddons(Object.values(newAddons.localAddons))
     setRemoteAddons(Object.values(newAddons.remoteAddons))
 }
+
+const amountUpdates = computed(() => {
+    return addons.value.filter((addon) => addon.HasUpdate == true).length
+})
 </script>
 
 <template>
     <section class="flex flex-col bg-light-brown py-2 px-4 text-gray-300">
         <section class="grid grid-cols-3">
             <div>
-                <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">
-                    <ArrowDownToLine class="h-5 w-5" />
-                    <button class="text-sm cursor-pointer">Update all</button>
-                </div>
+                <UChip
+                    :text="amountUpdates"
+                    :show="amountUpdates > 0"
+                    :ui="{
+                        base: 'text-sm bg-primary p-2 border-none ring-0',
+                    }"
+                >
+                    <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">
+                        <ArrowDownToLine class="h-5 w-5" />
+                        <button class="text-sm cursor-pointer">Update all</button>
+                    </div>
+                </UChip>
             </div>
 
             <span class="flex items-center justify-center text-sm"
