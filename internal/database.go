@@ -13,7 +13,6 @@ type Row struct {
 	Author           string
 	Version          string
 	Description      string
-	IsManaged        bool
 	Plugin           string
 	PluginCompendium string
 	RootFolder       string
