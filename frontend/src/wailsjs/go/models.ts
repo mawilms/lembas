@@ -1,5 +1,5 @@
 export namespace internal {
-	
+
 	export class Addon {
 	    Id: number;
 	    Type: string;
@@ -15,11 +15,11 @@ export namespace internal {
 	    ArchiveSize: string;
 	    HasUpdate: boolean;
 	    IsInstalled: boolean;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new Addon(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
@@ -38,20 +38,25 @@ export namespace internal {
 	        this.IsInstalled = source["IsInstalled"];
 	    }
 	}
+
+}
+
+export namespace main {
+
 	export class AddonMap {
-	    localAddons: Record<number, Addon>;
-	    remoteAddons: Record<number, Addon>;
-	
+	    localAddons: Record<number, internal.Addon>;
+	    remoteAddons: Record<number, internal.Addon>;
+
 	    static createFrom(source: any = {}) {
 	        return new AddonMap(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.localAddons = this.convertValues(source["localAddons"], Addon, true);
-	        this.remoteAddons = this.convertValues(source["remoteAddons"], Addon, true);
+	        this.localAddons = this.convertValues(source["localAddons"], internal.Addon, true);
+	        this.remoteAddons = this.convertValues(source["remoteAddons"], internal.Addon, true);
 	    }
-	
+
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
