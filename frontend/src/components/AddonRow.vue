@@ -4,10 +4,10 @@ import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
 import { extractFirstLetter } from '@/utils.ts'
 import { BrowserOpenURL } from '@/wailsjs/runtime'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 
 const props = defineProps<{
-    addon: ParentAddon
+    addon: Addon
 }>()
 
 const openPluginPage = (id: number) => {
@@ -73,7 +73,8 @@ const openPluginPage = (id: number) => {
 
                     <UTooltip arrow text="Current version">
                         <div class="flex items-center gap-1">
-                            <Computer class="w-4 h-4" /> {{ props.addon.Version }}
+                            <Computer class="w-4 h-4" />
+                            <slot name="version"></slot>
                         </div>
                     </UTooltip>
                 </section>

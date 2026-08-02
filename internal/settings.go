@@ -1,14 +1,43 @@
 package internal
 
 import (
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 )
 
+type Settings struct {
+	FavoritesUrl   string `json:"favoritesUrl"`
+	BaseUrl        string `json:"baseUrl"`
+	DownloadPath   string `json:"downloadPath"`
+	DataDirectory  string `json:"dataDirectory"`
+	AddonDirectory string `json:"addonDirectory"`
+}
+
+func WriteSettings(settings Settings, path string) error {
+	content, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	settingsPath := filepath.Join(path, "settings.json")
+
+	if _, err := os.Stat(settingsPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err = os.WriteFile(settingsPath, content, os.ModePerm); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 type UserDirectoryInterface interface {
 	GetDocumentsDir() (string, error)
 	CreateLotroDir() (string, error)
-	CreatePluginsDir() error
+	CreateAddonsDir() (string, error)
 }
 
 type UserDirectory struct{}
@@ -28,13 +57,19 @@ func (u *UserDirectory) CreateLotroDir() (string, error) {
 	return lotroDir, nil
 }
 
-func (u *UserDirectory) CreatePluginsDir() error {
+func (u *UserDirectory) CreateAddonsDir() (string, error) {
 	lotroDir, err := u.CreateLotroDir()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return os.MkdirAll(filepath.Join(lotroDir, "Plugins"), os.ModePerm)
+	pluginsDir := filepath.Join(lotroDir, "Plugins")
+	err = os.MkdirAll(pluginsDir, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return pluginsDir, nil
 }
 
 func (u *UserDirectory) GetDocumentsDir() (string, error) {

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
-import { InstallAddon, UpdateAddon } from '@/wailsjs/go/main/App'
+import { InstallAddon } from '@/wailsjs/go/main/App'
+import { useAddonsStore } from '@/stores/addons.ts'
+import { useRoute } from 'vue-router'
+import Addon = internal.Addon
 
 const props = defineProps<{
-    addons: ParentAddon[]
+    addons: Addon[]
 }>()
+
+const route = useRoute()
+const { setAddons } = useAddonsStore()
 
 const activeRow = ref<number | null>(null)
 
@@ -36,32 +41,25 @@ const resetRow = () => {
             @click="activeRow = index"
         >
             <template v-slot:status>
-                <div v-if="item.Type === 'remote'">
-                    <button
-                        v-if="item.HasUpdate"
-                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                    >
-                        Update
-                    </button>
-                    <p v-else-if="item.IsInstalled">Installed</p>
-                    <button
-                        v-else
-                        class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                        @click="async () => await InstallAddon(item.Id, false)"
-                    >
-                        Install
-                    </button>
-                </div>
-                <div v-else>
-                    <button
-                        class="bg-primary hover: text-sm py-1 px-2 rounded cursor-pointer"
-                        v-if="item.HasUpdate"
-                        @click="async () => await UpdateAddon(item.Id)"
-                    >
-                        Update
-                    </button>
-                    <span v-else>Up to date</span>
-                </div>
+                <button
+                    v-if="item.HasUpdate"
+                    class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
+                >
+                    Update
+                </button>
+                <p v-else-if="item.IsInstalled"></p>
+                <button
+                    v-else
+                    class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
+                    @click="
+                        async () =>
+                            InstallAddon(item.Id, false).then((newAddons) => {
+                                setAddons(Object.values(newAddons.localAddons))
+                            })
+                    "
+                >
+                    Install
+                </button>
             </template>
 
             <template v-slot:center>
@@ -72,8 +70,17 @@ const resetRow = () => {
                     <span v-else class="min-w-0 flex-1 truncate">{{ item.Description }}</span>
                 </div>
             </template>
+
+            <template v-slot:version>
+                <span v-if="route.fullPath === '/'">{{ item.CurrentVersion }}</span>
+                <span v-else>{{ item.LatestVersion }}</span>
+            </template>
         </AddonRow>
     </UScrollArea>
 
-    <SelectPopover :addon="props.addons[activeRow!]!" :activeRow="activeRow" @reset-row="resetRow" />
+    <SelectPopover
+        :addon="props.addons[activeRow!]!"
+        :activeRow="activeRow"
+        @reset-row="resetRow"
+    />
 </template>

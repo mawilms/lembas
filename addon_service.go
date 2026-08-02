@@ -1,111 +1,107 @@
 package main
 
 import (
-	"fmt"
-	"log/slog"
-	"time"
-
 	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
-	"github.com/mawilms/lembas/internal/remote"
 )
 
-type ParentAddonMap struct {
-	Items map[string]internal.ParentAddon `json:"items"`
-}
-
-func (a *App) GetLocalAddons() ParentAddonMap {
-	if len(a.localAddons) > 0 {
-		return ParentAddonMap{Items: a.localAddons}
+func (a *App) GetLocalAddons(forceReload bool) internal.AddonMap {
+	if len(a.localAddons) > 0 && !forceReload {
+		return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 	}
 
-	dbAddons, err := a.pluginModel.Get()
+	// TODO: Hier erstmal alle RemoteAddons auf installed = false setzen
+
+	dbAddons, err := a.addonModel.Get()
 	if err != nil {
-		return ParentAddonMap{}
+		return internal.AddonMap{}
 	}
 
-	var addons = make(map[string]internal.ParentAddon)
+	var addons = make(map[int]internal.Addon)
 
 	for _, e := range dbAddons {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.ParentAddon{
-			Id:          e.Id,
-			Type:        "local",
-			Name:        e.Name,
-			Author:      e.Author,
-			Description: e.Description,
-			Version:     e.Version,
-			Category:    e.Category,
-			Downloads:   e.Downloads,
-			UpdatedAt:   e.UpdatedAt,
-			ArchiveName: e.ArchiveName,
-			ArchiveSize: e.ArchiveSize,
-			HasUpdate:   false, // Check before
-			IsInstalled: true,
+		if remoteAddon, exists := a.remoteAddons[e.Id]; exists {
+			e.HasUpdate = internal.HasUpdate(e, remoteAddon)
+
+			remoteAddon.HasUpdate = internal.HasUpdate(e, remoteAddon)
+			a.remoteAddons[e.Id] = remoteAddon
 		}
+		addons[e.Id] = e
 	}
 
 	a.localAddons = addons
 
-	return ParentAddonMap{Items: addons}
+	return internal.AddonMap{
+		LocalAddons:  a.localAddons,
+		RemoteAddons: a.remoteAddons,
+	}
 }
 
-func (a *App) GetRemoteAddons() ParentAddonMap {
-	if len(a.remoteAddons) > 0 {
-		return ParentAddonMap{Items: a.remoteAddons}
+func (a *App) GetRemoteAddons(forceReload bool) internal.AddonMap {
+	if len(a.remoteAddons) > 0 && !forceReload {
+		return internal.AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
 	}
 
-	api := remote.Api{
-		Url: "https://api.lotrointerface.com/fav/plugincompendium.xml",
-	}
-
-	response, err := api.GetSourceXml()
+	remoteAddons, err := a.api.Get()
 	if err != nil {
-		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
-		return ParentAddonMap{}
+		return internal.AddonMap{}
 	}
 
-	xmlModel, err := remote.ParseXmlResponse(response)
-	if err != nil {
-		a.logger.Error("failed to get fetch remote plugins", slog.String("feed url", api.Url), slog.String("error", err.Error()))
-		return ParentAddonMap{}
-	}
+	addons := make(map[int]internal.Addon)
 
-	addons := make(map[string]internal.ParentAddon)
-
-	for _, e := range xmlModel {
-		addons[fmt.Sprintf("%s_%s", e.Name, e.Author)] = internal.ParentAddon{
-			Id:          e.Uid,
-			Type:        "remote",
-			Name:        e.Name,
-			Author:      e.Author,
-			Description: e.Description,
-			Version:     e.Version,
-			Category:    e.Category,
-			Downloads:   e.Downloads,
-			UpdatedAt:   time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
-			ArchiveName: e.File,
-			ArchiveSize: internal.FormatArchiveSize(e.Size),
-			HasUpdate:   false,
-			IsInstalled: false,
+	for _, e := range remoteAddons {
+		if localAddon, exists := a.localAddons[e.Id]; exists {
+			e.IsInstalled = true
+			e.HasUpdate = internal.HasUpdate(localAddon, e)
 		}
+		addons[e.Id] = e
 	}
 
 	a.remoteAddons = addons
 
-	return ParentAddonMap{Items: addons}
+	return internal.AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
 }
 
-func (a *App) GetAddons() ParentAddonMap {
-	localAddons := a.GetLocalAddons()
-	remoteAddons := a.GetRemoteAddons()
+func (a *App) GetAddons() internal.AddonMap {
+	localAddons := a.GetLocalAddons(false)
+	remoteAddons := a.GetRemoteAddons(false)
 
-	return ParentAddonMap{
-		Items: internal.MergeAddons(localAddons.Items, remoteAddons.Items),
+	finalizedAddons := internal.InitialLoading(localAddons.LocalAddons, remoteAddons.RemoteAddons)
+
+	a.localAddons = finalizedAddons.LocalAddons
+	a.remoteAddons = remoteAddons.RemoteAddons
+
+	return finalizedAddons
+}
+
+func (a *App) InstallAddon(id int, force bool) internal.AddonMap {
+	addon := a.remoteAddons[id]
+
+	newAddon, err := a.installer.Install(addon, *a.settings, a.addonModel)
+	if err != nil {
+		log.Infof("%v", err)
+		return internal.AddonMap{}
 	}
-}
 
-func (a *App) InstallAddon(id int, force bool) {
-	log.Infof("%v", id)
+	a.localAddons[id] = newAddon
+	a.remoteAddons[id] = internal.Addon{
+		Id:             a.remoteAddons[id].Id,
+		Type:           a.remoteAddons[id].Type,
+		Name:           a.remoteAddons[id].Name,
+		Author:         a.remoteAddons[id].Author,
+		Description:    a.remoteAddons[id].Description,
+		CurrentVersion: a.remoteAddons[id].LatestVersion,
+		LatestVersion:  a.remoteAddons[id].CurrentVersion,
+		Category:       a.remoteAddons[id].Category,
+		Downloads:      a.remoteAddons[id].Downloads,
+		UpdatedAt:      a.remoteAddons[id].UpdatedAt,
+		ArchiveName:    a.remoteAddons[id].ArchiveSize,
+		ArchiveSize:    a.remoteAddons[id].ArchiveSize,
+		HasUpdate:      false,
+		IsInstalled:    true,
+	}
+
+	return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }
 
 func (a *App) UpdateAddon(id int) {

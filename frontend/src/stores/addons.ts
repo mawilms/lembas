@@ -3,27 +3,32 @@ import { ref } from 'vue'
 import { GetAddons } from '@/wailsjs/go/main/App'
 import { useSort } from '@/utils.ts'
 import { internal } from '@/wailsjs/go/models.ts'
-import ParentAddon = internal.ParentAddon
+import Addon = internal.Addon
 
 export const useAddonsStore = defineStore('addons', () => {
-    const addons = ref<ParentAddon[]>([])
-    const remoteAddons = ref<ParentAddon[]>([])
+    const addons = ref<Addon[]>([])
+    const remoteAddons = ref<Addon[]>([])
+
+    const { sortAddons } = useSort()
 
     const getAddons = async () => {
         if (remoteAddons.value.length > 0) {
             return
         }
 
-        const { sortAddons } = useSort()
+        const fetchedAddons = await GetAddons()
 
-        const fetchedLocalAddons = Object.values((await GetAddons()).items)
-
-        addons.value = sortAddons(
-            fetchedLocalAddons.filter((value) => value.IsInstalled),
-            false
-        )
-        remoteAddons.value = sortAddons(fetchedLocalAddons, false)
+        addons.value = sortAddons(Object.values(fetchedAddons.localAddons), false)
+        remoteAddons.value = sortAddons(Object.values(fetchedAddons.remoteAddons), false)
     }
 
-    return { addons, remoteAddons, getAddons }
+    const setAddons = (newAddons: Addon[]) => {
+        addons.value = sortAddons(newAddons, false)
+    }
+
+    const setRemoteAddons = (newAddons: Addon[]) => {
+        remoteAddons.value = sortAddons(Object.values(newAddons), false)
+    }
+
+    return { addons, remoteAddons, setAddons, setRemoteAddons, getAddons }
 })

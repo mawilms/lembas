@@ -1,12 +1,13 @@
 export namespace internal {
 	
-	export class ParentAddon {
+	export class Addon {
 	    Id: number;
 	    Type: string;
 	    Name: string;
 	    Author: string;
 	    Description: string;
-	    Version: string;
+	    CurrentVersion: string;
+	    LatestVersion: string;
 	    Category: string;
 	    Downloads: number;
 	    UpdatedAt: string;
@@ -16,7 +17,7 @@ export namespace internal {
 	    IsInstalled: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new ParentAddon(source);
+	        return new Addon(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -26,7 +27,8 @@ export namespace internal {
 	        this.Name = source["Name"];
 	        this.Author = source["Author"];
 	        this.Description = source["Description"];
-	        this.Version = source["Version"];
+	        this.CurrentVersion = source["CurrentVersion"];
+	        this.LatestVersion = source["LatestVersion"];
 	        this.Category = source["Category"];
 	        this.Downloads = source["Downloads"];
 	        this.UpdatedAt = source["UpdatedAt"];
@@ -36,21 +38,18 @@ export namespace internal {
 	        this.IsInstalled = source["IsInstalled"];
 	    }
 	}
-
-}
-
-export namespace main {
-	
-	export class ParentAddonMap {
-	    items: Record<string, internal.ParentAddon>;
+	export class AddonMap {
+	    localAddons: Record<number, Addon>;
+	    remoteAddons: Record<number, Addon>;
 	
 	    static createFrom(source: any = {}) {
-	        return new ParentAddonMap(source);
+	        return new AddonMap(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.items = this.convertValues(source["items"], internal.ParentAddon, true);
+	        this.localAddons = this.convertValues(source["localAddons"], Addon, true);
+	        this.remoteAddons = this.convertValues(source["remoteAddons"], Addon, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
