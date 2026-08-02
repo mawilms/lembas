@@ -5,81 +5,82 @@ import (
 	"github.com/mawilms/lembas/internal"
 )
 
-type AddonMap struct {
-	LocalAddons  map[int]internal.Addon `json:"localAddons"`
-	RemoteAddons map[int]internal.Addon `json:"remoteAddons"`
-}
-
-func (a *App) GetLocalAddons(forceReload bool) AddonMap {
+func (a *App) GetLocalAddons(forceReload bool) internal.AddonMap {
 	if len(a.localAddons) > 0 && !forceReload {
-		return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
+		return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 	}
+
+	// TODO: Hier erstmal alle RemoteAddons auf installed = false setzen
 
 	dbAddons, err := a.addonModel.Get()
 	if err != nil {
-		return AddonMap{}
+		return internal.AddonMap{}
 	}
 
 	var addons = make(map[int]internal.Addon)
 
 	for _, e := range dbAddons {
+		if remoteAddon, exists := a.remoteAddons[e.Id]; exists {
+			e.HasUpdate = internal.HasUpdate(e, remoteAddon)
+
+			remoteAddon.HasUpdate = internal.HasUpdate(e, remoteAddon)
+			a.remoteAddons[e.Id] = remoteAddon
+		}
 		addons[e.Id] = e
 	}
 
-	if len(a.remoteAddons) > 0 {
-		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
-		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
+	a.localAddons = addons
 
-	} else {
-		a.localAddons = addons
-	}
-
-	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
-}
-
-func (a *App) GetRemoteAddons(forceReload bool) AddonMap {
-	if len(a.remoteAddons) > 0 && !forceReload {
-		return AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
-	}
-
-	remoteAddons, err := a.api.Get()
-	if err != nil {
-		return AddonMap{}
-	}
-
-	addons := make(map[int]internal.Addon)
-
-	for _, a := range remoteAddons {
-		addons[a.Id] = a
-	}
-
-	a.remoteAddons = addons
-
-	return AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
-}
-
-func (a *App) GetAddons() AddonMap {
-	localAddons := a.GetLocalAddons(false)
-	remoteAddons := a.GetRemoteAddons(false)
-
-	mergedAddons := internal.UpdateVersions(localAddons.LocalAddons, remoteAddons.RemoteAddons)
-
-	a.localAddons = internal.UpdateLocalAddons(mergedAddons)
-	a.remoteAddons = mergedAddons
-
-	return AddonMap{
+	return internal.AddonMap{
 		LocalAddons:  a.localAddons,
 		RemoteAddons: a.remoteAddons,
 	}
 }
 
-func (a *App) InstallAddon(id int, force bool) AddonMap {
+func (a *App) GetRemoteAddons(forceReload bool) internal.AddonMap {
+	if len(a.remoteAddons) > 0 && !forceReload {
+		return internal.AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
+	}
+
+	remoteAddons, err := a.api.Get()
+	if err != nil {
+		return internal.AddonMap{}
+	}
+
+	addons := make(map[int]internal.Addon)
+
+	for _, e := range remoteAddons {
+		if localAddon, exists := a.localAddons[e.Id]; exists {
+			e.IsInstalled = true
+			e.HasUpdate = internal.HasUpdate(localAddon, e)
+		}
+		addons[e.Id] = e
+	}
+
+	a.remoteAddons = addons
+
+	return internal.AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
+}
+
+func (a *App) GetAddons() internal.AddonMap {
+	localAddons := a.GetLocalAddons(false)
+	remoteAddons := a.GetRemoteAddons(false)
+
+	finalizedAddons := internal.InitialLoading(localAddons.LocalAddons, remoteAddons.RemoteAddons)
+
+	a.localAddons = finalizedAddons.LocalAddons
+	a.remoteAddons = remoteAddons.RemoteAddons
+
+	return finalizedAddons
+}
+
+func (a *App) InstallAddon(id int, force bool) internal.AddonMap {
 	addon := a.remoteAddons[id]
 
 	newAddon, err := a.installer.Install(addon, *a.settings, a.addonModel)
 	if err != nil {
 		log.Infof("%v", err)
-		return AddonMap{}
+		return internal.AddonMap{}
 	}
 
 	a.localAddons[id] = newAddon
@@ -100,7 +101,7 @@ func (a *App) InstallAddon(id int, force bool) AddonMap {
 		IsInstalled:    true,
 	}
 
-	return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
+	return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
 }
 
 func (a *App) UpdateAddon(id int) {

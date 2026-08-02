@@ -86,8 +86,8 @@ func (d *Database) Insert(addon Addon, info ArchiveInfo) error {
 		ArchiveName:      addon.ArchiveName,
 	}
 
-	stmt := `INSERT INTO plugins (name, author, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, archive_name) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
+	stmt := `INSERT INTO plugins (name, author, version, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, archive_name) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 	_, err = db.Exec(stmt, row.Name, row.Author, row.Version, row.Plugin, row.PluginCompendium,
 		row.RootFolder, row.PluginFolder, row.Id, row.ArchiveName)

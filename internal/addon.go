@@ -8,6 +8,11 @@ import (
 
 var leadingDigits = regexp.MustCompile(`^\d+`)
 
+type AddonMap struct {
+	LocalAddons  map[int]Addon `json:"localAddons"`
+	RemoteAddons map[int]Addon `json:"remoteAddons"`
+}
+
 type Addon struct {
 	Id             int
 	Type           string
@@ -23,6 +28,32 @@ type Addon struct {
 	ArchiveSize    string
 	HasUpdate      bool
 	IsInstalled    bool
+}
+
+func InitialLoading(localAddons, remoteAddons map[int]Addon) AddonMap {
+	mergedLocalAddons := make(map[int]Addon, len(localAddons))
+	mergedRemoteAddons := make(map[int]Addon, len(remoteAddons))
+
+	for key, remoteAddon := range remoteAddons {
+		if localAddon, exists := localAddons[key]; exists {
+			if HasUpdate(localAddon, remoteAddon) {
+				localAddon.HasUpdate = true
+				remoteAddon.HasUpdate = true
+			}
+			remoteAddon.IsInstalled = true
+			localAddon.Downloads = remoteAddon.Downloads
+			localAddon.ArchiveSize = remoteAddon.ArchiveSize
+			localAddon.UpdatedAt = remoteAddon.UpdatedAt
+
+			mergedLocalAddons[key] = localAddon
+		}
+		mergedRemoteAddons[key] = remoteAddon
+	}
+
+	return AddonMap{
+		LocalAddons:  mergedLocalAddons,
+		RemoteAddons: mergedRemoteAddons,
+	}
 }
 
 func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {
@@ -50,7 +81,7 @@ func UpdateVersions(localAddons, remoteAddons map[int]Addon) map[int]Addon {
 		if remoteAddon, exists := mergedAddons[key]; exists {
 			remoteAddon.IsInstalled = true
 			remoteAddon.CurrentVersion = localAddon.CurrentVersion
-			remoteAddon.HasUpdate = hasUpdate(localAddon, remoteAddon)
+			remoteAddon.HasUpdate = HasUpdate(localAddon, remoteAddon)
 			mergedAddons[key] = remoteAddon
 		}
 	}
@@ -129,6 +160,6 @@ func compareVersions(remoteVersion, localVersion string) int {
 }
 
 // hasUpdate reports whether remote has a newer version than local.
-func hasUpdate(local, remote Addon) bool {
+func HasUpdate(local, remote Addon) bool {
 	return compareVersions(remote.LatestVersion, local.CurrentVersion) > 0
 }
