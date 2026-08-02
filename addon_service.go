@@ -3,48 +3,52 @@ package main
 import (
 	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-func (a *App) GetLocalAddons(forceReload bool) internal.AddonMap {
-	if len(a.localAddons) > 0 && !forceReload {
-		return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
-	}
+type AddonMap struct {
+	LocalAddons  map[int]internal.Addon `json:"localAddons"`
+	RemoteAddons map[int]internal.Addon `json:"remoteAddons"`
+}
 
-	// TODO: Hier erstmal alle RemoteAddons auf installed = false setzen
+func (a *App) GetLocalAddons(forceReload bool) AddonMap {
+	if len(a.localAddons) > 0 && !forceReload {
+		return AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
+	}
 
 	dbAddons, err := a.addonModel.Get()
 	if err != nil {
-		return internal.AddonMap{}
+		return AddonMap{}
 	}
 
 	var addons = make(map[int]internal.Addon)
 
 	for _, e := range dbAddons {
-		if remoteAddon, exists := a.remoteAddons[e.Id]; exists {
-			e.HasUpdate = internal.HasUpdate(e, remoteAddon)
-
-			remoteAddon.HasUpdate = internal.HasUpdate(e, remoteAddon)
-			a.remoteAddons[e.Id] = remoteAddon
-		}
 		addons[e.Id] = e
+	}
+
+	if len(a.remoteAddons) > 0 {
+		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
+	} else {
+		a.localAddons = addons
 	}
 
 	a.localAddons = addons
 
-	return internal.AddonMap{
+	return AddonMap{
 		LocalAddons:  a.localAddons,
 		RemoteAddons: a.remoteAddons,
 	}
 }
 
-func (a *App) GetRemoteAddons(forceReload bool) internal.AddonMap {
+func (a *App) GetRemoteAddons(forceReload bool) AddonMap {
 	if len(a.remoteAddons) > 0 && !forceReload {
-		return internal.AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
+		return AddonMap{RemoteAddons: a.remoteAddons, LocalAddons: a.localAddons}
 	}
 
 	remoteAddons, err := a.api.Get()
 	if err != nil {
-		return internal.AddonMap{}
+		return AddonMap{}
 	}
 
 	addons := make(map[int]internal.Addon)
@@ -59,28 +63,31 @@ func (a *App) GetRemoteAddons(forceReload bool) internal.AddonMap {
 
 	a.remoteAddons = addons
 
-	return internal.AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
+	return AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
 }
 
-func (a *App) GetAddons() internal.AddonMap {
+func (a *App) GetAddons() AddonMap {
 	localAddons := a.GetLocalAddons(false)
 	remoteAddons := a.GetRemoteAddons(false)
 
-	finalizedAddons := internal.InitialLoading(localAddons.LocalAddons, remoteAddons.RemoteAddons)
+	mergedAddons := internal.UpdateVersions(localAddons.LocalAddons, remoteAddons.RemoteAddons)
 
-	a.localAddons = finalizedAddons.LocalAddons
-	a.remoteAddons = remoteAddons.RemoteAddons
+	a.localAddons = internal.UpdateLocalAddons(mergedAddons)
+	a.remoteAddons = mergedAddons
 
-	return finalizedAddons
+	return AddonMap{
+		LocalAddons:  a.localAddons,
+		RemoteAddons: a.remoteAddons,
+	}
 }
 
-func (a *App) InstallAddon(id int, force bool) internal.AddonMap {
+func (a *App) InstallAddon(id int, force bool) error {
 	addon := a.remoteAddons[id]
 
 	newAddon, err := a.installer.Install(addon, *a.settings, a.addonModel)
 	if err != nil {
 		log.Infof("%v", err)
-		return internal.AddonMap{}
+		return err
 	}
 
 	a.localAddons[id] = newAddon
@@ -101,13 +108,34 @@ func (a *App) InstallAddon(id int, force bool) internal.AddonMap {
 		IsInstalled:    true,
 	}
 
-	return internal.AddonMap{LocalAddons: a.localAddons, RemoteAddons: a.remoteAddons}
+	runtime.EventsEmit(a.ctx, "install:success", AddonMap{
+		LocalAddons:  a.localAddons,
+		RemoteAddons: a.remoteAddons,
+	})
+
+	return nil
 }
 
 func (a *App) UpdateAddon(id int) {
 	log.Infof("%v", id)
 }
 
-func (a *App) DeleteAddon(id int) {
-	log.Infof("%v", id)
+func (a *App) DeleteAddon(id int) error {
+	err := a.addonModel.Delete(id)
+	if err != nil {
+		return nil
+	}
+
+	remoteAddon := a.remoteAddons[id]
+	remoteAddon.IsInstalled = false
+
+	a.remoteAddons[id] = remoteAddon
+	delete(a.localAddons, id)
+
+	runtime.EventsEmit(a.ctx, "delete:success", AddonMap{
+		LocalAddons:  a.localAddons,
+		RemoteAddons: a.remoteAddons,
+	})
+
+	return nil
 }

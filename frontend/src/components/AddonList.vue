@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { internal } from '@/wailsjs/go/models.ts'
 import { InstallAddon } from '@/wailsjs/go/main/App'
 import { useAddonsStore } from '@/stores/addons.ts'
@@ -8,16 +7,13 @@ import Addon = internal.Addon
 
 const props = defineProps<{
     addons: Addon[]
+    activeRow: number | null
 }>()
 
 const route = useRoute()
 const { setAddons } = useAddonsStore()
 
-const activeRow = ref<number | null>(null)
-
-const resetRow = () => {
-    activeRow.value = null
-}
+const emit = defineEmits(['setActiveRow', 'resetRow'])
 </script>
 
 <template>
@@ -38,7 +34,7 @@ const resetRow = () => {
                 'border-primary': activeRow === index,
                 'border-transparent': activeRow !== index,
             }"
-            @click="activeRow = index"
+            @click="emit('setActiveRow', index)"
         >
             <template v-slot:status>
                 <button
@@ -51,12 +47,7 @@ const resetRow = () => {
                 <button
                     v-else
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                    @click="
-                        async () =>
-                            InstallAddon(item.Id, false).then((newAddons) => {
-                                setAddons(Object.values(newAddons.localAddons))
-                            })
-                    "
+                    @click="async () => await InstallAddon(item.Id, false)"
                 >
                     Install
                 </button>
@@ -81,6 +72,6 @@ const resetRow = () => {
     <SelectPopover
         :addon="props.addons[activeRow!]!"
         :activeRow="activeRow"
-        @reset-row="resetRow"
+        @reset-row="emit('resetRow')"
     />
 </template>

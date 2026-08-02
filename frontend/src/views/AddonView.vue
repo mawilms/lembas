@@ -6,9 +6,10 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 import { useAddonsStore } from '@/stores/addons.ts'
 import { storeToRefs } from 'pinia'
 import { GetLocalAddons } from '@/wailsjs/go/main/App'
-import { computed } from 'vue'
-import { internal } from '@/wailsjs/go/models.ts'
-import Addon = internal.Addon
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { EventsOff, EventsOn } from '@/wailsjs/runtime/runtime'
+import { main } from '@/wailsjs/go/models.ts'
+import AddonMap = main.AddonMap
 
 const { addons } = storeToRefs(useAddonsStore())
 const { setAddons, setRemoteAddons } = useAddonsStore()
@@ -18,6 +19,18 @@ const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(addons, selectedCategories)
+
+onMounted(() => {
+    EventsOn('delete:success', (addonMap: AddonMap) => {
+        setAddons(Object.values(addonMap.localAddons))
+        setRemoteAddons(Object.values(addonMap.remoteAddons))
+        resetRow()
+    })
+})
+
+onUnmounted(() => {
+    EventsOff('delete:success')
+})
 
 const reloadAddons = async () => {
     const newAddons = await GetLocalAddons(true)
@@ -29,6 +42,16 @@ const reloadAddons = async () => {
 const amountUpdates = computed(() => {
     return addons.value.filter((addon) => addon.HasUpdate == true).length
 })
+
+const activeRow = ref<number | null>(null)
+
+const setActiveRow = (index: number) => {
+    activeRow.value = index
+}
+
+const resetRow = () => {
+    activeRow.value = null
+}
 </script>
 
 <template>
@@ -96,5 +119,5 @@ const amountUpdates = computed(() => {
         </section>
     </section>
 
-    <AddonList :addons="filteredList" />
+    <AddonList :activeRow="activeRow" @setActiveRow="setActiveRow" @resetRow="resetRow" :addons="filteredList" />
 </template>

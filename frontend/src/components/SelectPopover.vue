@@ -2,8 +2,12 @@
 import { ArrowDownToLine, Trash2, X } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { DeleteAddon, InstallAddon } from '@/wailsjs/go/main/App'
-import { internal } from '@/wailsjs/go/models.ts'
+import { internal, main } from '@/wailsjs/go/models.ts'
 import Addon = internal.Addon
+import { onMounted, onUnmounted } from 'vue'
+import { EventsOff, EventsOn } from '@/wailsjs/runtime'
+import AddonMap = main.AddonMap
+import { useAddonsStore } from '@/stores/addons.ts'
 
 const props = defineProps<{
     activeRow: number | null
@@ -12,6 +16,18 @@ const props = defineProps<{
 const emit = defineEmits(['reset-row'])
 
 const route = useRoute()
+const { setAddons, setRemoteAddons } = useAddonsStore()
+
+onMounted(() => {
+    EventsOn('install:success', (addonMap: AddonMap) => {
+        setAddons(Object.values(addonMap.localAddons))
+        setRemoteAddons(Object.values(addonMap.remoteAddons))
+    })
+})
+
+onUnmounted(() => {
+    EventsOff('install:success')
+})
 </script>
 
 <template>
