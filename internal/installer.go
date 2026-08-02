@@ -37,9 +37,9 @@ func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInt
 		return Addon{}, err
 	}
 
-	//if err := extractZip(zipPath, settings.AddonDirectory); err != nil {
-	//	return err
-	//}
+	if err := extractZip(zipPath, settings.AddonDirectory); err != nil {
+		return Addon{}, err
+	}
 
 	if err := database.Insert(addon, *info); err != nil {
 		return Addon{}, err
@@ -103,19 +103,21 @@ func analyzeZip(zipPath string) (*ArchiveInfo, error) {
 
 		if len(parts) == 2 && info.RootFolder == "" {
 			info.RootFolder = parts[0]
+		} else if len(parts) == 3 && info.PluginFolder == "" {
+			info.PluginFolder = parts[1]
+
 		}
 
 		if strings.Contains(f.Name, ".plugincompendium") {
 			entry := strings.Split(f.Name, "/")
 
 			info.PluginCompendiumFile = entry[len(entry)-1]
+		} else if strings.Contains(f.Name, ".plugin") {
+			entry := strings.Split(f.Name, "/")
+
+			info.PluginFile = entry[len(entry)-1]
 		}
 
-	}
-
-	if info.PluginCompendiumFile != "" {
-		info.PluginFolder = strings.Split(info.PluginCompendiumFile, ".")[0]
-		info.PluginFile = strings.TrimSuffix(info.PluginCompendiumFile, "compendium")
 	}
 
 	return info, nil

@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS plugins
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	_, err = db.Exec(`
 CREATE VIEW plugins_view AS
 SELECT name, author, version, description, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category 
 FROM plugins;
 `)
-	defer db.Close()
 
 	return nil
 }
@@ -173,13 +173,13 @@ func (d *Database) Delete(id int) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	stmt := `DELETE FROM plugins WHERE plugin_id = ?`
 	_, err = db.Exec(stmt, id)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	return nil
 }

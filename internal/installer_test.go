@@ -33,6 +33,12 @@ func TestAnalyzeZip(t *testing.T) {
 			PluginFile:           "AltHolic.plugin",
 			PluginCompendiumFile: "AltHolic.plugincompendium",
 		}},
+		{"doesn't contain a plugincompendium file", "AH_Buyout_Calculator_0.5.zip", ArchiveInfo{
+			RootFolder:           "Munkey",
+			PluginFolder:         "Munkey",
+			PluginFile:           "Ah.plugin",
+			PluginCompendiumFile: "",
+		}},
 	}
 
 	for _, tt := range tests {
