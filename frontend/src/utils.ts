@@ -1,6 +1,7 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
-import type { ExtendedAddon, ExtendedRemoteAddon } from '@/types/plugin.ts'
+import { internal } from '@/wailsjs/go/models.ts'
+import Addon = internal.Addon
 
 interface Named {
     Name: string
@@ -24,7 +25,7 @@ export const useSort = () => {
 }
 
 export const useFilteredList = <T extends Named>(
-    addons: T[],
+    addons: Ref<T[]>,
     categories: Ref<string[]>
 ): ComputedRef<T[]> => {
     const searchbarStore = useSearchbarStore()
@@ -33,9 +34,9 @@ export const useFilteredList = <T extends Named>(
         const text = searchbarStore.text.trim().toLowerCase()
         const hasCategories = (categories?.value?.length ?? 0) > 0
 
-        if (!text && !hasCategories) return addons
+        if (!text && !hasCategories) return addons.value
 
-        let filteredAddons = addons
+        let filteredAddons: T[] = addons.value
 
         if (hasCategories) {
             filteredAddons = filteredAddons.filter((item) =>
@@ -57,11 +58,11 @@ export const useRemoveCategory = () => {
     return { selectedCategories, removeCategory }
 }
 
-export const useCategories = (addons: ExtendedAddon[] | ExtendedRemoteAddon[]) => {
+export const useCategories = (addons: Ref<Addon[]>) => {
     return computed(() => {
         return [
             ...new Set(
-                addons.map((a) => {
+                addons.value.map((a) => {
                     return a.Category
                 })
             ),

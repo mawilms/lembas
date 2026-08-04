@@ -2,11 +2,12 @@
 import { ArrowDownToLine, Clock, Computer, HardDrive } from '@lucide/vue'
 
 import { extractFirstLetter } from '@/utils.ts'
-import type { IAddon } from '@/types/plugin.ts'
 import { BrowserOpenURL } from '@/wailsjs/runtime'
+import { internal } from '@/wailsjs/go/models.ts'
+import Addon = internal.Addon
 
 const props = defineProps<{
-    addon: IAddon
+    addon: Addon
 }>()
 
 const openPluginPage = (id: number) => {
@@ -19,7 +20,7 @@ const openPluginPage = (id: number) => {
         class="flex gap-4 py-4 items-start bg-light-brown hover:bg-light-brown-hover p-4 select-none"
     >
         <div
-            class="flex items-center justify-center w-22 h-full rounded-lg text-2xl font-bold bg-secondary"
+            class="flex justify-center items-center self-stretch w-22 rounded-lg text-3xl font-bold bg-secondary"
         >
             {{ extractFirstLetter(props.addon.Name) }}
         </div>
@@ -30,7 +31,7 @@ const openPluginPage = (id: number) => {
                     <div class="flex gap-4 items-center mb-1">
                         <a
                             class="font-bold hover:underline"
-                            @click="openPluginPage(props.addon.Id)"
+                            @click.stop="openPluginPage(props.addon.Id)"
                             >{{ props.addon.Name }}</a
                         >
                         <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>
@@ -72,7 +73,8 @@ const openPluginPage = (id: number) => {
 
                     <UTooltip arrow text="Current version">
                         <div class="flex items-center gap-1">
-                            <Computer class="w-4 h-4" /> {{ props.addon.Version }}
+                            <Computer class="w-4 h-4" />
+                            <slot name="version"></slot>
                         </div>
                     </UTooltip>
                 </section>

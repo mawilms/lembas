@@ -7,13 +7,25 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 
 import { useAddonsStore } from '@/stores/addons.ts'
 import Filter from '@/components/Filter.vue'
+import { storeToRefs } from 'pinia'
+import { ref } from 'vue'
 
-const addonsStore = useAddonsStore()
-const categories = useCategories(addonsStore.remoteAddons)
+const { remoteAddons } = storeToRefs(useAddonsStore())
+const categories = useCategories(remoteAddons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
-const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategories)
+const filteredList = useFilteredList(remoteAddons, selectedCategories)
+
+const activeRow = ref<number | null>(null)
+
+const setActiveRow = (index: number) => {
+    activeRow.value = index
+}
+
+const resetRow = () => {
+    activeRow.value = null
+}
 </script>
 
 <template>
@@ -60,5 +72,10 @@ const filteredList = useFilteredList(addonsStore.remoteAddons, selectedCategorie
         </section>
     </section>
 
-    <AddonList :addons="filteredList" />
+    <AddonList
+        :activeRow="activeRow"
+        @setActiveRow="setActiveRow"
+        @resetRow="resetRow"
+        :addons="filteredList"
+    />
 </template>

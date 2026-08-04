@@ -1,30 +1,33 @@
 <script setup lang="ts">
 import { ArrowDownToLine, Trash2, X } from '@lucide/vue'
 import { useRoute } from 'vue-router'
+import { DeleteAddon, InstallAddon } from '@/wailsjs/go/main/App'
+import { internal, main } from '@/wailsjs/go/models.ts'
+import Addon = internal.Addon
+import { onMounted, onUnmounted } from 'vue'
+import { EventsOff, EventsOn } from '@/wailsjs/runtime'
+import AddonMap = main.AddonMap
+import { useAddonsStore } from '@/stores/addons.ts'
 
 const props = defineProps<{
     activeRow: number | null
+    addon: Addon
 }>()
 const emit = defineEmits(['reset-row'])
 
 const route = useRoute()
+const { setAddons, setRemoteAddons } = useAddonsStore()
 
-const forceInstall = () => {}
+onMounted(() => {
+    EventsOn('install:success', (addonMap: AddonMap) => {
+        setAddons(Object.values(addonMap.localAddons))
+        setRemoteAddons(Object.values(addonMap.remoteAddons))
+    })
+})
 
-const uninstall = () => {}
-
-const popupContent = [
-    {
-        label: 'Reinstall',
-        icon: ArrowDownToLine,
-        callback: forceInstall,
-    },
-    {
-        label: 'Delete',
-        icon: Trash2,
-        callback: uninstall,
-    },
-]
+onUnmounted(() => {
+    EventsOff('install:success')
+})
 </script>
 
 <template>
@@ -48,13 +51,19 @@ const popupContent = [
                 <span class="text-sm text-white">1 ausgewählt</span>
 
                 <button
-                    :key="e.label"
-                    v-for="e in popupContent"
-                    @click="e.callback"
+                    @click="async () => await InstallAddon(addon.Id, false)"
                     class="flex items-center gap-1 hover:bg-gold py-1 px-2 rounded cursor-pointer"
                 >
-                    <component :is="e.icon" class="h-4 w-4" />
-                    <span>{{ e.label }}</span>
+                    <ArrowDownToLine class="h-4 w-4" />
+                    <span>Reinstall</span>
+                </button>
+
+                <button
+                    @click="async () => await DeleteAddon(addon.Id)"
+                    class="flex items-center gap-1 hover:bg-gold py-1 px-2 rounded cursor-pointer"
+                >
+                    <Trash2 class="h-4 w-4" />
+                    <span>Delete</span>
                 </button>
 
                 <button
@@ -67,5 +76,3 @@ const popupContent = [
         </div>
     </Transition>
 </template>
-
-<style scoped></style>

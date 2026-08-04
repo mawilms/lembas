@@ -4,18 +4,53 @@ import AddonList from '@/components/AddonList.vue'
 import Filter from '@/components/Filter.vue'
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
+import { storeToRefs } from 'pinia'
+import { GetLocalAddons } from '@/wailsjs/go/main/App'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { EventsOff, EventsOn } from '@/wailsjs/runtime/runtime'
+import { main } from '@/wailsjs/go/models.ts'
+import AddonMap = main.AddonMap
 
-const addonsStore = useAddonsStore()
+const { addons } = storeToRefs(useAddonsStore())
+const { setAddons, setRemoteAddons } = useAddonsStore()
 
-const categories = useCategories(addonsStore.addons)
+const categories = useCategories(addons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
 const { sorting, sortAddons } = useSort()
-const filteredList = useFilteredList(addonsStore.addons, selectedCategories)
+const filteredList = useFilteredList(addons, selectedCategories)
+
+onMounted(() => {
+    EventsOn('delete:success', (addonMap: AddonMap) => {
+        setAddons(Object.values(addonMap.localAddons))
+        setRemoteAddons(Object.values(addonMap.remoteAddons))
+        resetRow()
+    })
+})
+
+onUnmounted(() => {
+    EventsOff('delete:success')
+})
 
 const reloadAddons = async () => {
-    // const newAddons = await GetLocalAddons()
-    // localAddonsStore.setAddons(newAddons)
+    const newAddons = await GetLocalAddons(true)
+    console.log(newAddons)
+    setAddons(Object.values(newAddons.localAddons))
+    setRemoteAddons(Object.values(newAddons.remoteAddons))
+}
+
+const amountUpdates = computed(() => {
+    return addons.value.filter((addon) => addon.HasUpdate == true).length
+})
+
+const activeRow = ref<number | null>(null)
+
+const setActiveRow = (index: number) => {
+    activeRow.value = index
+}
+
+const resetRow = () => {
+    activeRow.value = null
 }
 </script>
 
@@ -23,10 +58,18 @@ const reloadAddons = async () => {
     <section class="flex flex-col bg-light-brown py-2 px-4 text-gray-300">
         <section class="grid grid-cols-3">
             <div>
-                <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">
-                    <ArrowDownToLine class="h-5 w-5" />
-                    <button class="text-sm cursor-pointer">Update all</button>
-                </div>
+                <UChip
+                    :text="amountUpdates"
+                    :show="amountUpdates > 0"
+                    :ui="{
+                        base: 'text-sm bg-primary p-2 border-none ring-0',
+                    }"
+                >
+                    <div class="flex gap-1.5 cursor-pointer hover:bg-light-brown-hover p-2 w-fit">
+                        <ArrowDownToLine class="h-5 w-5" />
+                        <button class="text-sm cursor-pointer">Update all</button>
+                    </div>
+                </UChip>
             </div>
 
             <span class="flex items-center justify-center text-sm"
@@ -76,5 +119,5 @@ const reloadAddons = async () => {
         </section>
     </section>
 
-    <AddonList :addons="filteredList" />
+    <AddonList :activeRow="activeRow" @setActiveRow="setActiveRow" @resetRow="resetRow" :addons="filteredList" />
 </template>
