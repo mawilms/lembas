@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
 type ArchiveInfo struct {
-	RootFolder           string
-	PluginFolder         string
-	PluginFile           string
-	PluginCompendiumFile string
+	RootFolder string
+	Files      string
 }
 
 type Installer struct {
@@ -98,27 +97,38 @@ func analyzeZip(zipPath string) (*ArchiveInfo, error) {
 
 	info := &ArchiveInfo{}
 
+	folders := make([]string, 0)
+
 	for _, f := range r.File {
 		parts := strings.Split(f.Name, "/")
 
 		if len(parts) == 2 && info.RootFolder == "" {
 			info.RootFolder = parts[0]
-		} else if len(parts) == 3 && info.PluginFolder == "" {
-			info.PluginFolder = parts[1]
-
 		}
 
-		if strings.Contains(f.Name, ".plugincompendium") {
-			entry := strings.Split(f.Name, "/")
-
-			info.PluginCompendiumFile = entry[len(entry)-1]
-		} else if strings.Contains(f.Name, ".plugin") {
-			entry := strings.Split(f.Name, "/")
-
-			info.PluginFile = entry[len(entry)-1]
+		if f.FileInfo().IsDir() && len(parts) > 2 {
+			folders = append(folders, f.Name)
 		}
-
+		if strings.Contains(f.Name, ".plugin") {
+			folders = append(folders, f.Name)
+		}
 	}
+
+	sort.Strings(folders)
+
+	var result []string
+	lastKeptPath := ""
+	for _, f := range folders {
+		parts := strings.Split(f, "/")
+		if strings.Contains(parts[1], ".plugincompendium") ||
+			lastKeptPath == "" ||
+			!strings.HasPrefix(parts[1], lastKeptPath) {
+			result = append(result, f)
+			lastKeptPath = parts[1]
+		}
+	}
+
+	info.Files = strings.Join(result, ",")
 
 	return info, nil
 }

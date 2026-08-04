@@ -31,7 +31,7 @@ const openPluginPage = (id: number) => {
                     <div class="flex gap-4 items-center mb-1">
                         <a
                             class="font-bold hover:underline"
-                            @click="openPluginPage(props.addon.Id)"
+                            @click.stop="openPluginPage(props.addon.Id)"
                             >{{ props.addon.Name }}</a
                         >
                         <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>

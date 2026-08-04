@@ -22,22 +22,16 @@ func TestAnalyzeZip(t *testing.T) {
 		expect      ArchiveInfo
 	}{
 		{"same root and plugin folder", "LUI-v2.2.1.zip", ArchiveInfo{
-			RootFolder:           "LUI",
-			PluginFolder:         "LUI",
-			PluginFile:           "LUI.plugin",
-			PluginCompendiumFile: "LUI.plugincompendium",
+			RootFolder: "LUI",
+			Files:      "LUI/LICENSES/,LUI/LUI.plugin,LUI/LUI.plugincompendium,LUI/LUIReloader.plugin,LUI/api/,LUI/assets/,LUI/reloader/,LUI/src/",
 		}},
 		{"different root and plugin folder", "Altholic.zip", ArchiveInfo{
-			RootFolder:           "Homeopatix",
-			PluginFolder:         "AltHolic",
-			PluginFile:           "AltHolic.plugin",
-			PluginCompendiumFile: "AltHolic.plugincompendium",
+			RootFolder: "Homeopatix",
+			Files:      "Homeopatix/AltHolic.plugin,Homeopatix/AltHolic.plugincompendium,Homeopatix/AltHolic/",
 		}},
 		{"doesn't contain a plugincompendium file", "AH_Buyout_Calculator_0.5.zip", ArchiveInfo{
-			RootFolder:           "Munkey",
-			PluginFolder:         "Munkey",
-			PluginFile:           "Ah.plugin",
-			PluginCompendiumFile: "",
+			RootFolder: "Munkey",
+			Files:      "Munkey/Ah.plugin,Munkey/Ah/",
 		}},
 	}
 
