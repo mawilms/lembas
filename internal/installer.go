@@ -7,14 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
-
-type ArchiveInfo struct {
-	RootFolder string
-	Files      string
-}
 
 type Installer struct {
 }
@@ -22,6 +18,7 @@ type Installer struct {
 type InstallerInterface interface {
 	Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error)
 	downloadZip(downloadUrl, downloadDestination string, id int) (string, error)
+	DeleteFiles(addonsFolderPath string, files []string) error
 }
 
 func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInterface) (Addon, error) {
@@ -31,7 +28,7 @@ func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInt
 	}
 	defer os.Remove(zipPath)
 
-	info, err := analyzeZip(zipPath)
+	files, err := analyzeZip(zipPath)
 	if err != nil {
 		return Addon{}, err
 	}
@@ -40,7 +37,7 @@ func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInt
 		return Addon{}, err
 	}
 
-	if err := database.Insert(addon, *info); err != nil {
+	if err := database.Insert(addon, files); err != nil {
 		return Addon{}, err
 	}
 
@@ -88,28 +85,28 @@ func (i *Installer) downloadZip(downloadUrl, downloadDestination string, id int)
 	return tmpFile.Name(), nil
 }
 
-func analyzeZip(zipPath string) (*ArchiveInfo, error) {
+func ensureTrailingSlash(path string) string {
+	if !strings.HasSuffix(path, "/") {
+		return path + "/"
+	}
+	return path
+}
+
+func analyzeZip(zipPath string) (string, error) {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer r.Close()
-
-	info := &ArchiveInfo{}
 
 	folders := make([]string, 0)
 
 	for _, f := range r.File {
 		parts := strings.Split(f.Name, "/")
 
-		if len(parts) == 2 && info.RootFolder == "" {
-			info.RootFolder = parts[0]
-		}
-
 		if f.FileInfo().IsDir() && len(parts) > 2 {
 			folders = append(folders, f.Name)
-		}
-		if strings.Contains(f.Name, ".plugin") {
+		} else if len(parts) == 2 && parts[1] != "" {
 			folders = append(folders, f.Name)
 		}
 	}
@@ -122,15 +119,13 @@ func analyzeZip(zipPath string) (*ArchiveInfo, error) {
 		parts := strings.Split(f, "/")
 		if strings.Contains(parts[1], ".plugincompendium") ||
 			lastKeptPath == "" ||
-			!strings.HasPrefix(parts[1], lastKeptPath) {
+			!strings.HasPrefix(ensureTrailingSlash(parts[1]), ensureTrailingSlash(lastKeptPath)) {
 			result = append(result, f)
 			lastKeptPath = parts[1]
 		}
 	}
 
-	info.Files = strings.Join(result, ",")
-
-	return info, nil
+	return strings.Join(result, ","), nil
 }
 
 func isWithinDir(base, target string) bool {
@@ -190,4 +185,55 @@ func extractZip(zipPath string, destDir string) error {
 	}
 
 	return nil
+}
+
+func (i *Installer) DeleteFiles(addonsFolderPath string, files []string) error {
+	if len(files) == 0 {
+		return nil
+	}
+
+	var rootPaths []string
+	for _, f := range files {
+		splitPath := strings.Split(f, "/")[0]
+		if !slices.Contains(rootPaths, splitPath) {
+			rootPaths = append(rootPaths, splitPath)
+		}
+
+		fullPath := filepath.Join(addonsFolderPath, f)
+		if err := os.RemoveAll(fullPath); err != nil {
+			return err
+		}
+	}
+
+	for _, f := range rootPaths {
+		isEmpty, err := isRootFolderEmpty(filepath.Join(addonsFolderPath, f))
+		if err != nil {
+			return err
+		}
+
+		if isEmpty {
+			if err := os.RemoveAll(filepath.Join(addonsFolderPath, f)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func isRootFolderEmpty(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }

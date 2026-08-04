@@ -121,7 +121,17 @@ func (a *App) UpdateAddon(id int) {
 }
 
 func (a *App) DeleteAddon(id int) error {
-	err := a.addonModel.Delete(id)
+	files, err := a.addonModel.GetFiles(id)
+	if err != nil {
+		log.Errorf("%v", err)
+		return nil
+	}
+
+	if err := a.installer.DeleteFiles(a.settings.AddonDirectory, files); err != nil {
+		return nil
+	}
+
+	err = a.addonModel.Delete(id)
 	if err != nil {
 		return nil
 	}
