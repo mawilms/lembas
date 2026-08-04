@@ -63,13 +63,13 @@ func (u *UserDirectory) CreateAddonsDir() (string, error) {
 		return "", err
 	}
 
-	pluginsDir := filepath.Join(lotroDir, "Plugins")
-	err = os.MkdirAll(pluginsDir, os.ModePerm)
+	addonsDir := filepath.Join(lotroDir, "Plugins")
+	err = os.MkdirAll(addonsDir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
 
-	return pluginsDir, nil
+	return addonsDir, nil
 }
 
 func (u *UserDirectory) GetDocumentsDir() (string, error) {

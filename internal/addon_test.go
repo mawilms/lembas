@@ -68,7 +68,7 @@ func TestHasUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hasUpdate(tt.local, tt.remote)
+			got := HasUpdate(tt.local, tt.remote)
 			if got != tt.want {
 				t.Errorf("hasUpdate(%+v, %+v) = %v, want %v", tt.local, tt.remote, got, tt.want)
 			}

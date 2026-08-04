@@ -3,26 +3,22 @@ package internal
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
 )
 
 type Row struct {
-	Id               int
-	Name             string
-	Author           string
-	Version          string
-	Description      string
-	IsManaged        bool
-	Plugin           string
-	PluginCompendium string
-	RootFolder       string
-	PluginFolder     string
-	Downloads        int
-	UpdatedAt        string
-	ArchiveName      string
-	ArchiveSize      string
-	Category         string
+	Id          int
+	Name        string
+	Author      string
+	Version     string
+	Files       string
+	Downloads   int
+	UpdatedAt   string
+	ArchiveName string
+	ArchiveSize string
+	Category    string
 }
 
 type Database struct {
@@ -32,8 +28,9 @@ type Database struct {
 type DatabaseInterface interface {
 	SetupDb() error
 	Get() ([]Addon, error)
-	Insert(addon Addon, info ArchiveInfo) error
+	Insert(addon Addon, files string) error
 	Delete(id int) error
+	GetFiles(id int) ([]string, error)
 }
 
 func (d *Database) SetupDb() error {
@@ -43,43 +40,39 @@ func (d *Database) SetupDb() error {
 	}
 
 	_, err = db.Exec(`
-CREATE TABLE IF NOT EXISTS plugins
+CREATE TABLE IF NOT EXISTS addons
 (
     id                     INTEGER not null
-        constraint plugins_pk
+        constraint addons_pk
             primary key AUTOINCREMENT,
     name                   TEXT    not null,
     author                 TEXT    not null,
     version                TEXT    not null,
-    plugin_file            TEXT    not null,
-    plugin_compendium_file TEXT    not null,
-    root_folder            TEXT    not null,
-    plugin_folder          TEXT    not null,
-    plugin_id              INTEGER,
+    files                  TEXT    not null,
+    addon_id              INTEGER,
     downloads              INTEGER not null,
     updated_at             INTEGER not null,
     archive_name           TEXT    not null,
     archive_size           TEXT    not null,
-    category               TEXT    not null,
-    description            TEXT
+    category               TEXT    not null
 );
 `)
 
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	_, err = db.Exec(`
-CREATE VIEW plugins_view AS
-SELECT name, author, version, description, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category 
-FROM plugins;
+CREATE VIEW addons_view AS
+SELECT name, author, version, files, addon_id, downloads, updated_at, archive_name, archive_size, category 
+FROM addons;
 `)
-	defer db.Close()
 
 	return nil
 }
 
-func (d *Database) Insert(addon Addon, info ArchiveInfo) error {
+func (d *Database) Insert(addon Addon, files string) error {
 	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", d.DbUrl))
 	if err != nil {
 		return err
@@ -87,28 +80,23 @@ func (d *Database) Insert(addon Addon, info ArchiveInfo) error {
 	defer db.Close()
 
 	row := Row{
-		Id:               addon.Id,
-		Name:             addon.Name,
-		Author:           addon.Author,
-		Version:          addon.CurrentVersion,
-		Description:      addon.Description,
-		Plugin:           info.PluginFile,
-		PluginCompendium: info.PluginCompendiumFile,
-		RootFolder:       info.RootFolder,
-		PluginFolder:     info.PluginFolder,
-		Downloads:        addon.Downloads,
-		UpdatedAt:        addon.UpdatedAt,
-		ArchiveName:      addon.ArchiveName,
-		ArchiveSize:      addon.ArchiveSize,
-		Category:         addon.Category,
+		Id:          addon.Id,
+		Name:        addon.Name,
+		Author:      addon.Author,
+		Version:     addon.CurrentVersion,
+		Files:       files,
+		Downloads:   addon.Downloads,
+		UpdatedAt:   addon.UpdatedAt,
+		ArchiveName: addon.ArchiveName,
+		ArchiveSize: addon.ArchiveSize,
+		Category:    addon.Category,
 	}
 
-	stmt := `INSERT INTO plugins (name, author, version, plugin_file, plugin_compendium_file, root_folder, plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category, description) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	stmt := `INSERT INTO addons (name, author, version, files, addon_id, downloads, updated_at, archive_name, archive_size, category) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
-	_, err = db.Exec(stmt, row.Name, row.Author, row.Version, row.Plugin, row.PluginCompendium,
-		row.RootFolder, row.PluginFolder, row.Id, row.Downloads, row.UpdatedAt, row.ArchiveName, row.ArchiveSize,
-		row.Category, row.Description)
+	_, err = db.Exec(stmt, row.Name, row.Author, row.Version, row.Files, row.Id, row.Downloads,
+		row.UpdatedAt, row.ArchiveName, row.ArchiveSize, row.Category)
 	if err != nil {
 		return err
 	}
@@ -123,8 +111,7 @@ func (d *Database) Get() ([]Addon, error) {
 	}
 	defer db.Close()
 
-	query := `SELECT name, author, version, description, plugin_file, plugin_compendium_file, root_folder, 
-       plugin_folder, plugin_id, downloads, updated_at, archive_name, archive_size, category FROM plugins_view;`
+	query := `SELECT * FROM addons_view;`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -138,8 +125,7 @@ func (d *Database) Get() ([]Addon, error) {
 	for rows.Next() {
 		var p Row
 
-		if err := rows.Scan(&p.Name, &p.Author, &p.Version, &p.Description, &p.Plugin,
-			&p.PluginCompendium, &p.RootFolder, &p.PluginFolder, &p.Id, &p.Downloads, &p.UpdatedAt,
+		if err := rows.Scan(&p.Name, &p.Author, &p.Version, &p.Files, &p.Id, &p.Downloads, &p.UpdatedAt,
 			&p.ArchiveName, &p.ArchiveSize, &p.Category); err != nil {
 			return nil, err
 		}
@@ -149,7 +135,7 @@ func (d *Database) Get() ([]Addon, error) {
 			Type:           "local",
 			Name:           p.Name,
 			Author:         p.Author,
-			Description:    p.Description,
+			Description:    "",
 			CurrentVersion: p.Version,
 			LatestVersion:  "",
 			Category:       p.Category,
@@ -174,13 +160,41 @@ func (d *Database) Delete(id int) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	stmt := `DELETE FROM plugins WHERE plugin_id = ?`
+	stmt := `DELETE FROM addons WHERE addon_id = ?`
 	_, err = db.Exec(stmt, id)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	return nil
+}
+
+func (d *Database) GetFiles(id int) ([]string, error) {
+	var files []string
+
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared", d.DbUrl))
+	if err != nil {
+		return files, err
+	}
+	defer db.Close()
+
+	stmt := `SELECT files FROM addons_view WHERE addon_id = ?`
+	rows, err := db.Query(stmt, id)
+	if err != nil {
+		return files, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		fetchedFiles := ""
+		if err := rows.Scan(&fetchedFiles); err != nil {
+			return nil, err
+		}
+
+		files = strings.Split(fetchedFiles, ",")
+	}
+
+	return files, nil
 }

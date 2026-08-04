@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { internal } from '@/wailsjs/go/models.ts'
 import { InstallAddon } from '@/wailsjs/go/main/App'
-import { useAddonsStore } from '@/stores/addons.ts'
 import { useRoute } from 'vue-router'
 import Addon = internal.Addon
 
@@ -11,7 +10,6 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const { setAddons } = useAddonsStore()
 
 const emit = defineEmits(['setActiveRow', 'resetRow'])
 </script>
