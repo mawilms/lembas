@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowDownZA, ArrowUpAZ, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 
 import AddonList from '@/components/AddonList.vue'
 
@@ -7,15 +7,22 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 
 import { useAddonsStore } from '@/stores/addons.ts'
 import Filter from '@/components/Filter.vue'
+import Sort from '@/components/BrowserSort.vue'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const { remoteAddons } = storeToRefs(useAddonsStore())
 const categories = useCategories(remoteAddons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 
-const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(remoteAddons, selectedCategories)
+
+const { sortAddonsByCriteria } = useSort()
+const selectedCriteria = ref<string>('Name')
+
+watch(selectedCriteria, (criteria) => {
+    sortAddonsByCriteria(filteredList, criteria)
+})
 
 const activeRow = ref<number | null>(null)
 
@@ -36,20 +43,7 @@ const resetRow = () => {
             </div>
 
             <div class="flex items-center justify-end">
-                <UTooltip arrow text="Sort">
-                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer"
-                         @click="sortAddons(filteredList, true)">
-                        <ArrowUpAZ
-                            v-if="sorting == 1"
-                            class="h-5 w-5 hover:bg-light-brown-hover"
-
-                        />
-                        <ArrowDownZA
-                            v-else
-                            class="h-5 w-5 hover:bg-light-brown-hover"
-                        />
-                    </div>
-                </UTooltip>
+                <Sort v-model:selected-criteria="selectedCriteria" />
 
                 <Filter
                     v-model:selected-categories="selectedCategories"

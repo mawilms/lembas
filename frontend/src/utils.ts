@@ -2,6 +2,7 @@ import { computed, type ComputedRef, type Ref, ref } from 'vue'
 import { useSearchbarStore } from '@/stores/searchbar.ts'
 import { internal } from '@/wailsjs/go/models.ts'
 import Addon = internal.Addon
+import type { Criteria } from '@/types/criteria.ts'
 
 export const extractFirstLetter = (name: string) => {
     return name.substring(0, 1)
@@ -22,7 +23,33 @@ export const useSort = () => {
         })
     }
 
-    return { sorting, sortAddons }
+    const sortAddonsByCriteria = (addons: Ref<Addon[]>, criteria: Criteria): Addon[] => {
+        if (criteria == 'Name') {
+            return addons.value.sort((a, b) => {
+                return sorting.value * a.Name.localeCompare(b.Name)
+            })
+        } else if (criteria == 'Category') {
+            return addons.value.sort((a, b) => {
+                return sorting.value * a.Category.localeCompare(b.Category)
+            })
+        } else if (criteria == 'Recently updated') {
+            return addons.value.sort((a, b) => {
+                const [monthA, dayA, yearA] = a.UpdatedAt.split('/').map(Number)
+                const [monthB, dayB, yearB] = b.UpdatedAt.split('/').map(Number)
+
+                return (
+                    new Date(yearB!, monthB! - 1, dayB).getTime() -
+                    new Date(yearA!, monthA! - 1, dayA).getTime()
+                )
+            })
+        } else {
+            return addons.value.sort((a, b) => {
+                return a.Downloads > b.Downloads ? -1 : 1
+            })
+        }
+    }
+
+    return { sorting, sortAddons, sortAddonsByCriteria }
 }
 
 export const useFilteredList = (

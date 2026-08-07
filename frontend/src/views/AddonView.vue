@@ -34,7 +34,6 @@ onUnmounted(() => {
 
 const reloadAddons = async () => {
     const newAddons = await GetLocalAddons(true)
-    console.log(newAddons)
     setAddons(Object.values(newAddons.localAddons))
     setRemoteAddons(Object.values(newAddons.remoteAddons))
 }
@@ -119,5 +118,10 @@ const resetRow = () => {
         </section>
     </section>
 
-    <AddonList :activeRow="activeRow" @setActiveRow="setActiveRow" @resetRow="resetRow" :addons="filteredList" />
+    <AddonList
+        :activeRow="activeRow"
+        @setActiveRow="setActiveRow"
+        @resetRow="resetRow"
+        :addons="filteredList"
+    />
 </template>
