@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  GREETING: Hello, world!
+
+tasks:
+  check:
+    desc: Run eslint and prettier
+    cmds:
+      - npm run lint
+      - npm run format
