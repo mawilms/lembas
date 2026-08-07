@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowDownZA, ArrowUpAZ, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 
 import AddonList from '@/components/AddonList.vue'
 
@@ -7,15 +7,23 @@ import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/ut
 
 import { useAddonsStore } from '@/stores/addons.ts'
 import Filter from '@/components/Filter.vue'
+import Sort from '@/components/BrowserSort.vue'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import type { Criteria } from '@/types/criteria.ts'
 
 const { remoteAddons } = storeToRefs(useAddonsStore())
 const categories = useCategories(remoteAddons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
+const { sortAddonsByCriteria } = useSort()
+const selectedCriteria = ref<Criteria>('Name')
 
-const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(remoteAddons, selectedCategories)
+sortAddonsByCriteria(filteredList, selectedCriteria.value)
+
+watch(selectedCriteria, (criteria) => {
+    sortAddonsByCriteria(filteredList, criteria)
+})
 
 const activeRow = ref<number | null>(null)
 
@@ -36,20 +44,7 @@ const resetRow = () => {
             </div>
 
             <div class="flex items-center justify-end">
-                <UTooltip arrow text="Sort">
-                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
-                        <ArrowUpAZ
-                            v-if="sorting == 1"
-                            class="h-5 w-5 hover:bg-light-brown-hover"
-                            @click="sortAddons(filteredList, true)"
-                        />
-                        <ArrowDownZA
-                            v-else
-                            class="h-5 w-5 hover:bg-light-brown-hover"
-                            @click="sortAddons(filteredList, true)"
-                        />
-                    </div>
-                </UTooltip>
+                <Sort v-model:selected-criteria="selectedCriteria" />
 
                 <Filter
                     v-model:selected-categories="selectedCategories"
