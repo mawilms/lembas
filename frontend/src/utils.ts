@@ -3,11 +3,6 @@ import { useSearchbarStore } from '@/stores/searchbar.ts'
 import { internal } from '@/wailsjs/go/models.ts'
 import Addon = internal.Addon
 
-interface Named {
-    Name: string
-    Category: string
-}
-
 export const extractFirstLetter = (name: string) => {
     return name.substring(0, 1)
 }
@@ -15,19 +10,25 @@ export const extractFirstLetter = (name: string) => {
 export const useSort = () => {
     const sorting = ref<1 | -1>(1)
 
-    const sortAddons = <T extends Named>(addons: T[], reverse: boolean): T[] => {
+    const sortAddons = (addons: Addon[], reverse: boolean): Addon[] => {
         if (reverse) sorting.value = (sorting.value * -1) as 1 | -1
 
-        return addons.sort((a, b) => sorting.value * a.Name.localeCompare(b.Name))
+        return addons.sort((a, b) => {
+            if (a.HasUpdate !== b.HasUpdate) {
+                return a.HasUpdate ? -1 : 1
+            }
+
+            return sorting.value * a.Name.localeCompare(b.Name)
+        })
     }
 
     return { sorting, sortAddons }
 }
 
-export const useFilteredList = <T extends Named>(
-    addons: Ref<T[]>,
+export const useFilteredList = (
+    addons: Ref<Addon[]>,
     categories: Ref<string[]>
-): ComputedRef<T[]> => {
+): ComputedRef<Addon[]> => {
     const searchbarStore = useSearchbarStore()
 
     return computed(() => {
@@ -36,7 +37,7 @@ export const useFilteredList = <T extends Named>(
 
         if (!text && !hasCategories) return addons.value
 
-        let filteredAddons: T[] = addons.value
+        let filteredAddons: Addon[] = addons.value
 
         if (hasCategories) {
             filteredAddons = filteredAddons.filter((item) =>

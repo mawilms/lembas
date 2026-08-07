@@ -37,16 +37,16 @@ const resetRow = () => {
 
             <div class="flex items-center justify-end">
                 <UTooltip arrow text="Sort">
-                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer">
+                    <div class="p-2 hover:bg-light-brown-hover cursor-pointer"
+                         @click="sortAddons(filteredList, true)">
                         <ArrowUpAZ
                             v-if="sorting == 1"
                             class="h-5 w-5 hover:bg-light-brown-hover"
-                            @click="sortAddons(filteredList, true)"
+
                         />
                         <ArrowDownZA
                             v-else
                             class="h-5 w-5 hover:bg-light-brown-hover"
-                            @click="sortAddons(filteredList, true)"
                         />
                     </div>
                 </UTooltip>
