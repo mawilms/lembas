@@ -20,8 +20,8 @@ const { setAddons, setRemoteAddons } = useAddonsStore()
 
 onMounted(() => {
     EventsOn('install:success', (addonMap: AddonMap) => {
-        setAddons(Object.values(addonMap.localAddons))
-        setRemoteAddons(Object.values(addonMap.remoteAddons))
+        setAddons(addonMap.localAddons)
+        setRemoteAddons(addonMap.remoteAddons)
     })
 })
 

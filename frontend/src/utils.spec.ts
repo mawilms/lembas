@@ -120,7 +120,7 @@ describe('useSort', () => {
             }),
             createAddon({
                 Name: 'Bevy o Bars',
-                HasUpdate: true,
+                HasUpdate: false,
             }),
             createAddon({
                 Name: 'Alt Inventory',
@@ -201,6 +201,25 @@ describe('useSort', () => {
     })
 
     it('updatable addons on alphabetically on top', () => {
+        addons = ref<Addon[]>([
+            createAddon({
+                Name: 'AH Buyout Calculator',
+                HasUpdate: false,
+            }),
+            createAddon({
+                Name: 'Bevy o Bars',
+                HasUpdate: true,
+            }),
+            createAddon({
+                Name: 'Alt Inventory',
+                HasUpdate: false,
+            }),
+            createAddon({
+                Name: 'Class DragBar with Examples',
+                HasUpdate: false,
+            }),
+        ])
+
         const { sortAddons } = useSort()
 
         const result = sortAddons(addons.value, false)

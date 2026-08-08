@@ -22,8 +22,8 @@ const filteredList = useFilteredList(addons, selectedCategories)
 
 onMounted(() => {
     EventsOn('delete:success', (addonMap: AddonMap) => {
-        setAddons(Object.values(addonMap.localAddons))
-        setRemoteAddons(Object.values(addonMap.remoteAddons))
+        setAddons(addonMap.localAddons)
+        setRemoteAddons(addonMap.remoteAddons)
         resetRow()
     })
 })
@@ -34,8 +34,8 @@ onUnmounted(() => {
 
 const reloadAddons = async () => {
     const newAddons = await GetLocalAddons(true)
-    setAddons(Object.values(newAddons.localAddons))
-    setRemoteAddons(Object.values(newAddons.remoteAddons))
+    setAddons(newAddons.localAddons)
+    setRemoteAddons(newAddons.remoteAddons)
 }
 
 const amountUpdates = computed(() => {
