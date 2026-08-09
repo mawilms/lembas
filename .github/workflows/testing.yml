@@ -11,13 +11,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.26'
 
       - name: Install ubuntu dependencies
         run: sudo apt install -y nodejs
 
       - name: Build frontend
         run: |
+          npm install --global corepack@latest
+          corepack enable pnpm
           pnpm --prefix frontend install
           pnpm --prefix frontend run build
 
