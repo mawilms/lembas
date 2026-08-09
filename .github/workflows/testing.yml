@@ -29,6 +29,12 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Debug webpack deps
+        working-directory: frontend
+        run: |
+          pnpm why webpack
+          pnpm why webpack-virtual-modules
+
       - name: Build frontend
         working-directory: frontend
         run: pnpm run build
