@@ -32,7 +32,7 @@ jobs:
         run: pnpm run build-only
 
       - name: Golang tests
-        run: go test -v ./...
+        run: go test ./...
 
       - name: JS tests
         run: pnpm run test:unit-run
