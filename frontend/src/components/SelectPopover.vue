@@ -35,7 +35,7 @@ const route = useRoute()
                 <span class="text-sm text-white">1 ausgewählt</span>
 
                 <button
-                    @click="async () => await InstallAddon(addon.Id, false)"
+                    @click="async () => await InstallAddon(addon.id, false)"
                     class="flex items-center gap-1 hover:bg-gold py-1 px-2 rounded cursor-pointer"
                 >
                     <ArrowDownToLine class="h-4 w-4" />
@@ -43,7 +43,7 @@ const route = useRoute()
                 </button>
 
                 <button
-                    @click="async () => await DeleteAddon(addon.Id)"
+                    @click="async () => await DeleteAddon(addon.id)"
                     class="flex items-center gap-1 hover:bg-gold py-1 px-2 rounded cursor-pointer"
                 >
                     <Trash2 class="h-4 w-4" />

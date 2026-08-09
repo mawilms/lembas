@@ -9,7 +9,7 @@ includes:
 
 tasks:
   test:
-    cmd: go test -v ./...
+    cmd: go test ./...
 
   ci:
     cmds:

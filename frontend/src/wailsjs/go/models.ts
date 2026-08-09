@@ -1,20 +1,20 @@
 export namespace internal {
 	
 	export class Addon {
-	    Id: number;
-	    Type: string;
-	    Name: string;
-	    Author: string;
-	    Description: string;
-	    LocalVersion: string;
-	    RemoteVersion: string;
-	    Category: string;
-	    Downloads: number;
-	    UpdatedAt: string;
-	    ArchiveName: string;
-	    ArchiveSize: string;
-	    HasUpdate: boolean;
-	    IsInstalled: boolean;
+	    id: number;
+	    type: string;
+	    name: string;
+	    author: string;
+	    description: string;
+	    localVersion: string;
+	    remoteVersion: string;
+	    category: string;
+	    downloads: number;
+	    updatedAt: string;
+	    archiveName: string;
+	    archiveSize: string;
+	    hasUpdate: boolean;
+	    isInstalled: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Addon(source);
@@ -22,20 +22,20 @@ export namespace internal {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Id = source["Id"];
-	        this.Type = source["Type"];
-	        this.Name = source["Name"];
-	        this.Author = source["Author"];
-	        this.Description = source["Description"];
-	        this.LocalVersion = source["LocalVersion"];
-	        this.RemoteVersion = source["RemoteVersion"];
-	        this.Category = source["Category"];
-	        this.Downloads = source["Downloads"];
-	        this.UpdatedAt = source["UpdatedAt"];
-	        this.ArchiveName = source["ArchiveName"];
-	        this.ArchiveSize = source["ArchiveSize"];
-	        this.HasUpdate = source["HasUpdate"];
-	        this.IsInstalled = source["IsInstalled"];
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.name = source["name"];
+	        this.author = source["author"];
+	        this.description = source["description"];
+	        this.localVersion = source["localVersion"];
+	        this.remoteVersion = source["remoteVersion"];
+	        this.category = source["category"];
+	        this.downloads = source["downloads"];
+	        this.updatedAt = source["updatedAt"];
+	        this.archiveName = source["archiveName"];
+	        this.archiveSize = source["archiveSize"];
+	        this.hasUpdate = source["hasUpdate"];
+	        this.isInstalled = source["isInstalled"];
 	    }
 	}
 

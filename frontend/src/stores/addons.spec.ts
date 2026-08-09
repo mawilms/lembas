@@ -20,11 +20,11 @@ describe('getAddons', () => {
     test('fetch addons from the go backend', async () => {
         const mockResponse = new AddonMap({
             localAddons: {
-                506: { Id: '506', Name: 'AH Buyout Calculator' },
+                506: { id: '506', name: 'AH Buyout Calculator' },
             },
             remoteAddons: {
-                414: { Id: '414', Name: 'Inventory' },
-                506: { Id: '506', Name: 'AH Buyout Calculator' },
+                414: { id: '414', name: 'Inventory' },
+                506: { id: '506', name: 'AH Buyout Calculator' },
             },
         })
         mockedGetAddons.mockResolvedValue(mockResponse)
@@ -37,18 +37,18 @@ describe('getAddons', () => {
 
         expect(Object.values(addons.value)).toEqual([
             {
-                Id: '506',
-                Name: 'AH Buyout Calculator',
+                id: '506',
+                name: 'AH Buyout Calculator',
             },
         ])
         expect(Object.values(remoteAddons.value)).toEqual([
             {
-                Id: '506',
-                Name: 'AH Buyout Calculator',
+                id: '506',
+                name: 'AH Buyout Calculator',
             },
             {
-                Id: '414',
-                Name: 'Inventory',
+                id: '414',
+                name: 'Inventory',
             },
         ])
     })
@@ -63,11 +63,11 @@ describe('setAddons', () => {
     test('set local addons', async () => {
         const mockResponse = new AddonMap({
             localAddons: {
-                506: { Id: 506, Name: 'AH Buyout Calculator' },
+                506: { id: 506, name: 'AH Buyout Calculator' },
             },
             remoteAddons: {
-                414: { Id: 414, Name: 'Inventory' },
-                506: { Id: 506, Name: 'AH Buyout Calculator' },
+                414: { id: 414, name: 'Inventory' },
+                506: { id: 506, name: 'AH Buyout Calculator' },
             },
         })
         mockedGetAddons.mockResolvedValue(mockResponse)
@@ -78,39 +78,39 @@ describe('setAddons', () => {
 
         setAddons({
             506: {
-                Id: 506,
-                Name: 'AH Buyout Calculator',
-                Category: 'Others',
-                Type: 'local',
-                HasUpdate: true,
-                UpdatedAt: '01/05/2026',
-                Downloads: 12345,
-                Author: 'MuNkEy',
-                Description: 'Hello World',
-                IsInstalled: true,
-                LocalVersion: '1.0.0',
-                RemoteVersion: '1.0.0',
-                ArchiveSize: '5 MB',
-                ArchiveName: 'AH Buyout Calculator.zip',
+                id: 506,
+                name: 'AH Buyout Calculator',
+                category: 'Others',
+                type: 'local',
+                hasUpdate: true,
+                updatedAt: '01/05/2026',
+                downloads: 12345,
+                author: 'MuNkEy',
+                description: 'Hello World',
+                isInstalled: true,
+                localVersion: '1.0.0',
+                remoteVersion: '1.0.0',
+                archiveSize: '5 MB',
+                archiveName: 'AH Buyout Calculator.zip',
             },
         })
 
         expect(Object.values(addons.value)).toEqual([
             {
-                Id: 506,
-                Name: 'AH Buyout Calculator',
-                Category: 'Others',
-                Type: 'local',
-                HasUpdate: true,
-                UpdatedAt: '01/05/2026',
-                Downloads: 12345,
-                Author: 'MuNkEy',
-                Description: 'Hello World',
-                IsInstalled: true,
-                LocalVersion: '1.0.0',
-                RemoteVersion: '1.0.0',
-                ArchiveSize: '5 MB',
-                ArchiveName: 'AH Buyout Calculator.zip',
+                id: 506,
+                name: 'AH Buyout Calculator',
+                category: 'Others',
+                type: 'local',
+                hasUpdate: true,
+                updatedAt: '01/05/2026',
+                downloads: 12345,
+                author: 'MuNkEy',
+                description: 'Hello World',
+                isInstalled: true,
+                localVersion: '1.0.0',
+                remoteVersion: '1.0.0',
+                archiveSize: '5 MB',
+                archiveName: 'AH Buyout Calculator.zip',
             },
         ])
     })
@@ -125,7 +125,7 @@ describe('setRemoteAddons', () => {
     test('set remote addons', async () => {
         const mockResponse = new AddonMap({
             localAddons: {
-                414: { Id: 414, Name: 'Inventory' },
+                414: { id: 414, name: 'Inventory' },
             },
             remoteAddons: {},
         })
@@ -137,39 +137,39 @@ describe('setRemoteAddons', () => {
 
         setRemoteAddons({
             506: {
-                Id: 506,
-                Name: 'AH Buyout Calculator',
-                Category: 'Others',
-                Type: 'local',
-                HasUpdate: true,
-                UpdatedAt: '01/05/2026',
-                Downloads: 12345,
-                Author: 'MuNkEy',
-                Description: 'Hello World',
-                IsInstalled: true,
-                LocalVersion: '1.0.0',
-                RemoteVersion: '1.0.0',
-                ArchiveSize: '5 MB',
-                ArchiveName: 'AH Buyout Calculator.zip',
+                id: 506,
+                name: 'AH Buyout Calculator',
+                category: 'Others',
+                type: 'local',
+                hasUpdate: true,
+                updatedAt: '01/05/2026',
+                downloads: 12345,
+                author: 'MuNkEy',
+                description: 'Hello World',
+                isInstalled: true,
+                localVersion: '1.0.0',
+                remoteVersion: '1.0.0',
+                archiveSize: '5 MB',
+                archiveName: 'AH Buyout Calculator.zip',
             },
         })
 
         expect(Object.values(remoteAddons.value)).toEqual([
             {
-                Id: 506,
-                Name: 'AH Buyout Calculator',
-                Category: 'Others',
-                Type: 'local',
-                HasUpdate: true,
-                UpdatedAt: '01/05/2026',
-                Downloads: 12345,
-                Author: 'MuNkEy',
-                Description: 'Hello World',
-                IsInstalled: true,
-                LocalVersion: '1.0.0',
-                RemoteVersion: '1.0.0',
-                ArchiveSize: '5 MB',
-                ArchiveName: 'AH Buyout Calculator.zip',
+                id: 506,
+                name: 'AH Buyout Calculator',
+                category: 'Others',
+                type: 'local',
+                hasUpdate: true,
+                updatedAt: '01/05/2026',
+                downloads: 12345,
+                author: 'MuNkEy',
+                description: 'Hello World',
+                isInstalled: true,
+                localVersion: '1.0.0',
+                remoteVersion: '1.0.0',
+                archiveSize: '5 MB',
+                archiveName: 'AH Buyout Calculator.zip',
             },
         ])
     })

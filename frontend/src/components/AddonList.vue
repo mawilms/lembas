@@ -36,16 +36,16 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
         >
             <template v-slot:status>
                 <button
-                    v-if="item.HasUpdate"
+                    v-if="item.hasUpdate"
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                 >
                     Update
                 </button>
-                <p v-else-if="item.IsInstalled"></p>
+                <p v-else-if="item.isInstalled"></p>
                 <button
                     v-else
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                    @click="async () => await InstallAddon(item.Id, false)"
+                    @click="async () => await InstallAddon(item.id, false)"
                 >
                     Install
                 </button>
@@ -53,16 +53,16 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
 
             <template v-slot:center>
                 <div class="flex min-w-0 flex-1 text-xs text-gray-300">
-                    <span v-if="item.Type === 'local'" class="min-w-0 truncate">{{
-                        item.ArchiveName
+                    <span v-if="item.type === 'local'" class="min-w-0 truncate">{{
+                        item.archiveName
                     }}</span>
-                    <span v-else class="min-w-0 flex-1 truncate">{{ item.Description }}</span>
+                    <span v-else class="min-w-0 flex-1 truncate">{{ item.description }}</span>
                 </div>
             </template>
 
             <template v-slot:version>
-                <span v-if="route.fullPath === '/'">{{ item.LocalVersion }}</span>
-                <span v-else>{{ item.RemoteVersion }}</span>
+                <span v-if="route.fullPath === '/'">{{ item.localVersion }}</span>
+                <span v-else>{{ item.remoteVersion }}</span>
             </template>
         </AddonRow>
     </UScrollArea>

@@ -9,20 +9,20 @@ import (
 var leadingDigits = regexp.MustCompile(`^\d+`)
 
 type Addon struct {
-	Id            int
-	Type          string
-	Name          string
-	Author        string
-	Description   string
-	LocalVersion  string
-	RemoteVersion string
-	Category      string
-	Downloads     int
-	UpdatedAt     string
-	ArchiveName   string
-	ArchiveSize   string
-	HasUpdate     bool
-	IsInstalled   bool
+	Id            int    `json:"id"`
+	Type          string `json:"type"`
+	Name          string `json:"name"`
+	Author        string `json:"author"`
+	Description   string `json:"description"`
+	LocalVersion  string `json:"localVersion"`
+	RemoteVersion string `json:"remoteVersion"`
+	Category      string `json:"category"`
+	Downloads     int    `json:"downloads"`
+	UpdatedAt     string `json:"updatedAt"`
+	ArchiveName   string `json:"archiveName"`
+	ArchiveSize   string `json:"archiveSize"`
+	HasUpdate     bool   `json:"hasUpdate"`
+	IsInstalled   bool   `json:"isInstalled"`
 }
 
 func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {

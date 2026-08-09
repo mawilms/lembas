@@ -19,24 +19,24 @@ describe('useFilteredList', () => {
 
         addons = ref<Addon[]>([
             createAddon({
-                Name: 'AH Buyout Calculator',
-                Category: 'Outdated LotRO Interfaces',
-                HasUpdate: true,
+                name: 'AH Buyout Calculator',
+                category: 'Outdated LotRO Interfaces',
+                hasUpdate: true,
             }),
             createAddon({
-                Name: 'Alt Inventory',
-                Category: 'Bags Bank & Inventory',
-                HasUpdate: false,
+                name: 'Alt Inventory',
+                category: 'Bags Bank & Inventory',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Bevy o Bars',
-                Category: 'Action Bars & Main Bar',
-                HasUpdate: false,
+                name: 'Bevy o Bars',
+                category: 'Action Bars & Main Bar',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Class DragBar with Examples',
-                Category: 'Outdated LotRO Interfaces',
-                HasUpdate: false,
+                name: 'Class DragBar with Examples',
+                category: 'Outdated LotRO Interfaces',
+                hasUpdate: false,
             }),
         ])
     })
@@ -59,7 +59,7 @@ describe('useFilteredList', () => {
         const result = useFilteredList(addons, categories)
 
         expect(result.value).toHaveLength(1)
-        expect(result.value.map((a) => a.Name)).toEqual(['AH Buyout Calculator'])
+        expect(result.value.map((a) => a.name)).toEqual(['AH Buyout Calculator'])
     })
 
     it('filter for category without text search', () => {
@@ -68,7 +68,7 @@ describe('useFilteredList', () => {
         const result = useFilteredList(addons, categories)
 
         expect(result.value).toHaveLength(1)
-        expect(result.value.map((a) => a.Name)).toEqual(['Alt Inventory'])
+        expect(result.value.map((a) => a.name)).toEqual(['Alt Inventory'])
     })
 
     it('use text search and category together', () => {
@@ -80,7 +80,7 @@ describe('useFilteredList', () => {
         const result = useFilteredList(addons, categories)
 
         expect(result.value).toHaveLength(1)
-        expect(result.value[0]!.Name).toBe('AH Buyout Calculator')
+        expect(result.value[0]!.name).toBe('AH Buyout Calculator')
     })
 
     it('no addons found because of the not fitting text search', () => {
@@ -103,7 +103,7 @@ describe('useFilteredList', () => {
         const result = useFilteredList(addons, categories)
 
         expect(result.value).toHaveLength(1)
-        expect(result.value[0]!.Name).toBe('AH Buyout Calculator')
+        expect(result.value[0]!.name).toBe('AH Buyout Calculator')
     })
 })
 
@@ -115,20 +115,20 @@ describe('useSort', () => {
 
         addons = ref<Addon[]>([
             createAddon({
-                Name: 'AH Buyout Calculator',
-                HasUpdate: false,
+                name: 'AH Buyout Calculator',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Bevy o Bars',
-                HasUpdate: false,
+                name: 'Bevy o Bars',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Alt Inventory',
-                HasUpdate: false,
+                name: 'Alt Inventory',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Class DragBar with Examples',
-                HasUpdate: false,
+                name: 'Class DragBar with Examples',
+                hasUpdate: false,
             }),
         ])
     })
@@ -138,7 +138,7 @@ describe('useSort', () => {
 
         const result = sortAddons(addons.value, false)
 
-        expect(result.map((a) => a.Name)).toEqual([
+        expect(result.map((a) => a.name)).toEqual([
             'AH Buyout Calculator',
             'Alt Inventory',
             'Bevy o Bars',
@@ -151,7 +151,7 @@ describe('useSort', () => {
 
         const result = sortAddons(addons.value, true)
 
-        expect(result.map((a) => a.Name)).toEqual([
+        expect(result.map((a) => a.name)).toEqual([
             'Class DragBar with Examples',
             'Bevy o Bars',
             'Alt Inventory',
@@ -176,7 +176,7 @@ describe('useSort', () => {
         const { sortAddons } = useSort()
 
         const firstResult = sortAddons(addons.value, true)
-        expect(firstResult.map((a) => a.Name)).toEqual([
+        expect(firstResult.map((a) => a.name)).toEqual([
             'Class DragBar with Examples',
             'Bevy o Bars',
             'Alt Inventory',
@@ -184,7 +184,7 @@ describe('useSort', () => {
         ])
 
         const secondResult = sortAddons(addons.value, true)
-        expect(secondResult.map((a) => a.Name)).toEqual([
+        expect(secondResult.map((a) => a.name)).toEqual([
             'AH Buyout Calculator',
             'Alt Inventory',
             'Bevy o Bars',
@@ -203,20 +203,20 @@ describe('useSort', () => {
     it('updatable addons on alphabetically on top', () => {
         addons = ref<Addon[]>([
             createAddon({
-                Name: 'AH Buyout Calculator',
-                HasUpdate: false,
+                name: 'AH Buyout Calculator',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Bevy o Bars',
-                HasUpdate: true,
+                name: 'Bevy o Bars',
+                hasUpdate: true,
             }),
             createAddon({
-                Name: 'Alt Inventory',
-                HasUpdate: false,
+                name: 'Alt Inventory',
+                hasUpdate: false,
             }),
             createAddon({
-                Name: 'Class DragBar with Examples',
-                HasUpdate: false,
+                name: 'Class DragBar with Examples',
+                hasUpdate: false,
             }),
         ])
 
@@ -224,7 +224,7 @@ describe('useSort', () => {
 
         const result = sortAddons(addons.value, false)
 
-        expect(result.map((a) => a.Name)).toEqual([
+        expect(result.map((a) => a.name)).toEqual([
             'Bevy o Bars',
             'AH Buyout Calculator',
             'Alt Inventory',
