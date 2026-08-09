@@ -74,7 +74,7 @@ const openPluginPage = (id: number) => {
                     <UTooltip arrow text="Current version">
                         <div class="flex items-center gap-1">
                             <Computer class="w-4 h-4" />
-                            <slot name="version"></slot>
+                            <span >{{ props.addon.version }}</span>
                         </div>
                     </UTooltip>
                 </section>

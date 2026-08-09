@@ -86,20 +86,19 @@ func (a *Api) Get() ([]Addon, error) {
 
 	for _, e := range xmlModel {
 		addons = append(addons, Addon{
-			Id:            e.Uid,
-			Type:          "remote",
-			Name:          e.Name,
-			Author:        e.Author,
-			Description:   e.Description,
-			LocalVersion:  e.Version,
-			RemoteVersion: e.Version,
-			Category:      e.Category,
-			Downloads:     e.Downloads,
-			UpdatedAt:     time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
-			ArchiveName:   e.File,
-			ArchiveSize:   formatArchiveSize(e.Size),
-			HasUpdate:     false,
-			IsInstalled:   false,
+			Id:          e.Uid,
+			Type:        "remote",
+			Name:        e.Name,
+			Author:      e.Author,
+			Description: e.Description,
+			Version:     e.Version,
+			Category:    e.Category,
+			Downloads:   e.Downloads,
+			UpdatedAt:   time.Unix(e.Updated, 0).Local().Format("01/02/2006"),
+			ArchiveName: e.File,
+			ArchiveSize: formatArchiveSize(e.Size),
+			HasUpdate:   false,
+			IsInstalled: false,
 		})
 	}
 

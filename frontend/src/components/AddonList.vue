@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { internal } from '@/wailsjs/go/models.ts'
 import { InstallAddon } from '@/wailsjs/go/main/App'
-import { useRoute } from 'vue-router'
 import Addon = internal.Addon
 
 const props = defineProps<{
     addons: Addon[]
     activeRow: number | null
 }>()
-
-const route = useRoute()
 
 const emit = defineEmits(['setActiveRow', 'resetRow'])
 </script>
@@ -58,11 +55,6 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
                     }}</span>
                     <span v-else class="min-w-0 flex-1 truncate">{{ item.description }}</span>
                 </div>
-            </template>
-
-            <template v-slot:version>
-                <span v-if="route.fullPath === '/'">{{ item.localVersion }}</span>
-                <span v-else>{{ item.remoteVersion }}</span>
             </template>
         </AddonRow>
     </UScrollArea>
