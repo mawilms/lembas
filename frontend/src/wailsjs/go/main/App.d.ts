@@ -13,3 +13,5 @@ export function GetRemoteAddons(arg1: boolean): Promise<main.AddonMap>
 export function InstallAddon(arg1: number, arg2: boolean): Promise<void>
 
 export function UpdateAddon(arg1: number): Promise<void>
+
+export function UpdateAllAddons(): Promise<void>

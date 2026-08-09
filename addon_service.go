@@ -27,7 +27,6 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 		addons[e.Id] = e
 	}
 
-	// TODO: Currently bugged. local addons don't have a latestVersion entry after reloading
 	if len(a.remoteAddons) > 0 {
 		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
 	} else {
@@ -118,6 +117,12 @@ func (a *App) InstallAddon(id int, force bool) error {
 
 func (a *App) UpdateAddon(id int) {
 	log.Infof("%v", id)
+}
+
+func (a *App) UpdateAllAddons() {
+	for _, a := range a.localAddons {
+		log.Infof("%v", a.Id)
+	}
 }
 
 func (a *App) DeleteAddon(id int) error {

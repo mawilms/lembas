@@ -25,3 +25,7 @@ export function InstallAddon(arg1, arg2) {
 export function UpdateAddon(arg1) {
     return window['go']['main']['App']['UpdateAddon'](arg1)
 }
+
+export function UpdateAllAddons() {
+    return window['go']['main']['App']['UpdateAllAddons']()
+}

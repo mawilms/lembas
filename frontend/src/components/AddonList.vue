@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { internal } from '@/wailsjs/go/models.ts'
-import { InstallAddon } from '@/wailsjs/go/main/App'
+import { InstallAddon, UpdateAddon } from '@/wailsjs/go/main/App'
 import Addon = internal.Addon
 
 const props = defineProps<{
@@ -35,12 +35,12 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
                 <button
                     v-if="item.hasUpdate"
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
+                    @click="async () => await UpdateAddon(item.id)"
                 >
                     Update
                 </button>
-                <p v-else-if="item.isInstalled"></p>
                 <button
-                    v-else
+                    v-else-if="!item.isInstalled"
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
                     @click="async () => await InstallAddon(item.id, false)"
                 >
