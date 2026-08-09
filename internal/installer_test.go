@@ -33,7 +33,7 @@ func TestAnalyzeZip(t *testing.T) {
 
 			got, err := analyzeZip(filepath.Join(samplesPath, tt.archiveName))
 			if err != nil {
-				t.Fatalf("unable to process ZIP file")
+				t.Fatalf("unable to process ZIP file; %v", err)
 			}
 
 			if got != tt.expect {
