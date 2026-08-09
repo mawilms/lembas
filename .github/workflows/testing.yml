@@ -35,4 +35,5 @@ jobs:
         run: go test ./...
 
       - name: JS tests
+        working-directory: frontend
         run: pnpm run test:unit-run
