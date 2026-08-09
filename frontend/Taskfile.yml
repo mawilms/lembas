@@ -2,12 +2,10 @@
 
 version: '3'
 
-vars:
-  GREETING: Hello, world!
-
 tasks:
   check:
-    desc: Run eslint and prettier
+    desc: Run eslint, prettier and vitest
     cmds:
       - npm run lint
       - npm run format
+      - npm run test:unit-run

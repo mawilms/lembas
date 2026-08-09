@@ -11,22 +11,22 @@ export const useAddonsStore = defineStore('addons', () => {
 
     const { sortAddons } = useSort()
 
-    const getAddons = async () => {
+    const getAddons = async (forceReload: boolean) => {
         if (remoteAddons.value.length > 0) {
             return
         }
 
-        const fetchedAddons = await GetAddons()
+        const fetchedAddons = await GetAddons(forceReload)
 
         addons.value = sortAddons(Object.values(fetchedAddons.localAddons), false)
         remoteAddons.value = sortAddons(Object.values(fetchedAddons.remoteAddons), false)
     }
 
-    const setAddons = (newAddons: Addon[]) => {
-        addons.value = sortAddons(newAddons, false)
+    const setAddons = (newAddons: Record<number, Addon>) => {
+        addons.value = sortAddons(Object.values(newAddons), false)
     }
 
-    const setRemoteAddons = (newAddons: Addon[]) => {
+    const setRemoteAddons = (newAddons: Record<number, Addon>) => {
         remoteAddons.value = sortAddons(Object.values(newAddons), false)
     }
 

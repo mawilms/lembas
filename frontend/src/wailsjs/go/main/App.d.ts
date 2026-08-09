@@ -4,7 +4,7 @@ import {main} from '../models';
 
 export function DeleteAddon(arg1:number):Promise<void>;
 
-export function GetAddons():Promise<main.AddonMap>;
+export function GetAddons(arg1:boolean):Promise<main.AddonMap>;
 
 export function GetLocalAddons(arg1:boolean):Promise<main.AddonMap>;
 

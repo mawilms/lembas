@@ -61,8 +61,8 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
             </template>
 
             <template v-slot:version>
-                <span v-if="route.fullPath === '/'">{{ item.CurrentVersion }}</span>
-                <span v-else>{{ item.LatestVersion }}</span>
+                <span v-if="route.fullPath === '/'">{{ item.LocalVersion }}</span>
+                <span v-else>{{ item.RemoteVersion }}</span>
             </template>
         </AddonRow>
     </UScrollArea>

@@ -6,8 +6,8 @@ export function DeleteAddon(arg1) {
   return window['go']['main']['App']['DeleteAddon'](arg1);
 }
 
-export function GetAddons() {
-  return window['go']['main']['App']['GetAddons']();
+export function GetAddons(arg1) {
+  return window['go']['main']['App']['GetAddons'](arg1);
 }
 
 export function GetLocalAddons(arg1) {

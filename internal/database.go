@@ -83,7 +83,7 @@ func (d *Database) Insert(addon Addon, files string) error {
 		Id:          addon.Id,
 		Name:        addon.Name,
 		Author:      addon.Author,
-		Version:     addon.CurrentVersion,
+		Version:     addon.LocalVersion,
 		Files:       files,
 		Downloads:   addon.Downloads,
 		UpdatedAt:   addon.UpdatedAt,
@@ -131,20 +131,20 @@ func (d *Database) Get() ([]Addon, error) {
 		}
 
 		addons = append(addons, Addon{
-			Id:             p.Id,
-			Type:           "local",
-			Name:           p.Name,
-			Author:         p.Author,
-			Description:    "",
-			CurrentVersion: p.Version,
-			LatestVersion:  "",
-			Category:       p.Category,
-			Downloads:      p.Downloads,
-			UpdatedAt:      p.UpdatedAt,
-			ArchiveName:    p.ArchiveName,
-			ArchiveSize:    p.ArchiveSize,
-			HasUpdate:      false,
-			IsInstalled:    true,
+			Id:            p.Id,
+			Type:          "local",
+			Name:          p.Name,
+			Author:        p.Author,
+			Description:   "",
+			LocalVersion:  p.Version,
+			RemoteVersion: "",
+			Category:      p.Category,
+			Downloads:     p.Downloads,
+			UpdatedAt:     p.UpdatedAt,
+			ArchiveName:   p.ArchiveName,
+			ArchiveSize:   p.ArchiveSize,
+			HasUpdate:     false,
+			IsInstalled:   true,
 		})
 	}
 

@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+includes:
+  frontend:
+    taskfile: ./frontend/Taskfile.yml
+    dir: ./frontend
+
+tasks:
+  test:
+    cmd: go test -v ./...
+
+  ci:
+    cmds:
+      - task: test
+      - task: frontend:check

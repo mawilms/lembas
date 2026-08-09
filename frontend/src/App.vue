@@ -11,7 +11,7 @@ const error = ref<string | null>(null)
 
 onMounted(async () => {
     try {
-        await getAddons()
+        await getAddons(false)
     } catch (e) {
         console.log(e)
         error.value = 'Error while loading addons'
