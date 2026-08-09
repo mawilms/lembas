@@ -27,12 +27,12 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm run build-only
+
       - name: Golang tests
         run: go test -v ./...
 
       - name: JS tests
         run: pnpm run test:unit-run
-
-      - name: Build frontend
-        working-directory: frontend
-        run: pnpm run build-only
