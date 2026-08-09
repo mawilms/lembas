@@ -27,6 +27,6 @@ func TestUserDirectory_CreatePluginsDir(t *testing.T) {
 
 	expected := filepath.Join(tmpHome, "Documents", "The Lord of the Rings Online", "Plugins")
 	if info, err := os.Stat(expected); err != nil || !info.IsDir() {
-		t.Fatalf("Directory %s wasn't created", expected)
+		t.Fatalf("Directory %s wasn't created; got %v", expected, err)
 	}
 }
