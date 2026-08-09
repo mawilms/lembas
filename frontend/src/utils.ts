@@ -15,27 +15,27 @@ export const useSort = () => {
         if (reverse) sorting.value = (sorting.value * -1) as 1 | -1
 
         return addons.sort((a, b) => {
-            if (a.HasUpdate !== b.HasUpdate) {
-                return a.HasUpdate ? -1 : 1
+            if (a.hasUpdate !== b.hasUpdate) {
+                return a.hasUpdate ? -1 : 1
             }
 
-            return sorting.value * a.Name.localeCompare(b.Name)
+            return sorting.value * a.name.localeCompare(b.name)
         })
     }
 
     const sortAddonsByCriteria = (addons: Ref<Addon[]>, criteria: Criteria): Addon[] => {
         if (criteria == 'Name') {
             return addons.value.sort((a, b) => {
-                return sorting.value * a.Name.localeCompare(b.Name)
+                return sorting.value * a.name.localeCompare(b.name)
             })
         } else if (criteria == 'Category') {
             return addons.value.sort((a, b) => {
-                return sorting.value * a.Category.localeCompare(b.Category)
+                return sorting.value * a.category.localeCompare(b.category)
             })
         } else if (criteria == 'Recently updated') {
             return addons.value.sort((a, b) => {
-                const [monthA, dayA, yearA] = a.UpdatedAt.split('/').map(Number)
-                const [monthB, dayB, yearB] = b.UpdatedAt.split('/').map(Number)
+                const [monthA, dayA, yearA] = a.updatedAt.split('/').map(Number)
+                const [monthB, dayB, yearB] = b.updatedAt.split('/').map(Number)
 
                 return (
                     new Date(yearB!, monthB! - 1, dayB).getTime() -
@@ -44,7 +44,7 @@ export const useSort = () => {
             })
         } else {
             return addons.value.sort((a, b) => {
-                return a.Downloads > b.Downloads ? -1 : 1
+                return a.downloads > b.downloads ? -1 : 1
             })
         }
     }
@@ -68,11 +68,11 @@ export const useFilteredList = (
 
         if (hasCategories) {
             filteredAddons = filteredAddons.filter((item) =>
-                categories.value.includes(item.Category)
+                categories.value.includes(item.category)
             )
         }
 
-        return filteredAddons.filter((item) => item.Name.toLowerCase().includes(text))
+        return filteredAddons.filter((item) => item.name.toLowerCase().includes(text))
     })
 }
 
@@ -91,7 +91,7 @@ export const useCategories = (addons: Ref<Addon[]>) => {
         return [
             ...new Set(
                 addons.value.map((a) => {
-                    return a.Category
+                    return a.category
                 })
             ),
         ]

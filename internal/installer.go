@@ -42,20 +42,19 @@ func (i *Installer) Install(addon Addon, settings Settings, database DatabaseInt
 	}
 
 	return Addon{
-		Id:            addon.Id,
-		Type:          "local",
-		Name:          addon.Name,
-		Author:        addon.Author,
-		Description:   addon.Description,
-		LocalVersion:  addon.RemoteVersion,
-		RemoteVersion: addon.RemoteVersion,
-		Category:      addon.Category,
-		Downloads:     addon.Downloads,
-		UpdatedAt:     addon.UpdatedAt,
-		ArchiveName:   addon.ArchiveName,
-		ArchiveSize:   addon.ArchiveSize,
-		HasUpdate:     false,
-		IsInstalled:   true,
+		Id:          addon.Id,
+		Type:        "local",
+		Name:        addon.Name,
+		Author:      addon.Author,
+		Description: addon.Description,
+		Version:     addon.Version,
+		Category:    addon.Category,
+		Downloads:   addon.Downloads,
+		UpdatedAt:   addon.UpdatedAt,
+		ArchiveName: addon.ArchiveName,
+		ArchiveSize: addon.ArchiveSize,
+		HasUpdate:   false,
+		IsInstalled: true,
 	}, nil
 }
 

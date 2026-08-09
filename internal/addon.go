@@ -9,20 +9,19 @@ import (
 var leadingDigits = regexp.MustCompile(`^\d+`)
 
 type Addon struct {
-	Id            int
-	Type          string
-	Name          string
-	Author        string
-	Description   string
-	LocalVersion  string
-	RemoteVersion string
-	Category      string
-	Downloads     int
-	UpdatedAt     string
-	ArchiveName   string
-	ArchiveSize   string
-	HasUpdate     bool
-	IsInstalled   bool
+	Id          int    `json:"id"`
+	Type        string `json:"type"`
+	Name        string `json:"name"`
+	Author      string `json:"author"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
+	Category    string `json:"category"`
+	Downloads   int    `json:"downloads"`
+	UpdatedAt   string `json:"updatedAt"`
+	ArchiveName string `json:"archiveName"`
+	ArchiveSize string `json:"archiveSize"`
+	HasUpdate   bool   `json:"hasUpdate"`
+	IsInstalled bool   `json:"isInstalled"`
 }
 
 func UpdateLocalAddons(mergedAddons map[int]Addon) map[int]Addon {
@@ -49,8 +48,8 @@ func UpdateVersions(localAddons, remoteAddons map[int]Addon) map[int]Addon {
 	for key, localAddon := range localAddons {
 		if remoteAddon, exists := mergedAddons[key]; exists {
 			remoteAddon.IsInstalled = true
-			remoteAddon.LocalVersion = localAddon.LocalVersion
 			remoteAddon.HasUpdate = HasUpdate(localAddon, remoteAddon)
+			remoteAddon.Version = localAddon.Version
 			mergedAddons[key] = remoteAddon
 		}
 	}
@@ -129,5 +128,5 @@ func compareVersions(remoteVersion, localVersion string) int {
 }
 
 func HasUpdate(local, remote Addon) bool {
-	return compareVersions(remote.RemoteVersion, local.LocalVersion) > 0
+	return compareVersions(remote.Version, local.Version) > 0
 }

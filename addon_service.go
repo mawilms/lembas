@@ -93,20 +93,19 @@ func (a *App) InstallAddon(id int, force bool) error {
 
 	a.localAddons[id] = newAddon
 	a.remoteAddons[id] = internal.Addon{
-		Id:            a.remoteAddons[id].Id,
-		Type:          a.remoteAddons[id].Type,
-		Name:          a.remoteAddons[id].Name,
-		Author:        a.remoteAddons[id].Author,
-		Description:   a.remoteAddons[id].Description,
-		LocalVersion:  a.remoteAddons[id].RemoteVersion,
-		RemoteVersion: a.remoteAddons[id].LocalVersion,
-		Category:      a.remoteAddons[id].Category,
-		Downloads:     a.remoteAddons[id].Downloads,
-		UpdatedAt:     a.remoteAddons[id].UpdatedAt,
-		ArchiveName:   a.remoteAddons[id].ArchiveSize,
-		ArchiveSize:   a.remoteAddons[id].ArchiveSize,
-		HasUpdate:     false,
-		IsInstalled:   true,
+		Id:          a.remoteAddons[id].Id,
+		Type:        a.remoteAddons[id].Type,
+		Name:        a.remoteAddons[id].Name,
+		Author:      a.remoteAddons[id].Author,
+		Description: a.remoteAddons[id].Description,
+		Version:     a.remoteAddons[id].Version,
+		Category:    a.remoteAddons[id].Category,
+		Downloads:   a.remoteAddons[id].Downloads,
+		UpdatedAt:   a.remoteAddons[id].UpdatedAt,
+		ArchiveName: a.remoteAddons[id].ArchiveSize,
+		ArchiveSize: a.remoteAddons[id].ArchiveSize,
+		HasUpdate:   false,
+		IsInstalled: true,
 	}
 
 	runtime.EventsEmit(a.ctx, "install:success", AddonMap{

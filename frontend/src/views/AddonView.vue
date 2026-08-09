@@ -41,7 +41,7 @@ const reloadAddons = async () => {
 }
 
 const amountUpdates = computed(() => {
-    return addons.value.filter((addon) => addon.HasUpdate == true).length
+    return addons.value.filter((addon) => addon.hasUpdate == true).length
 })
 
 const activeRow = ref<number | null>(null)

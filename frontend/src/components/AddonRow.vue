@@ -22,7 +22,7 @@ const openPluginPage = (id: number) => {
         <div
             class="flex justify-center items-center self-stretch w-22 rounded-lg text-3xl font-bold bg-secondary"
         >
-            {{ extractFirstLetter(props.addon.Name) }}
+            {{ extractFirstLetter(props.addon.name) }}
         </div>
 
         <div class="flex-1 min-w-0">
@@ -31,10 +31,10 @@ const openPluginPage = (id: number) => {
                     <div class="flex gap-4 items-center mb-1">
                         <a
                             class="font-bold hover:underline"
-                            @click.stop="openPluginPage(props.addon.Id)"
-                            >{{ props.addon.Name }}</a
+                            @click.stop="openPluginPage(props.addon.id)"
+                            >{{ props.addon.name }}</a
                         >
-                        <span class="text-xs text-gray-300">by {{ props.addon.Author }}</span>
+                        <span class="text-xs text-gray-300">by {{ props.addon.author }}</span>
                     </div>
                     <slot name="center"></slot>
                 </section>
@@ -48,33 +48,33 @@ const openPluginPage = (id: number) => {
 
             <div class="flex items-center justify-between text-sm text-gray-300">
                 <div>
-                    <p>{{ props.addon.Category }}</p>
+                    <p>{{ props.addon.category }}</p>
                 </div>
 
                 <section class="flex gap-3.5">
                     <UTooltip arrow text="Downloads">
                         <div class="flex items-center gap-1">
-                            <ArrowDownToLine class="w-4 h-4" /> {{ props.addon.Downloads }}
+                            <ArrowDownToLine class="w-4 h-4" /> {{ props.addon.downloads }}
                         </div>
                     </UTooltip>
 
                     <UTooltip arrow text="Last update">
                         <div class="flex items-center gap-1">
                             <Clock class="w-4 h-4" />
-                            {{ props.addon.UpdatedAt }}
+                            {{ props.addon.updatedAt }}
                         </div>
                     </UTooltip>
 
                     <UTooltip arrow text="Archive size">
                         <div class="flex items-center gap-1">
-                            <HardDrive class="w-4 h-4" /> {{ props.addon.ArchiveSize }}
+                            <HardDrive class="w-4 h-4" /> {{ props.addon.archiveSize }}
                         </div>
                     </UTooltip>
 
                     <UTooltip arrow text="Current version">
                         <div class="flex items-center gap-1">
                             <Computer class="w-4 h-4" />
-                            <slot name="version"></slot>
+                            <span>{{ props.addon.version }}</span>
                         </div>
                     </UTooltip>
                 </section>
