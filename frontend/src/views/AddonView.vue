@@ -34,9 +34,6 @@ onUnmounted(() => {
 })
 
 const reloadAddons = async () => {
-    // const newAddons = await GetLocalAddons(true)
-    // setAddons(newAddons.localAddons)
-    // setRemoteAddons(newAddons.remoteAddons)
     await getAddons(true)
 }
 
