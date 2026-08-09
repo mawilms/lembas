@@ -3,6 +3,7 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -11,7 +12,11 @@ func setupTempHome(t *testing.T) string {
 
 	tmpHome := t.TempDir()
 
-	t.Setenv("USERPROFILE", tmpHome) // Windows
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpHome)
+	} else {
+		t.Setenv("HOME", tmpHome)
+	}
 
 	return tmpHome
 }
