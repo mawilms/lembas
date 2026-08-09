@@ -1,4 +1,4 @@
 allowBuilds:
-  esbuild: true
-  vue-demi: true
+  esbuild: false
+  vue-demi: false
 minimumReleaseAge: 1440 # 7 Tage
