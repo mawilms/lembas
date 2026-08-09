@@ -33,7 +33,7 @@ jobs:
 
       - name: Check ZIP
         run: |
-          ls -l test/samples
+          ls -l /home/runner/work/lembas/lembas/test/samples
 
       - name: Golang tests
         run: go test ./...
