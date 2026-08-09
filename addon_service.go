@@ -27,6 +27,7 @@ func (a *App) GetLocalAddons(forceReload bool) AddonMap {
 		addons[e.Id] = e
 	}
 
+	// TODO: Currently bugged. local addons don't have a latestVersion entry after reloading
 	if len(a.remoteAddons) > 0 {
 		a.localAddons = internal.UpdateLocalAddons(internal.UpdateVersions(addons, a.remoteAddons))
 	} else {
@@ -66,8 +67,8 @@ func (a *App) GetRemoteAddons(forceReload bool) AddonMap {
 	return AddonMap{RemoteAddons: addons, LocalAddons: a.localAddons}
 }
 
-func (a *App) GetAddons() AddonMap {
-	localAddons := a.GetLocalAddons(false)
+func (a *App) GetAddons(forceReload bool) AddonMap {
+	localAddons := a.GetLocalAddons(forceReload)
 	remoteAddons := a.GetRemoteAddons(false)
 
 	mergedAddons := internal.UpdateVersions(localAddons.LocalAddons, remoteAddons.RemoteAddons)
@@ -86,26 +87,26 @@ func (a *App) InstallAddon(id int, force bool) error {
 
 	newAddon, err := a.installer.Install(addon, *a.settings, a.addonModel)
 	if err != nil {
-		log.Infof("%v", err)
+		log.Errorf("%v", err)
 		return err
 	}
 
 	a.localAddons[id] = newAddon
 	a.remoteAddons[id] = internal.Addon{
-		Id:             a.remoteAddons[id].Id,
-		Type:           a.remoteAddons[id].Type,
-		Name:           a.remoteAddons[id].Name,
-		Author:         a.remoteAddons[id].Author,
-		Description:    a.remoteAddons[id].Description,
-		CurrentVersion: a.remoteAddons[id].LatestVersion,
-		LatestVersion:  a.remoteAddons[id].CurrentVersion,
-		Category:       a.remoteAddons[id].Category,
-		Downloads:      a.remoteAddons[id].Downloads,
-		UpdatedAt:      a.remoteAddons[id].UpdatedAt,
-		ArchiveName:    a.remoteAddons[id].ArchiveSize,
-		ArchiveSize:    a.remoteAddons[id].ArchiveSize,
-		HasUpdate:      false,
-		IsInstalled:    true,
+		Id:            a.remoteAddons[id].Id,
+		Type:          a.remoteAddons[id].Type,
+		Name:          a.remoteAddons[id].Name,
+		Author:        a.remoteAddons[id].Author,
+		Description:   a.remoteAddons[id].Description,
+		LocalVersion:  a.remoteAddons[id].RemoteVersion,
+		RemoteVersion: a.remoteAddons[id].LocalVersion,
+		Category:      a.remoteAddons[id].Category,
+		Downloads:     a.remoteAddons[id].Downloads,
+		UpdatedAt:     a.remoteAddons[id].UpdatedAt,
+		ArchiveName:   a.remoteAddons[id].ArchiveSize,
+		ArchiveSize:   a.remoteAddons[id].ArchiveSize,
+		HasUpdate:     false,
+		IsInstalled:   true,
 	}
 
 	runtime.EventsEmit(a.ctx, "install:success", AddonMap{

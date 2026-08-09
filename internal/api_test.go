@@ -10,7 +10,7 @@ import (
 var (
 	_, b, _, _ = runtime.Caller(0)
 
-	apiResponse = filepath.Join(filepath.Dir(b), "..", "..", "test", "api_response.xml")
+	apiResponse = filepath.Join(filepath.Dir(b), "..", "test", "api_response.xml")
 )
 
 func TestParseXmlResponse(t *testing.T) {

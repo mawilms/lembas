@@ -9,10 +9,14 @@ import { useAddonsStore } from '@/stores/addons.ts'
 import Filter from '@/components/Filter.vue'
 import Sort from '@/components/BrowserSort.vue'
 import { storeToRefs } from 'pinia'
-import { ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Criteria } from '@/types/criteria.ts'
+import { EventsOff, EventsOn } from '@/wailsjs/runtime'
+import { main } from '@/wailsjs/go/models.ts'
+import AddonMap = main.AddonMap
 
 const { remoteAddons } = storeToRefs(useAddonsStore())
+const { setAddons, setRemoteAddons } = useAddonsStore()
 const categories = useCategories(remoteAddons)
 const { selectedCategories, removeCategory } = useRemoveCategory()
 const { sortAddonsByCriteria } = useSort()
@@ -20,6 +24,19 @@ const selectedCriteria = ref<Criteria>('Name')
 
 const filteredList = useFilteredList(remoteAddons, selectedCategories)
 sortAddonsByCriteria(filteredList, selectedCriteria.value)
+
+onMounted(() => {
+    EventsOn('install:success', (addonMap: AddonMap) => {
+        setRemoteAddons(addonMap.remoteAddons)
+        setAddons(addonMap.localAddons)
+        const filteredList = useFilteredList(remoteAddons, selectedCategories)
+        sortAddonsByCriteria(filteredList, selectedCriteria.value)
+    })
+})
+
+onUnmounted(() => {
+    EventsOff('install:success')
+})
 
 watch(selectedCriteria, (criteria) => {
     sortAddonsByCriteria(filteredList, criteria)

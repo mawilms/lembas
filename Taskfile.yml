@@ -6,3 +6,12 @@ includes:
   frontend:
     taskfile: ./frontend/Taskfile.yml
     dir: ./frontend
+
+tasks:
+  test:
+    cmd: go test -v ./...
+
+  ci:
+    cmds:
+      - task: test
+      - task: frontend:check

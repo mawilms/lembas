@@ -5,7 +5,6 @@ import Filter from '@/components/Filter.vue'
 import { useCategories, useFilteredList, useRemoveCategory, useSort } from '@/utils.ts'
 import { useAddonsStore } from '@/stores/addons.ts'
 import { storeToRefs } from 'pinia'
-import { GetLocalAddons } from '@/wailsjs/go/main/App'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { EventsOff, EventsOn } from '@/wailsjs/runtime/runtime'
 import { main } from '@/wailsjs/go/models.ts'
@@ -20,6 +19,8 @@ const { selectedCategories, removeCategory } = useRemoveCategory()
 const { sorting, sortAddons } = useSort()
 const filteredList = useFilteredList(addons, selectedCategories)
 
+const { getAddons } = useAddonsStore()
+
 onMounted(() => {
     EventsOn('delete:success', (addonMap: AddonMap) => {
         setAddons(addonMap.localAddons)
@@ -33,9 +34,10 @@ onUnmounted(() => {
 })
 
 const reloadAddons = async () => {
-    const newAddons = await GetLocalAddons(true)
-    setAddons(newAddons.localAddons)
-    setRemoteAddons(newAddons.remoteAddons)
+    // const newAddons = await GetLocalAddons(true)
+    // setAddons(newAddons.localAddons)
+    // setRemoteAddons(newAddons.remoteAddons)
+    await getAddons(true)
 }
 
 const amountUpdates = computed(() => {

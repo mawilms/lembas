@@ -11,12 +11,12 @@ export const useAddonsStore = defineStore('addons', () => {
 
     const { sortAddons } = useSort()
 
-    const getAddons = async () => {
+    const getAddons = async (forceReload: boolean) => {
         if (remoteAddons.value.length > 0) {
             return
         }
 
-        const fetchedAddons = await GetAddons()
+        const fetchedAddons = await GetAddons(forceReload)
 
         addons.value = sortAddons(Object.values(fetchedAddons.localAddons), false)
         remoteAddons.value = sortAddons(Object.values(fetchedAddons.remoteAddons), false)

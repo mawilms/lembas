@@ -33,7 +33,7 @@ describe('getAddons', () => {
         const { addons, remoteAddons } = storeToRefs(store)
         const { getAddons } = store
 
-        await getAddons()
+        await getAddons(false)
 
         expect(Object.values(addons.value)).toEqual([
             {
@@ -88,8 +88,8 @@ describe('setAddons', () => {
                 Author: 'MuNkEy',
                 Description: 'Hello World',
                 IsInstalled: true,
-                CurrentVersion: '1.0.0',
-                LatestVersion: '1.0.0',
+                LocalVersion: '1.0.0',
+                RemoteVersion: '1.0.0',
                 ArchiveSize: '5 MB',
                 ArchiveName: 'AH Buyout Calculator.zip',
             },
@@ -107,8 +107,8 @@ describe('setAddons', () => {
                 Author: 'MuNkEy',
                 Description: 'Hello World',
                 IsInstalled: true,
-                CurrentVersion: '1.0.0',
-                LatestVersion: '1.0.0',
+                LocalVersion: '1.0.0',
+                RemoteVersion: '1.0.0',
                 ArchiveSize: '5 MB',
                 ArchiveName: 'AH Buyout Calculator.zip',
             },
@@ -147,8 +147,8 @@ describe('setRemoteAddons', () => {
                 Author: 'MuNkEy',
                 Description: 'Hello World',
                 IsInstalled: true,
-                CurrentVersion: '1.0.0',
-                LatestVersion: '1.0.0',
+                LocalVersion: '1.0.0',
+                RemoteVersion: '1.0.0',
                 ArchiveSize: '5 MB',
                 ArchiveName: 'AH Buyout Calculator.zip',
             },
@@ -166,8 +166,8 @@ describe('setRemoteAddons', () => {
                 Author: 'MuNkEy',
                 Description: 'Hello World',
                 IsInstalled: true,
-                CurrentVersion: '1.0.0',
-                LatestVersion: '1.0.0',
+                LocalVersion: '1.0.0',
+                RemoteVersion: '1.0.0',
                 ArchiveSize: '5 MB',
                 ArchiveName: 'AH Buyout Calculator.zip',
             },

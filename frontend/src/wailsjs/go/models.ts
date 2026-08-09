@@ -6,8 +6,8 @@ export namespace internal {
 	    Name: string;
 	    Author: string;
 	    Description: string;
-	    CurrentVersion: string;
-	    LatestVersion: string;
+	    LocalVersion: string;
+	    RemoteVersion: string;
 	    Category: string;
 	    Downloads: number;
 	    UpdatedAt: string;
@@ -27,8 +27,8 @@ export namespace internal {
 	        this.Name = source["Name"];
 	        this.Author = source["Author"];
 	        this.Description = source["Description"];
-	        this.CurrentVersion = source["CurrentVersion"];
-	        this.LatestVersion = source["LatestVersion"];
+	        this.LocalVersion = source["LocalVersion"];
+	        this.RemoteVersion = source["RemoteVersion"];
 	        this.Category = source["Category"];
 	        this.Downloads = source["Downloads"];
 	        this.UpdatedAt = source["UpdatedAt"];

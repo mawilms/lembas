@@ -18,8 +18,11 @@ jobs:
 
       - name: Build frontend
         run: |
-          npm --prefix frontend install
-          npm --prefix frontend run build
+          pnpm --prefix frontend install
+          pnpm --prefix frontend run build
 
-      - name: Test
+      - name: Golang tests
         run: go test -v ./...
+
+      - name: JS tests
+        run: pnpm run test:unit-run
