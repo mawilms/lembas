@@ -22,7 +22,7 @@ func TestAnalyzeZip(t *testing.T) {
 		expect      string
 	}{
 		{"same root and plugin folder", "LUI-v2.3.0.zip", "LUI/ATTRIBUTIONS.md,LUI/LICENSE,LUI/LICENSES/,LUI/LUI.plugin,LUI/LUI.plugincompendium,LUI/LUIReloader.plugin,LUI/README.md,LUI/api/,LUI/assets/,LUI/reloader/,LUI/src/"},
-		{"different root and plugin folder", "Altholic.zip", "Homeopatix/AltHolic.plugin,Homeopatix/AltHolic.plugincompendium,Homeopatix/AltHolic/"},
+		{"different root and plugin folder", "AltHolic.zip", "Homeopatix/AltHolic.plugin,Homeopatix/AltHolic.plugincompendium,Homeopatix/AltHolic/"},
 		{"doesn't contain a plugincompendium file", "AH_Buyout_Calculator_0.5.zip", "Munkey/Ah.plugin,Munkey/Ah/"},
 		{"contains multiple folders after installation", "ExoPlugins.zip", "ExoPlugins/Acumen.plugin,ExoPlugins/Acumen/,ExoPlugins/AcumenReloader.plugin,ExoPlugins/AcumenReloader/"},
 	}

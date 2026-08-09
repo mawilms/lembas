@@ -31,10 +31,6 @@ jobs:
         working-directory: frontend
         run: pnpm run build-only
 
-      - name: Check ZIP
-        run: |
-          ls -l /home/runner/work/lembas/lembas/test/samples
-
       - name: Golang tests
         run: go test ./...
 
