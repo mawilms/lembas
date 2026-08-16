@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/labstack/gommon v0.5.0
 	github.com/ncruces/go-sqlite3 v0.35.3
-	github.com/wailsapp/wails/v2 v2.12.0
+	github.com/wailsapp/wails/v2 v2.14.0
 )
 
 require (
