@@ -16,7 +16,7 @@
         "format": "prettier --write --experimental-cli src/"
     },
     "dependencies": {
-        "@lucide/vue": "^1.30.0",
+        "@lucide/vue": "^1.31.0",
         "@nuxt/ui": "^4.10.0",
         "@tailwindcss/vite": "^4.3.3",
         "pinia": "^4.0.2",
