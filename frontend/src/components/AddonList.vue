@@ -35,14 +35,14 @@ const emit = defineEmits(['setActiveRow', 'resetRow'])
                 <button
                     v-if="item.hasUpdate"
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                    @click="async () => await UpdateAddon(item.id)"
+                    @click.stop="async () => await UpdateAddon(item.id)"
                 >
                     Update
                 </button>
                 <button
                     v-else-if="!item.isInstalled"
                     class="bg-primary hover:bg-gold text-sm py-1 px-2 rounded cursor-pointer"
-                    @click="async () => await InstallAddon(item.id, false)"
+                    @click.stop="async () => await InstallAddon(item.id, false)"
                 >
                     Install
                 </button>

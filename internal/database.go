@@ -64,10 +64,21 @@ CREATE TABLE IF NOT EXISTS addons
 	defer db.Close()
 
 	_, err = db.Exec(`
-CREATE VIEW addons_view AS
+CREATE VIEW IF NOT EXISTS addons_view AS
 SELECT name, author, version, files, addon_id, downloads, updated_at, archive_name, archive_size, category 
 FROM addons;
 `)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+CREATE UNIQUE INDEX IF NOT EXISTS addons_id_name_author_uindex
+ON addons (id asc, addon_id desc, name desc, author asc);
+`)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

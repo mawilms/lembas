@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"path/filepath"
 
+	"github.com/labstack/gommon/log"
 	"github.com/mawilms/lembas/internal"
 )
 
 type App struct {
 	ctx          context.Context
-	logger       *slog.Logger
-	settings     *internal.Settings
+	settings     internal.Settings
 	addonModel   internal.DatabaseInterface
 	installer    internal.InstallerInterface
 	api          internal.ApiInterface
@@ -21,22 +20,22 @@ type App struct {
 }
 
 func NewApp() *App {
-	loggerHandler := slog.NewTextHandler(os.Stdout, nil)
-	logger := slog.New(loggerHandler)
-
 	userDirectory := internal.UserDirectory{}
 	addonsDirectory, err := userDirectory.CreateAddonsDir()
 	if err != nil {
+		log.Fatalf("Got error %v", err)
 		return nil
 	}
 
 	appDataDirectory := internal.AppDataDirectory{}
 	if err := appDataDirectory.CreateLembasDir(); err != nil {
+		log.Fatalf("Got error %v", err)
 		return nil
 	}
 
 	lembasDirectory, err := appDataDirectory.GetLembasDir()
 	if err != nil {
+		log.Fatalf("Got error %v", err)
 		return nil
 	}
 
@@ -47,21 +46,23 @@ func NewApp() *App {
 		DataDirectory:  lembasDirectory,
 		AddonDirectory: addonsDirectory}
 	if err = internal.WriteSettings(settings, lembasDirectory); err != nil {
+		log.Fatalf("Got error %v", err)
 		return nil
 	}
 
 	database := &internal.Database{DbUrl: filepath.Join(lembasDirectory, "db.sqlite")}
 	if err = database.SetupDb(); err != nil {
+		log.Fatalf("Got error %v", err)
 		return nil
 	}
 
 	return &App{
-		logger:     logger,
-		settings:   &settings,
+		settings:   settings,
 		addonModel: database,
 		installer:  &internal.Installer{},
 		api: &internal.Api{
-			Url: settings.FavoritesUrl},
+			Url: settings.FavoritesUrl,
+		},
 	}
 }
 

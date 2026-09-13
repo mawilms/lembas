@@ -193,7 +193,7 @@ func (i *Installer) DeleteFiles(addonsFolderPath string, files []string) error {
 
 	var rootPaths []string
 	for _, f := range files {
-		splitPath := strings.Split(f, "/")[0]
+		splitPath, _, _ := strings.Cut(f, "/")
 		if !slices.Contains(rootPaths, splitPath) {
 			rootPaths = append(rootPaths, splitPath)
 		}
